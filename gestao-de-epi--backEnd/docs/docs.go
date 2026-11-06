@@ -2045,11 +2045,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/model.CaepiDto"
                         }
                     },
-                    "404": {
-                        "description": "CA não está na base do MTE",
-                        "schema": {
-                            "$ref": "#/definitions/helper.HTTPError"
-                        }
+                    "204": {
+                        "description": "CA não está na base do MTE (sem corpo, para o front não tratar como erro)"
                     },
                     "500": {
                         "description": "Erro interno",

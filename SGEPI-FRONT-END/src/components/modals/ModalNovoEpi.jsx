@@ -134,18 +134,19 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
     if (!form.ca) return setInfoCa(null);
     setInfoCa("carregando");
     try {
-      const dados = await api.get(`/gerencial/caepi/${form.ca}`);
+      const dados = await api.get(`/gerencial/caepi/${form.ca}`); // 204 (null) = fora da base
+      if (!dados) return setInfoCa("nao-encontrado");
       const [d, m, a] = dados.validade.split("/");
       setForm((prev) => ({
         ...prev,
         nome: prev.nome || dados.equipamento,
-        fabricante: dados.fabricante,
+        fabricante: dados.fabricante.slice(0, 100), // limite do back; há razão social maior na base
         data_validade_ca: `${a}-${m}-${d}`,
       }));
       ["nome", "fabricante", "data_validade_ca"].forEach(limparErroCampo);
       setInfoCa(dados);
     } catch {
-      setInfoCa("nao-encontrado");
+      setInfoCa(null); // o api já mostrou o erro
     }
   };
 
