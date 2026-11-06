@@ -19,6 +19,7 @@ export function normalizarEpi(item) {
     alerta_minimo: Number(item?.alerta_minimo ?? item?.alertaMinimo ?? 0),
     ca: String(item?.ca ?? ""),
     validade_ca: String(item?.validade_ca ?? ""), // DD/MM/YYYY
+    situacao_ca: String(item?.situacao_ca ?? ""), // situação na base do MTE (vazio se não está nela)
   };
 }
 

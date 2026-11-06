@@ -68,11 +68,12 @@ func (q *Queries) DevolverItemAoEstoque(ctx context.Context, arg DevolverItemAoE
 }
 
 const listarEpisCaVencido = `-- name: ListarEpisCaVencido :many
-SELECT id, nome, CA, validade_CA
-FROM epi
-WHERE tenant_id = $1
-  AND id = ANY($2::int[])
-  AND validade_CA < $3::date
+SELECT e.id, e.nome, e.CA, e.validade_CA, COALESCE(c.situacao, '')::text AS situacao
+FROM epi e
+LEFT JOIN caepi c ON c.ca = ltrim(regexp_replace(e.CA, '\D', '', 'g'), '0')
+WHERE e.tenant_id = $1
+  AND e.id = ANY($2::int[])
+  AND (e.validade_CA < $3::date OR c.situacao IN ('CANCELADO', 'SUSPENSO'))
 `
 
 type ListarEpisCaVencidoParams struct {
@@ -86,9 +87,11 @@ type ListarEpisCaVencidoRow struct {
 	Nome       string
 	Ca         string
 	ValidadeCa pgtype.Date
+	Situacao   string
 }
 
-// Entregar EPI com CA vencido na data da entrega gera autuação (NR-6).
+// Entregar EPI com CA vencido na data da entrega gera autuação (NR-6). CA cancelado ou suspenso
+// na base do MTE (caepi) também bloqueia, mesmo com a validade cadastrada ainda em dia.
 func (q *Queries) ListarEpisCaVencido(ctx context.Context, arg ListarEpisCaVencidoParams) ([]ListarEpisCaVencidoRow, error) {
 	rows, err := q.db.Query(ctx, listarEpisCaVencido, arg.TenantID, arg.Ids, arg.DataEntrega)
 	if err != nil {
@@ -103,6 +106,7 @@ func (q *Queries) ListarEpisCaVencido(ctx context.Context, arg ListarEpisCaVenci
 			&i.Nome,
 			&i.Ca,
 			&i.ValidadeCa,
+			&i.Situacao,
 		); err != nil {
 			return nil, err
 		}

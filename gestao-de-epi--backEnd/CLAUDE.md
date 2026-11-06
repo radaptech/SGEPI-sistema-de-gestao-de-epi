@@ -37,6 +37,10 @@ swag init
 # localmente ele só existe dentro da imagem de produção, ver docs/BACKUP.md
 make backup-banco    # = go run . backup-banco
 ./main backup-banco  # binário compilado (é o que roda no cron do Railway)
+
+# Atualiza a base de CAs do MTE (tabela caepi) baixando o .zip do FTP do governo.
+# Com um caminho, lê um .zip local. Deve rodar num cron diário/semanal, como o backup.
+go run . atualizar-caepi [arquivo.zip]
 ```
 
 ### Subir o ambiente completo (Docker)
@@ -112,7 +116,8 @@ Como o tenant chega até a query:
 4. O service repassa `tenantId` como parâmetro de **toda** query.
 
 **Ao escrever qualquer query nova em `database/queries/`, o `WHERE` precisa incluir
-`tenant_id = $N`.** Não existe RLS no banco — o isolamento é feito 100% na aplicação. Um `WHERE`
+`tenant_id = $N`.** A única exceção é a tabela `caepi` (`Caepi.sql`), que guarda a base pública de CAs
+do MTE e é igual para todos os tenants. Não existe RLS no banco — o isolamento é feito 100% na aplicação. Um `WHERE`
 sem tenant vaza dados entre empresas.
 
 O `userId` logado sai da sessão e é lido com `ginmw.UserID(c)` (usado para auditoria:
@@ -238,6 +243,26 @@ docker run --rm --network sgeepi-infra_default --env-file .env sgeepi-backup-tes
 
 Nada no código agenda o backup — quem chama `./main backup-banco` é o cron do Railway. Retenção dos dumps
 é regra de lifecycle no bucket. Detalhes, verificação do upload e restauração: `docs/BACKUP.md`.
+
+### Base de CAs do MTE (CAEPI)
+
+`cli_atualizarCaepi.go`: `./main atualizar-caepi` baixa `tgg_export_caepi.zip` do FTP do MTE
+(`ftp.mtps.gov.br`, via `jlaffaye/ftp`), lê o `.txt` separado por `|` e, numa transação, troca todo o
+conteúdo da tabela `caepi` (`DELETE` + `COPY`). Depois roda `RenovarValidadeCaEpis`, que estende o
+`epi.validade_CA` de **todos os tenants** quando o MTE tem uma validade mais nova. Só usa as 8
+primeiras colunas porque a descrição às vezes tem `|` no meio. O mesmo CA aparece uma vez por laudo,
+e fica a linha com a validade mais recente.
+
+O CA do EPI é comparado com a `caepi` só pelos dígitos e sem zero à esquerda
+(`ltrim(regexp_replace(CA, '\D', '', 'g'), '0')`). Onde ela é usada:
+- `GET /api/gerencial/caepi/:ca`: o cadastro de EPI chama essa rota no blur do campo CA para preencher
+  fabricante, validade e nome.
+- `ListarEpisCaVencido`: além da validade vencida, bloqueia a entrega de CA `CANCELADO` ou `SUSPENSO`
+  (`ErrCaVencido`). `VENCIDO` na base não bloqueia sozinho, porque o arquivo pode estar desatualizado
+  e a renovação ainda não ter entrado. O que vale nesse caso é a data.
+- `/epis-dashbord` devolve `situacao_ca`, e o card "CA Vencendo" mostra os cancelados e suspensos.
+
+Nada no código agenda o comando. Em produção ele precisa de um cron no Railway, igual ao backup.
 
 ### Limites de plano
 

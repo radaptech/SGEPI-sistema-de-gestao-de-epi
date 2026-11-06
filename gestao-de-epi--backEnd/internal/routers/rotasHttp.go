@@ -255,6 +255,7 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 			rotasAdm.DELETE("/epi/:id", c.Epi.DeletarEpi())
 			rotasAdm.PATCH("/epi/:id", c.Epi.AtualizaEpi())
 			rotasAdm.POST("/cadastro-epi", c.Epi.AdicionarEpi())
+			rotasAdm.GET("/caepi/:ca", c.Epi.BuscarCaepi())
 
 			//entrada
 			rotasAdm.POST("/cadastrar-entrada", c.Entrada.AdicionarEntrada())

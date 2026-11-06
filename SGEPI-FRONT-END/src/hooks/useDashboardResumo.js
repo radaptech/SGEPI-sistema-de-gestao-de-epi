@@ -288,12 +288,15 @@ export function useDashboardResumo() {
       .sort((a, b) => a.quantidade - b.quantidade);
   }, [entradas, episMap, tamanhosMap]);
 
-  // CA vencido ou vencendo nos próximos DIAS_ALERTA_CA dias
+  // CA vencido, vencendo nos próximos DIAS_ALERTA_CA dias, ou cancelado/suspenso no MTE
   const caVencendoDetalhado = useMemo(() => {
     return epis
-      .map((epi) => ({ id: epi.id, item: epi.nome, ca: epi.ca, validade: epi.validade_ca, dias: diasAte(epi.validade_ca) }))
-      .filter((item) => item.dias !== null && item.dias <= DIAS_ALERTA_CA)
-      .sort((a, b) => a.dias - b.dias);
+      .map((epi) => ({
+        id: epi.id, item: epi.nome, ca: epi.ca, validade: epi.validade_ca, dias: diasAte(epi.validade_ca),
+        bloqueadoMte: ["CANCELADO", "SUSPENSO"].includes(epi.situacao_ca) ? epi.situacao_ca : null,
+      }))
+      .filter((item) => item.bloqueadoMte || (item.dias !== null && item.dias <= DIAS_ALERTA_CA))
+      .sort((a, b) => Boolean(b.bloqueadoMte) - Boolean(a.bloqueadoMte) || a.dias - b.dias);
   }, [epis]);
 
   // já vem filtrado e ordenado pelo back-end (/trocas-pendentes)

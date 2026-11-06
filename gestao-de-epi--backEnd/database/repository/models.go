@@ -8,6 +8,14 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Caepi struct {
+	Ca          string
+	Validade    pgtype.Date
+	Situacao    string
+	Fabricante  string
+	Equipamento string
+}
+
 type Departamento struct {
 	ID         int32
 	TenantID   int32

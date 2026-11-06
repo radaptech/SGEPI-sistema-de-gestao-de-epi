@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -94,6 +95,18 @@ func (e *EpiRepository) BuscaEpiDashbord(ctx context.Context, tenant int32) ([]B
 		return nil, helper.TraduzErroPostgres(err)
 	}
 	return epis, nil
+}
+
+// BuscarCaepi consulta a base pública de CAs do MTE (tabela global, sem tenant)
+func (e *EpiRepository) BuscarCaepi(ctx context.Context, ca string) (Caepi, error) {
+	c, err := e.q.BuscarCaepi(ctx, ca)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return Caepi{}, helper.ErrNaoEncontrado
+		}
+		return Caepi{}, helper.TraduzErroPostgres(err)
+	}
+	return c, nil
 }
 
 func (e *EpiRepository) BuscaEpiTenant(ctx context.Context, tenant int32) ([]BuscaTodosItensEntreguesDoTenantRow, error) {

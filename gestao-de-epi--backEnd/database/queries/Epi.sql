@@ -86,11 +86,12 @@ SET
 
 
 -- name: BuscaEpiDashbord :many
-SELECT id, nome, alerta_minimo, CA, validade_CA
-FROM epi
-WHERE tenant_id = $1 -- SEGURANÇA
-  AND ativo = TRUE
-ORDER BY nome;
+SELECT e.id, e.nome, e.alerta_minimo, e.CA, e.validade_CA, COALESCE(c.situacao, '')::text AS situacao_ca
+FROM epi e
+LEFT JOIN caepi c ON c.ca = ltrim(regexp_replace(e.CA, '\D', '', 'g'), '0') -- caepi é global
+WHERE e.tenant_id = $1 -- SEGURANÇA
+  AND e.ativo = TRUE
+ORDER BY e.nome;
 
 
 -- name: BuscaTodosItensEntreguesDoTenant :many

@@ -87,6 +87,16 @@ type EpiDashBord struct {
 	AlertaMinimo int32          `json:"alerta_minimo"`
 	CA           string         `json:"ca"`
 	ValidadeCa   configs.DataBr `json:"validade_ca"`
+	SituacaoCa   string         `json:"situacao_ca"` // situação na base do MTE; vazio se o CA não está nela
+}
+
+// CaepiDto é o registro do CA na base pública do MTE (CAEPI)
+type CaepiDto struct {
+	CA          string         `json:"ca"`
+	Validade    configs.DataBr `json:"validade"`
+	Situacao    string         `json:"situacao"`
+	Fabricante  string         `json:"fabricante"`
+	Equipamento string         `json:"equipamento"`
 }
 
 type EpiDtoEstoque struct {

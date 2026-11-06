@@ -82,9 +82,11 @@ LIMIT $1 OFFSET $2;
 
 
 -- name: ListarEpisCaVencido :many
--- Entregar EPI com CA vencido na data da entrega gera autuação (NR-6).
-SELECT id, nome, CA, validade_CA
-FROM epi
-WHERE tenant_id = $1
-  AND id = ANY(sqlc.arg(ids)::int[])
-  AND validade_CA < sqlc.arg(data_entrega)::date;
+-- Entregar EPI com CA vencido na data da entrega gera autuação (NR-6). CA cancelado ou suspenso
+-- na base do MTE (caepi) também bloqueia, mesmo com a validade cadastrada ainda em dia.
+SELECT e.id, e.nome, e.CA, e.validade_CA, COALESCE(c.situacao, '')::text AS situacao
+FROM epi e
+LEFT JOIN caepi c ON c.ca = ltrim(regexp_replace(e.CA, '\D', '', 'g'), '0')
+WHERE e.tenant_id = $1
+  AND e.id = ANY(sqlc.arg(ids)::int[])
+  AND (e.validade_CA < sqlc.arg(data_entrega)::date OR c.situacao IN ('CANCELADO', 'SUSPENSO'));

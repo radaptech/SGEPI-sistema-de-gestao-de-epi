@@ -21,6 +21,7 @@ type EpiService interface {
 	AtualizaEpi(ctx context.Context, model model.UpdateEpiInput, id, tenantId int32) error
 	ListarEpiDashbord(ctx context.Context, tenantId int32) ([]model.EpiDashBord, error)
 	BuscarEpiDoFuncionario(ctx context.Context, tenantId, IdFuncionario int32) ([]model.EpiDtoDevolucao, error)
+	BuscarCaepi(ctx context.Context, ca string) (model.CaepiDto, error)
 }
 
 type EpiController struct {
@@ -232,6 +233,38 @@ func (e *EpiController) ListarEpiPorId() gin.HandlerFunc {
 		}
 
 		ctx.JSON(http.StatusOK, epi)
+	}
+}
+
+// BuscarCaepi godoc
+// @Summary      Consultar CA na base do MTE
+// @Description  Busca o CA na base pública CAEPI (atualizada por `./main atualizar-caepi`) para preencher o cadastro do EPI
+// @Tags         EPIs
+// @Param        ca   path      string  true  "Número do CA"
+// @Produce      json
+// @Success      200  {object}  model.CaepiDto
+// @Failure      404  {object}  helper.HTTPError "CA não está na base do MTE"
+// @Failure      500  {object}  helper.HTTPError "Erro interno"
+// @Router       /gerencial/caepi/{ca} [get]
+// @Security     BearerAuth
+func (e *EpiController) BuscarCaepi() gin.HandlerFunc {
+
+	return func(ctx *gin.Context) {
+
+		ca, err := e.service.BuscarCaepi(ctx, ctx.Param("ca"))
+		if err != nil {
+
+			if errors.Is(err, helper.ErrNaoEncontrado) {
+				ctx.JSON(http.StatusNotFound, gin.H{"error": "CA não encontrado na base do MTE"})
+				return
+			}
+
+			ctx.Error(err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro ao consultar o CA", "detalhes": err.Error()})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, ca)
 	}
 }
 

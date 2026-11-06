@@ -26,6 +26,7 @@ type EpiRepository interface {
 	BuscaEpiDashbord(ctx context.Context, tenant int32) ([]repository.BuscaEpiDashbordRow, error)
 	BuscaEpiTenant(ctx context.Context, tenant int32) ([]repository.BuscaTodosItensEntreguesDoTenantRow, error)
 	BuscaEpiFuncionario(ctx context.Context, idfuncionario, tenantId int32)([]repository.BuscaItensEntreguesPorFuncionarioRow, error)
+	BuscarCaepi(ctx context.Context, ca string) (repository.Caepi, error)
 }
 
 type EpiService struct {
@@ -440,6 +441,7 @@ func (e *EpiService) ListarEpiDashbord(ctx context.Context, tenantId int32) ([]m
 			AlertaMinimo: e.AlertaMinimo,
 			CA:           e.Ca,
 			ValidadeCa:   configs.DataBr(e.ValidadeCa.Time),
+			SituacaoCa:   e.SituacaoCa,
 		}
 
 		dto = append(dto, ee)
@@ -489,4 +491,18 @@ func (e *EpiService) BuscarEpiDoFuncionario(ctx context.Context, tenantId, IdFun
 	}
 
 	return dtoSlice, nil
+}
+// BuscarCaepi consulta o CA na base do MTE para preencher o cadastro do EPI
+func (e *EpiService) BuscarCaepi(ctx context.Context, ca string) (model.CaepiDto, error) {
+	c, err := e.repo.BuscarCaepi(ctx, ca)
+	if err != nil {
+		return model.CaepiDto{}, err
+	}
+	return model.CaepiDto{
+		CA:          c.Ca,
+		Validade:    configs.DataBr(c.Validade.Time),
+		Situacao:    c.Situacao,
+		Fabricante:  c.Fabricante,
+		Equipamento: c.Equipamento,
+	}, nil
 }

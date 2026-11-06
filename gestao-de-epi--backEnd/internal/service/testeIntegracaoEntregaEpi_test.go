@@ -209,6 +209,24 @@ func TestEntrega(t *testing.T) {
 		require.Equal(t, saldoAntes, saldoDepois, "o estoque não deveria ter sido abatido")
 	})
 
+	t.Run("ERRO - entregar EPI com CA cancelado na base do MTE, mesmo com validade em dia", func(t *testing.T) {
+		epiCancelado := CreateEpi(t, db, protec, empresa) // validade do CA daqui a 1 ano
+		CreateEntradaEpi(t, db, empresa, epiCancelado, tamanho, user, entradaNf)
+		_, err := db.Exec(ctx, `INSERT INTO caepi (ca, validade, situacao, fabricante, equipamento)
+			SELECT ltrim(CA, '0'), validade_CA, 'CANCELADO', 'Fabr', 'LUVA' FROM epi WHERE id = $1`, epiCancelado)
+		require.NoError(t, err)
+
+		err = serv.Salvar(ctx, model.EntregaParaInserir{
+			ID_funcionario:     int32(funcionario),
+			Id_user:            int32(user),
+			Data_entrega:       *configs.NewDataBrPtr(time.Now()),
+			Assinatura_Digital: "teste.pop",
+			Itens:              []model.ItemParaInserir{{ID_epi: int32(epiCancelado), ID_tamanho: int32(tamanho), Quantidade: 1}},
+		}, int32(empresa), "token-ca-cancelado")
+		require.ErrorIs(t, err, helper.ErrCaVencido)
+		require.ErrorContains(t, err, "cancelado no MTE")
+	})
+
 	t.Run("trocas pendentes - vida útil vencida, em dia, sem vida útil e devolvido", func(t *testing.T) {
 		func2 := CreateFuncionario(t, db, dep, funcc, empresa)
 		epiVida := CreateEpi(t, db, protec, empresa)  // vida útil 10 dias

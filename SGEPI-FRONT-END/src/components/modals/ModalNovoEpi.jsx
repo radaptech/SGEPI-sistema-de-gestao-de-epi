@@ -38,6 +38,8 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
   const [salvandoNovoTamanho, setSalvandoNovoTamanho] = useState(false);
 
   const [erros, setErros] = useState({});
+  // consulta do CA na base do MTE: null | "carregando" | "nao-encontrado" | { situacao, ... }
+  const [infoCa, setInfoCa] = useState(null);
   const [toast, setToast] = useState(null);
 
   const [form, setForm] = useState({
@@ -125,6 +127,26 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
       [campo]: valor,
     }));
     limparErroCampo(campo);
+  };
+
+  // Preenche fabricante e validade com o que está na base do MTE (e o nome, se ainda vazio)
+  const consultarCa = async () => {
+    if (!form.ca) return setInfoCa(null);
+    setInfoCa("carregando");
+    try {
+      const dados = await api.get(`/gerencial/caepi/${form.ca}`);
+      const [d, m, a] = dados.validade.split("/");
+      setForm((prev) => ({
+        ...prev,
+        nome: prev.nome || dados.equipamento,
+        fabricante: dados.fabricante,
+        data_validade_ca: `${a}-${m}-${d}`,
+      }));
+      ["nome", "fabricante", "data_validade_ca"].forEach(limparErroCampo);
+      setInfoCa(dados);
+    } catch {
+      setInfoCa("nao-encontrado");
+    }
   };
 
   const alternarTamanho = (id) => {
@@ -448,10 +470,23 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
                       type="text"
                       value={form.ca}
                       onChange={(e) => atualizarCampo("ca", e.target.value.replace(/\D/g, ""))}
+                      onBlur={consultarCa}
                       className={`${baseInputClass} ${campoComErro("ca")} font-mono`}
                       placeholder="Apenas números"
                     />
                     {erros.ca && <p className="text-xs font-medium text-red-500 mt-1.5">{erros.ca}</p>}
+                    {!erros.ca && infoCa === "carregando" && (
+                      <p className="text-xs text-slate-400 mt-1.5">Consultando a base do MTE...</p>
+                    )}
+                    {!erros.ca && infoCa === "nao-encontrado" && (
+                      <p className="text-xs text-slate-400 mt-1.5">CA não encontrado na base do MTE. Preencha à mão.</p>
+                    )}
+                    {!erros.ca && infoCa?.situacao && (
+                      <p className={`text-xs font-semibold mt-1.5 ${infoCa.situacao === "VÁLIDO" ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"}`}>
+                        MTE: {infoCa.situacao}
+                        {infoCa.situacao !== "VÁLIDO" && infoCa.situacao !== "VENCIDO" && " (não pode ser entregue)"}
+                      </p>
+                    )}
                   </div>
 
                   <div>

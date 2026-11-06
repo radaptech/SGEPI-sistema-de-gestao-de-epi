@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/configs"
@@ -109,6 +110,9 @@ func (e *EntregaService) RegistrarEntrega(ctx context.Context, qtx *repository.Q
 	}
 	if len(vencidos) > 0 {
 		v := vencidos[0]
+		if v.Situacao == "CANCELADO" || v.Situacao == "SUSPENSO" {
+			return fmt.Errorf("%w: %s (CA %s %s no MTE)", helper.ErrCaVencido, v.Nome, v.Ca, strings.ToLower(v.Situacao))
+		}
 		return fmt.Errorf("%w: %s (CA %s, venceu em %s)", helper.ErrCaVencido, v.Nome, v.Ca, v.ValidadeCa.Time.Format("02/01/2006"))
 	}
 

@@ -7,6 +7,19 @@ definitions:
       message:
         type: string
     type: object
+  model.CaepiDto:
+    properties:
+      ca:
+        type: string
+      equipamento:
+        type: string
+      fabricante:
+        type: string
+      situacao:
+        type: string
+      validade:
+        type: string
+    type: object
   model.Departamento:
     properties:
       departamento:
@@ -434,6 +447,9 @@ definitions:
       id:
         type: integer
       nome:
+        type: string
+      situacao_ca:
+        description: situação na base do MTE; vazio se o CA não está nela
         type: string
       validade_ca:
         type: string
@@ -2129,6 +2145,36 @@ paths:
       summary: Listar todos
       tags:
       - funcao
+  /gerencial/caepi/{ca}:
+    get:
+      description: Busca o CA na base pública CAEPI (atualizada por `./main atualizar-caepi`)
+        para preencher o cadastro do EPI
+      parameters:
+      - description: Número do CA
+        in: path
+        name: ca
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.CaepiDto'
+        "404":
+          description: CA não está na base do MTE
+          schema:
+            $ref: '#/definitions/helper.HTTPError'
+        "500":
+          description: Erro interno
+          schema:
+            $ref: '#/definitions/helper.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Consultar CA na base do MTE
+      tags:
+      - EPIs
   /trocas-pendentes:
     get:
       description: EPIs em posse dos funcionários cuja vida útil já venceu ou vence

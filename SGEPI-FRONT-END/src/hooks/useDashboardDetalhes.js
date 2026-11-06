@@ -200,7 +200,7 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
     if (cardAberto === "ca") {
       return {
         titulo: "CA vencido ou vencendo",
-        subtitulo: `EPIs com CA vencido ou que vence nos próximos ${DIAS_ALERTA_CA} dias. EPI com CA vencido não pode ser entregue.`,
+        subtitulo: `EPIs com CA vencendo nos próximos ${DIAS_ALERTA_CA} dias, vencido ou cancelado/suspenso no MTE. Os vencidos e os cancelados/suspensos não podem ser entregues.`,
         icon: <ShieldAlert className="w-6 h-6" strokeWidth={2.5} />,
         dados: caVencendoDetalhado,
         subColunas: null,
@@ -232,9 +232,9 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
             key: "dias",
             label: "Situação",
             render: (item) =>
-              item.dias < 0 ? (
+              item.bloqueadoMte || item.dias < 0 ? (
                 <span className="font-bold text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-0.5 rounded-lg border border-red-200 dark:border-red-800 text-xs uppercase">
-                  Vencido
+                  {item.bloqueadoMte ? `${item.bloqueadoMte} no MTE` : "Vencido"}
                 </span>
               ) : (
                 <span className="font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800 text-xs">
