@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../services/api";
 import {
   X, ShieldPlus, ShieldAlert, CheckCircle2,
-  AlertCircle, Loader2, Plus, PenLine
+  AlertCircle, Loader2, Plus, PenLine, RefreshCw
 } from "lucide-react";
 
 const PROTECOES_PADRAO = [
@@ -129,7 +129,7 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
     limparErroCampo(campo);
   };
 
-  // Preenche fabricante e validade com o que está na base do MTE (e o nome, se ainda vazio)
+  // Preenche nome, fabricante e validade com o que está na base do MTE (botão "Buscar" ou Enter)
   const consultarCa = async () => {
     if (!form.ca) return setInfoCa(null);
     setInfoCa("carregando");
@@ -139,7 +139,7 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
       const [d, m, a] = dados.validade.split("/");
       setForm((prev) => ({
         ...prev,
-        nome: prev.nome || dados.equipamento,
+        nome: dados.equipamento,
         fabricante: dados.fabricante.slice(0, 100), // limite do back; há razão social maior na base
         data_validade_ca: `${a}-${m}-${d}`,
       }));
@@ -467,14 +467,34 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
                     <label className={labelClass}>
                       Número do CA <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="text"
-                      value={form.ca}
-                      onChange={(e) => atualizarCampo("ca", e.target.value.replace(/\D/g, ""))}
-                      onBlur={consultarCa}
-                      className={`${baseInputClass} ${campoComErro("ca")} font-mono`}
-                      placeholder="Apenas números"
-                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={form.ca}
+                        onChange={(e) => {
+                          atualizarCampo("ca", e.target.value.replace(/\D/g, ""));
+                          setInfoCa(null); // a situação mostrada era do CA anterior
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            consultarCa();
+                          }
+                        }}
+                        className={`${baseInputClass} ${campoComErro("ca")} font-mono`}
+                        placeholder="Apenas números"
+                      />
+                      <button
+                        type="button"
+                        onClick={consultarCa}
+                        disabled={!form.ca || infoCa === "carregando"}
+                        title="Buscar dados do CA na base do MTE"
+                        className="shrink-0 inline-flex items-center gap-1.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition-all shadow-sm shadow-blue-600/20 disabled:opacity-50"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${infoCa === "carregando" ? "animate-spin" : ""}`} />
+                        Buscar
+                      </button>
+                    </div>
                     {erros.ca && <p className="text-xs font-medium text-red-500 mt-1.5">{erros.ca}</p>}
                     {!erros.ca && infoCa === "carregando" && (
                       <p className="text-xs text-slate-400 mt-1.5">Consultando a base do MTE...</p>
