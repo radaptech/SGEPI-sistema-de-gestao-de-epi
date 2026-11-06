@@ -111,7 +111,8 @@ test("cadastra EPI", async () => {
   await modal.getByPlaceholder("Ex: Capacete de segurança").fill(nomeEpi);
   await modal.locator("select").first().selectOption({ label: "Mãos e Braços" });
   await modal.getByPlaceholder("Ex: 3M").fill("3M");
-  await modal.getByPlaceholder("Apenas números").fill("12345");
+  // CA fora da base do MTE (lá têm no máximo 5 dígitos): a consulta no blur não sobrescreve a validade
+  await modal.getByPlaceholder("Apenas números").fill("999999");
   await modal.locator('input[type="date"]').fill("2099-12-31");
   await modal.getByRole("button", { name: "M", exact: true }).click();
   // "Alerta Estoque Mín." fica vazio de propósito: o front manda 0 e o back tem que aceitar
