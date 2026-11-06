@@ -7,6 +7,19 @@ definitions:
       message:
         type: string
     type: object
+  model.CaepiDto:
+    properties:
+      ca:
+        type: string
+      equipamento:
+        type: string
+      fabricante:
+        type: string
+      situacao:
+        type: string
+      validade:
+        type: string
+    type: object
   model.Departamento:
     properties:
       departamento:
@@ -429,9 +442,16 @@ definitions:
     properties:
       alerta_minimo:
         type: integer
+      ca:
+        type: string
       id:
         type: integer
       nome:
+        type: string
+      situacao_ca:
+        description: situação na base do MTE; vazio se o CA não está nela
+        type: string
+      validade_ca:
         type: string
     type: object
   model.EpiDto:
@@ -457,6 +477,9 @@ definitions:
         type: array
       validade_ca:
         type: string
+      vida_util_dias:
+        description: 0 = sem troca periódica
+        type: integer
     type: object
   model.EpiDtoDevolucao:
     properties:
@@ -529,6 +552,10 @@ definitions:
         type: array
       nome:
         type: string
+      vida_util_dias:
+        description: 0 = sem troca periódica
+        minimum: 0
+        type: integer
     required:
     - ca
     - data_validade_ca
@@ -723,6 +750,25 @@ definitions:
       nome:
         type: string
     type: object
+  model.TrocaPendenteDto:
+    properties:
+      em_posse:
+        type: integer
+      epi_id:
+        type: integer
+      epi_nome:
+        type: string
+      funcionario_id:
+        type: integer
+      funcionario_nome:
+        type: string
+      matricula:
+        type: integer
+      ultima_entrega:
+        type: string
+      vence_em:
+        type: string
+    type: object
   model.UpdateEpiInput:
     properties:
       alerta_minimo:
@@ -744,6 +790,10 @@ definitions:
         type: array
       validade_ca:
         type: string
+      vida_util_dias:
+        description: 0 desliga
+        minimum: 0
+        type: integer
     type: object
   model.UpdateFuncionarioRequest:
     properties:
@@ -2095,6 +2145,67 @@ paths:
       summary: Listar todos
       tags:
       - funcao
+  /gerencial/caepi/{ca}:
+    get:
+      description: Busca o CA na base pública CAEPI (atualizada por `./main atualizar-caepi`)
+        para preencher o cadastro do EPI
+      parameters:
+      - description: Número do CA
+        in: path
+        name: ca
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.CaepiDto'
+        "404":
+          description: CA não está na base do MTE
+          schema:
+            $ref: '#/definitions/helper.HTTPError'
+        "500":
+          description: Erro interno
+          schema:
+            $ref: '#/definitions/helper.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Consultar CA na base do MTE
+      tags:
+      - EPIs
+  /trocas-pendentes:
+    get:
+      description: EPIs em posse dos funcionários cuja vida útil já venceu ou vence
+        nos próximos `dias` dias (padrão 30)
+      parameters:
+      - description: Janela em dias a partir de hoje (0 a 365)
+        in: query
+        name: dias
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.TrocaPendenteDto'
+            type: array
+        "400":
+          description: Parâmetro inválido
+          schema:
+            $ref: '#/definitions/helper.HTTPError'
+        "500":
+          description: Erro interno
+          schema:
+            $ref: '#/definitions/helper.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Trocas periódicas pendentes
+      tags:
+      - Entregas
 securityDefinitions:
   BearerAuth:
     in: header

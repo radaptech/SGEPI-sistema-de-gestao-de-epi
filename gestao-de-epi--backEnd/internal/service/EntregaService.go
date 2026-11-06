@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/configs"
@@ -27,11 +28,13 @@ type EntregaRepository interface {
 	AbaterEstoqueEntrada(ctx context.Context, qtx *repository.Queries, args repository.AbaterEstoqueLoteParams) (int64, error)
 	ReporEstoqueEntrada(ctx context.Context, qtx *repository.Queries, args repository.ReporEstoqueLoteParams) (int64, error)
 	ListarEntregasDisponiveis(ctx context.Context, qtx *repository.Queries, args repository.ListarLotesParaConsumoParams) ([]repository.ListarLotesParaConsumoRow, error)
+	ListarEpisCaVencido(ctx context.Context, qtx *repository.Queries, args repository.ListarEpisCaVencidoParams) ([]repository.ListarEpisCaVencidoRow, error)
 	ListarEpisEntreguesCancelados(ctx context.Context, qtx *repository.Queries, arg repository.ListarItensEntregueCanceladosParams) ([]repository.ListarItensEntregueCanceladosRow, error)
 	ListasEntregasPorMatricula(ctx context.Context, args repository.ListarHistoricoEntregasPorMatriculaParams) ([]repository.ListarHistoricoEntregasPorMatriculaRow, error)
 	BuscaEntregaDashbord(ctx context.Context, tenant int32) ([]repository.EntregaDashbordRow, error)
 	BuscaEntregaItensDashbord(ctx context.Context, tenant int32) ([]repository.EntregaItensDashbordRow, error)
 	BuscaTodasEntregasDoTenant(ctx context.Context, tenantId int32) ([]repository.BuscaTodasEntregasDoTenantRow, error)
+	ListarTrocasPendentes(ctx context.Context, args repository.ListarTrocasPendentesParams) ([]repository.ListarTrocasPendentesRow, error)
 }
 
 type EntregaService struct {
@@ -89,6 +92,28 @@ func (e *EntregaService) RegistrarEntrega(ctx context.Context, qtx *repository.Q
 	var idTrocaParaBanco pgtype.Int4
 	if model.IdTroca != nil {
 		idTrocaParaBanco = pgtype.Int4{Int32: int32(*model.IdTroca), Valid: true}
+	}
+
+	// 0. Bloqueia EPI com CA vencido na data da entrega (vale também para a troca na devolução)
+	idsEpi := make([]int32, len(model.Itens))
+	for i, item := range model.Itens {
+		idsEpi[i] = int32(item.ID_epi)
+	}
+	vencidos, err := e.repo.ListarEpisCaVencido(ctx, qtx, repository.ListarEpisCaVencidoParams{
+		TenantID:    tenantId,
+		Ids:         idsEpi,
+		DataEntrega: pgtype.Date{Time: model.Data_entrega.Time(), Valid: true},
+	})
+	if err != nil {
+		slog.ErrorContext(ctx, "verificar validade do CA", "funcionario", model.ID_funcionario, "tenant", tenantId, "err", err)
+		return err
+	}
+	if len(vencidos) > 0 {
+		v := vencidos[0]
+		if v.Situacao == "CANCELADO" || v.Situacao == "SUSPENSO" {
+			return fmt.Errorf("%w: %s (CA %s %s no MTE)", helper.ErrCaVencido, v.Nome, v.Ca, strings.ToLower(v.Situacao))
+		}
+		return fmt.Errorf("%w: %s (CA %s, venceu em %s)", helper.ErrCaVencido, v.Nome, v.Ca, v.ValidadeCa.Time.Format("02/01/2006"))
 	}
 
 	// 1. Salva Cabeçalho
@@ -359,6 +384,28 @@ func (e *EntregaService) GerarDadosPdfService(ctx context.Context, matricula str
 		Assinatura: primeira.Assinatura,
 		Epi: epis,
 	}, nil
+}
+
+// ListarTrocasPendentes: EPIs em posse com vida útil vencida ou vencendo nos próximos `dias` dias
+func (e *EntregaService) ListarTrocasPendentes(ctx context.Context, tenantId int32, dias int) ([]model.TrocaPendenteDto, error) {
+	trocas, err := e.repo.ListarTrocasPendentes(ctx, repository.ListarTrocasPendentesParams{
+		TenantID: tenantId,
+		Ate:      pgtype.Date{Time: time.Now().AddDate(0, 0, dias), Valid: true},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	dto := make([]model.TrocaPendenteDto, 0, len(trocas))
+	for _, t := range trocas {
+		dto = append(dto, model.TrocaPendenteDto{
+			FuncionarioId: t.FuncionarioID, FuncionarioNome: t.FuncionarioNome, Matricula: t.Matricula,
+			EpiId: t.EpiID, EpiNome: t.EpiNome, EmPosse: t.EmPosse,
+			UltimaEntrega: configs.DataBr(t.UltimaEntrega.Time),
+			VenceEm:       configs.DataBr(t.VenceEm.Time),
+		})
+	}
+	return dto, nil
 }
 
 // Funções de Dashboard

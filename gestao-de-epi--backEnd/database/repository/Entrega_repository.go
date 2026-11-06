@@ -163,6 +163,24 @@ func (e *EntregaRepository) ListarEntregasDisponiveis(ctx context.Context, qtx *
 	return listaLotes, nil
 }
 
+// ListarTrocasPendentes implements [service.EntregaRepository].
+func (e *EntregaRepository) ListarTrocasPendentes(ctx context.Context, args ListarTrocasPendentesParams) ([]ListarTrocasPendentesRow, error) {
+	trocas, err := e.q.ListarTrocasPendentes(ctx, args)
+	if err != nil {
+		return nil, helper.TraduzErroPostgres(err)
+	}
+	return trocas, nil
+}
+
+// ListarEpisCaVencido implements [service.EntregaRepository].
+func (e *EntregaRepository) ListarEpisCaVencido(ctx context.Context, qtx *Queries, args ListarEpisCaVencidoParams) ([]ListarEpisCaVencidoRow, error) {
+	epis, err := qtx.ListarEpisCaVencido(ctx, args)
+	if err != nil {
+		return nil, helper.TraduzErroPostgres(err)
+	}
+	return epis, nil
+}
+
 // ListarEpisEntreguesCancelados implements [service.EntregaRepository].
 func (e *EntregaRepository) ListarEpisEntreguesCancelados(ctx context.Context, qtx *Queries, arg ListarItensEntregueCanceladosParams) ([]ListarItensEntregueCanceladosRow, error) {
 	

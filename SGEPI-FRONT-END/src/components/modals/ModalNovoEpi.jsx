@@ -38,6 +38,8 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
   const [salvandoNovoTamanho, setSalvandoNovoTamanho] = useState(false);
 
   const [erros, setErros] = useState({});
+  // consulta do CA na base do MTE: null | "carregando" | "nao-encontrado" | { situacao, ... }
+  const [infoCa, setInfoCa] = useState(null);
   const [toast, setToast] = useState(null);
 
   const [form, setForm] = useState({
@@ -49,6 +51,7 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
     id_tamanho: [],
     id_protecao: "",
     alerta_minimo: "",
+    vida_util_dias: "",
   });
 
   useEffect(() => {
@@ -82,6 +85,7 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
             id_protecao: epiParaEditar.protecao?.id || "",
             id_tamanho: epiParaEditar.tamanhos?.map((t) => t.id) || [],
             alerta_minimo: epiParaEditar.alerta_minimo || "",
+            vida_util_dias: epiParaEditar.vida_util_dias || "",
           });
         }
       } catch (erro) {
@@ -125,6 +129,26 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
     limparErroCampo(campo);
   };
 
+  // Preenche fabricante e validade com o que está na base do MTE (e o nome, se ainda vazio)
+  const consultarCa = async () => {
+    if (!form.ca) return setInfoCa(null);
+    setInfoCa("carregando");
+    try {
+      const dados = await api.get(`/gerencial/caepi/${form.ca}`);
+      const [d, m, a] = dados.validade.split("/");
+      setForm((prev) => ({
+        ...prev,
+        nome: prev.nome || dados.equipamento,
+        fabricante: dados.fabricante,
+        data_validade_ca: `${a}-${m}-${d}`,
+      }));
+      ["nome", "fabricante", "data_validade_ca"].forEach(limparErroCampo);
+      setInfoCa(dados);
+    } catch {
+      setInfoCa("nao-encontrado");
+    }
+  };
+
   const alternarTamanho = (id) => {
     setForm((prev) => {
       const jaSelecionado = prev.id_tamanho.includes(id);
@@ -154,6 +178,9 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
       Number(form.alerta_minimo) < 0
     ) {
       novosErros.alerta_minimo = "O alerta mínimo não pode ser negativo.";
+    }
+    if (form.vida_util_dias !== "" && !(Number.isInteger(Number(form.vida_util_dias)) && Number(form.vida_util_dias) >= 0)) {
+      novosErros.vida_util_dias = "Informe a vida útil em dias inteiros (vazio = sem troca periódica).";
     }
 
     setErros(novosErros);
@@ -261,6 +288,7 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
         id_protecao: Number(form.id_protecao),
         id_tamanho: form.id_tamanho.map((id) => Number(id)),
         alerta_minimo: Number(form.alerta_minimo || 0),
+        vida_util_dias: Number(form.vida_util_dias || 0), // 0 = sem troca periódica
       };
 
       const payloadAtualizarEpi = {
@@ -272,6 +300,7 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
         id_protecao: Number(form.id_protecao),
         tamanhos: form.id_tamanho.map((id) => Number(id)),
         alerta_minimo: Number(form.alerta_minimo || 0),
+        vida_util_dias: Number(form.vida_util_dias || 0), // 0 = sem troca periódica
       };
 
       if (epiParaEditar) {
@@ -441,10 +470,23 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
                       type="text"
                       value={form.ca}
                       onChange={(e) => atualizarCampo("ca", e.target.value.replace(/\D/g, ""))}
+                      onBlur={consultarCa}
                       className={`${baseInputClass} ${campoComErro("ca")} font-mono`}
                       placeholder="Apenas números"
                     />
                     {erros.ca && <p className="text-xs font-medium text-red-500 mt-1.5">{erros.ca}</p>}
+                    {!erros.ca && infoCa === "carregando" && (
+                      <p className="text-xs text-slate-400 mt-1.5">Consultando a base do MTE...</p>
+                    )}
+                    {!erros.ca && infoCa === "nao-encontrado" && (
+                      <p className="text-xs text-slate-400 mt-1.5">CA não encontrado na base do MTE. Preencha à mão.</p>
+                    )}
+                    {!erros.ca && infoCa?.situacao && (
+                      <p className={`text-xs font-semibold mt-1.5 ${infoCa.situacao === "VÁLIDO" ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"}`}>
+                        MTE: {infoCa.situacao}
+                        {infoCa.situacao !== "VÁLIDO" && infoCa.situacao !== "VENCIDO" && " (não pode ser entregue)"}
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -473,6 +515,22 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
                       placeholder="Ex: 10"
                     />
                     {erros.alerta_minimo && <p className="text-xs font-medium text-red-500 mt-1.5">{erros.alerta_minimo}</p>}
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>
+                      Vida Útil (dias)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={form.vida_util_dias}
+                      onChange={(e) => atualizarCampo("vida_util_dias", e.target.value)}
+                      className={`${baseInputClass} ${campoComErro("vida_util_dias")}`}
+                      placeholder="Ex: 180 (vazio = sem troca)"
+                    />
+                    {erros.vida_util_dias && <p className="text-xs font-medium text-red-500 mt-1.5">{erros.vida_util_dias}</p>}
                   </div>
 
                   <div className="md:col-span-3">

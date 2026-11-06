@@ -10,6 +10,7 @@ type EpiInserir struct {
 	Fabricante     string         `json:"fabricante" binding:"required,max=100"`
 	CA             string         `json:"ca" binding:"required,max=20"`
 	Descricao      string         `json:"descricao" binding:"lte=250"`
+	VidaUtilDias   int32          `json:"vida_util_dias" binding:"gte=0"` // 0 = sem troca periódica
 	DataValidadeCa configs.DataBr `json:"data_validade_ca" binding:"required"`
 	IdTamanho      []int32        `json:"id_tamanho" binding:"required,min=1"` // Lista de tamanhos permitidos para este EPI
 	IDProtecao     int32          `json:"id_protecao" binding:"required,numeric"`
@@ -27,6 +28,7 @@ type EpiDto struct {
 	DataValidadeCa configs.DataBr  `json:"validade_ca"`
 	Protecao       TipoProtecaoDto `json:"protecao"`
 	AlertaMinimo   int32           `json:"alerta_minimo"`
+	VidaUtilDias   int32           `json:"vida_util_dias"` // 0 = sem troca periódica
 }
 
 type EpiDtoEntrega struct {
@@ -62,6 +64,7 @@ type UpdateEpiInput struct {
 	DataValidadeCa *configs.DataBr `json:"validade_ca"`
 	IdProtecao     *int32          `json:"id_protecao"`
 	AlertaMinimo   *int32          `json:"alerta_minimo"`
+	VidaUtilDias   *int32          `json:"vida_util_dias" binding:"omitempty,gte=0"` // 0 desliga
 	Tamanhos       []int32         `json:"tamanhos"` // Se enviado, você deve resetar os tamanhos no banco
 }
 
@@ -79,9 +82,21 @@ type EpiResponse struct {
 
 // EpiDashBord é o resumo para os cards do dashboard
 type EpiDashBord struct {
-	Id           int32  `json:"id"`
-	Nome         string `json:"nome"`
-	AlertaMinimo int32  `json:"alerta_minimo"`
+	Id           int32          `json:"id"`
+	Nome         string         `json:"nome"`
+	AlertaMinimo int32          `json:"alerta_minimo"`
+	CA           string         `json:"ca"`
+	ValidadeCa   configs.DataBr `json:"validade_ca"`
+	SituacaoCa   string         `json:"situacao_ca"` // situação na base do MTE; vazio se o CA não está nela
+}
+
+// CaepiDto é o registro do CA na base pública do MTE (CAEPI)
+type CaepiDto struct {
+	CA          string         `json:"ca"`
+	Validade    configs.DataBr `json:"validade"`
+	Situacao    string         `json:"situacao"`
+	Fabricante  string         `json:"fabricante"`
+	Equipamento string         `json:"equipamento"`
 }
 
 type EpiDtoEstoque struct {

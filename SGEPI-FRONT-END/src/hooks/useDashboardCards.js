@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { formatarMoeda } from "../utils/dashboardFormatters";
-import { Package, Truck, AlertTriangle, CircleDollarSign } from "lucide-react"; 
+import { Package, Truck, AlertTriangle, CircleDollarSign, ShieldAlert, RefreshCw } from "lucide-react"; 
+import { DIAS_ALERTA_CA, DIAS_ALERTA_TROCA } from "./useDashboardResumo";
 
 export function useDashboardCards(
   resumo,
@@ -53,6 +54,36 @@ export function useDashboardCards(
         ring:
           "hover:border-orange-200 dark:hover:border-orange-700 hover:bg-orange-50/40 dark:hover:bg-slate-800/80",
         badge: "Estoque baixo",
+      },
+      {
+        id: "ca",
+        titulo: "CA Vencendo",
+        valor: carregandoResumo
+          ? "--"
+          : resumo.caVencendo,
+        descricao:
+          `Vencidos ou vencendo em ${DIAS_ALERTA_CA} dias`,
+        icone: <ShieldAlert className="w-6 h-6" strokeWidth={2} />,
+        iconeBox:
+          "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400",
+        ring:
+          "hover:border-red-200 dark:hover:border-red-700 hover:bg-red-50/40 dark:hover:bg-slate-800/80",
+        badge: "Certificado de aprovação",
+      },
+      {
+        id: "trocas",
+        titulo: "Trocas Pendentes",
+        valor: carregandoResumo
+          ? "--"
+          : resumo.trocas,
+        descricao:
+          `Vida útil vencida ou vencendo em ${DIAS_ALERTA_TROCA} dias`,
+        icone: <RefreshCw className="w-6 h-6" strokeWidth={2} />,
+        iconeBox:
+          "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400",
+        ring:
+          "hover:border-amber-200 dark:hover:border-amber-700 hover:bg-amber-50/40 dark:hover:bg-slate-800/80",
+        badge: "Troca periódica",
       },
       {
         id: "valor",

@@ -112,6 +112,7 @@ func (d *DevolucaoService) SalvarDevolucao(ctx context.Context, modelDevolucao m
 	}
 
 	// Se não for descarte, devolve a quantidade ao estoque no lote mais recente
+	var reposicoes []repository.AddDevolucaoLoteParams
 	if !ehDescarte {
 		qtdRestanteParaDevolver := int32(modelDevolucao.QuantidadeADevolver)
 
@@ -134,17 +135,22 @@ func (d *DevolucaoService) SalvarDevolucao(ctx context.Context, modelDevolucao m
 			espaçoNoLote := lote.Quantidade - lote.QuantidadeAtual
 			qtdParaDeixarNoLote := min(qtdRestanteParaDevolver, espaçoNoLote)
 
-			novoSaldoLote := lote.QuantidadeAtual + qtdParaDeixarNoLote
+			if qtdParaDeixarNoLote <= 0 {
+				continue
+			}
 
-			err := qtx.AtualizarSaldoLote(ctx, repository.AtualizarSaldoLoteParams{
+			// incremento em vez de gravar o saldo lido: não sobrescreve uma entrega concorrente
+			linhas, err := qtx.ReporEstoqueLote(ctx, repository.ReporEstoqueLoteParams{
+				QuantidadeAtual: qtdParaDeixarNoLote,
 				ID:              lote.ID,
-				QuantidadeAtual: novoSaldoLote,
 				TenantID:        tenantId,
 			})
-			if err != nil {
-
+			if err != nil || linhas == 0 {
 				return fmt.Errorf("erro ao atualizar saldo do lote %d: %w", lote.ID, err)
 			}
+			reposicoes = append(reposicoes, repository.AddDevolucaoLoteParams{
+				TenantID: tenantId, IDEntradaItem: lote.ID, Quantidade: qtdParaDeixarNoLote,
+			})
 
 			qtdRestanteParaDevolver -= qtdParaDeixarNoLote
 		}
@@ -183,6 +189,14 @@ func (d *DevolucaoService) SalvarDevolucao(ctx context.Context, modelDevolucao m
 	idDevolucao, err := d.repo.AdicionarTroca(ctx, qtx, arg)
 	if err != nil {
 		return fmt.Errorf("erro ao registrar devolução: %w", err)
+	}
+
+	// Guarda em qual lote cada unidade voltou, para o cancelamento desfazer
+	for _, r := range reposicoes {
+		r.IDDevolucao = int32(idDevolucao)
+		if err := qtx.AddDevolucaoLote(ctx, r); err != nil {
+			return fmt.Errorf("erro ao registrar lote da devolução: %w", helper.TraduzErroPostgres(err))
+		}
 	}
 
 	// Se for uma troca, dispara automaticamente o processo de nova entrega
@@ -234,6 +248,29 @@ func (d *DevolucaoService) CancelarDevolucao(ctx context.Context, id, iduser, te
 	idDevolucao, err := d.repo.Cancelar(ctx, qtx, arg)
 	if err != nil {
 		return fmt.Errorf("falha ao cancelar devolução: %w", err)
+	}
+
+	// Tira do estoque o que a devolução tinha reposto, lote a lote
+	lotesRepostos, err := qtx.ListarDevolucaoLotes(ctx, repository.ListarDevolucaoLotesParams{
+		IDDevolucao: int32(idDevolucao),
+		TenantID:    arg.TenantID,
+	})
+	if err != nil {
+		return fmt.Errorf("erro ao buscar lotes da devolução: %w", helper.TraduzErroPostgres(err))
+	}
+	for _, l := range lotesRepostos {
+		linhas, err := qtx.AbaterEstoqueLote(ctx, repository.AbaterEstoqueLoteParams{
+			QuantidadeAtual: l.Quantidade,
+			ID:              l.IDEntradaItem,
+			TenantID:        arg.TenantID,
+		})
+		if err != nil {
+			return fmt.Errorf("erro ao abater estoque do lote %d: %w", l.IDEntradaItem, helper.TraduzErroPostgres(err))
+		}
+		if linhas == 0 {
+			// as unidades devolvidas já saíram de novo nesse lote
+			return fmt.Errorf("%w: o lote %d não tem mais as %d unidades desta devolução", helper.ErrEstoqueInsuficiente, l.IDEntradaItem, l.Quantidade)
+		}
 	}
 
 	// Tenta cancelar a entrega gerada por essa troca (se houver uma)

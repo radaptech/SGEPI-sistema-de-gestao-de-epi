@@ -99,6 +99,10 @@ func (d *DevolucaoController) Adicionar() gin.HandlerFunc {
 				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "funcionario ou registro não encontrado"})
 				return
 			}
+			if errors.Is(err, helper.ErrCaVencido) {
+				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+				return
+			}
 			ctx.Error(err)
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro ao salvar entrega", "detalhes": err.Error()})
 			return

@@ -68,6 +68,8 @@ SELECT
               AND eei.id_epi = $2
               AND eei.id_tamanho = $3
               AND ee.tenant_id = $4
+              AND ee.ativo = TRUE  -- entregas/itens cancelados não estão em posse
+              AND eei.ativo = TRUE
         ), 0)
         -
         -- Menos o total que ele já devolveu anteriormente
@@ -78,6 +80,7 @@ SELECT
               AND d.idepi = $2
               AND d.idtamanho = $3
               AND d.tenant_id = $4
+              AND d.ativo = TRUE   -- devolução cancelada volta para a posse
         ), 0)
     )::int AS saldo;
 
@@ -92,12 +95,6 @@ WHERE tenant_id = $1
   AND ativo = TRUE
   AND quantidade_atual < quantidade
 ORDER BY id DESC; -- Pega do lote mais recente para o mais antigo
-
--- name: AtualizarSaldoLote :exec
--- Atualiza o saldo de um lote específico
-UPDATE entrada_epi_item
-SET quantidade_atual = $2
-WHERE id = $1 AND tenant_id = $3;
 
 -- name: BuscarDadosPdfDevolucao :one
 SELECT 
@@ -127,3 +124,12 @@ INNER JOIN motivo_devolucao m ON m.id = d.idmotivo
 LEFT JOIN epi en ON en.id = d.idepinovo      
 LEFT JOIN tamanho tn ON tn.id = d.idtamanhonovo 
 WHERE d.id = $1 AND d.tenant_id = $2;
+-- name: AddDevolucaoLote :exec
+INSERT INTO devolucao_lote (tenant_id, id_devolucao, id_entrada_item, quantidade)
+VALUES ($1, $2, $3, $4);
+
+-- name: ListarDevolucaoLotes :many
+SELECT id_entrada_item, quantidade
+FROM devolucao_lote
+WHERE id_devolucao = $1
+  AND tenant_id = $2;

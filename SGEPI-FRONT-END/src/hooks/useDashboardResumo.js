@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api";
 
-import { obterHojeISO, formatarData } from "../utils/dashboardFormatters";
+import { obterHojeISO, formatarData, diasAte } from "../utils/dashboardFormatters";
 
 import {
   normalizarEpi,
@@ -12,6 +12,9 @@ import {
   normalizarItemEntregue,
   normalizarDevolucao, // <-- Descomentado
 } from "../utils/dashboardNormalizers";
+
+export const DIAS_ALERTA_CA = 30;
+export const DIAS_ALERTA_TROCA = 7;
 
 function extrairLista(resp, fallback = []) {
   const dados = resp?.data ?? resp ?? fallback;
@@ -39,6 +42,7 @@ export function useDashboardResumo() {
   const [entregas, setEntregas] = useState([]);
   const [itensEntregues, setItensEntregues] = useState([]);
   const [devolucoes, setDevolucoes] = useState([]); // <-- Descomentado
+  const [trocas, setTrocas] = useState([]);
   const [carregandoResumo, setCarregandoResumo] = useState(true);
 
   const carregarResumo = async () => {
@@ -53,6 +57,7 @@ export function useDashboardResumo() {
         listaEntregas,
         listaItensEntregues,
         listaDevolucoes,
+        listaTrocas,
       ] = await Promise.all([
         api.get("/epis-dashbord").catch(() => []),
         api.get("/tamanhos").catch(() => []),
@@ -64,6 +69,7 @@ export function useDashboardResumo() {
           console.warn("Rota /devolucoes ainda não implementada no Back-end");
           return []; // Retorna lista vazia e o código continua rodando
         }),
+        api.get(`/trocas-pendentes?dias=${DIAS_ALERTA_TROCA}`).catch(() => []),
       ]);
       
       setEpis((listaEpis || []).map(normalizarEpi));
@@ -73,6 +79,7 @@ export function useDashboardResumo() {
       setEntregas((listaEntregas || []).map(normalizarEntrega));
       setItensEntregues((listaItensEntregues || []).map(normalizarItemEntregue));
       setDevolucoes((listaDevolucoes || []).map(normalizarDevolucao)); // <-- Descomentado
+      setTrocas(Array.isArray(listaTrocas) ? listaTrocas : []);
 
     } finally {
       setCarregandoResumo(false);
@@ -281,6 +288,31 @@ export function useDashboardResumo() {
       .sort((a, b) => a.quantidade - b.quantidade);
   }, [entradas, episMap, tamanhosMap]);
 
+  // CA vencido, vencendo nos próximos DIAS_ALERTA_CA dias, ou cancelado/suspenso no MTE
+  const caVencendoDetalhado = useMemo(() => {
+    return epis
+      .map((epi) => ({
+        id: epi.id, item: epi.nome, ca: epi.ca, validade: epi.validade_ca, dias: diasAte(epi.validade_ca),
+        bloqueadoMte: ["CANCELADO", "SUSPENSO"].includes(epi.situacao_ca) ? epi.situacao_ca : null,
+      }))
+      .filter((item) => item.bloqueadoMte || (item.dias !== null && item.dias <= DIAS_ALERTA_CA))
+      .sort((a, b) => Boolean(b.bloqueadoMte) - Boolean(a.bloqueadoMte) || a.dias - b.dias);
+  }, [epis]);
+
+  // já vem filtrado e ordenado pelo back-end (/trocas-pendentes)
+  const trocasDetalhadas = useMemo(() => {
+    return trocas.map((t) => ({
+      id: `${t.funcionario_id}-${t.epi_id}`,
+      funcionario: t.funcionario_nome,
+      matricula: t.matricula,
+      item: t.epi_nome,
+      emPosse: t.em_posse,
+      ultimaEntrega: t.ultima_entrega,
+      venceEm: t.vence_em,
+      dias: diasAte(t.vence_em),
+    }));
+  }, [trocas]);
+
   const valorEstoqueDetalhado = useMemo(() => {
     const mapa = {};
 
@@ -356,9 +388,11 @@ export function useDashboardResumo() {
       entregasMes, 
       devolucoesHoje,
       alertas,
+      caVencendo: caVencendoDetalhado.length,
+      trocas: trocasDetalhadas.length,
       valorTotal,
     };
-  }, [entradas, entregas, devolucoes, alertasDetalhados]);
+  }, [entradas, entregas, devolucoes, alertasDetalhados, caVencendoDetalhado, trocasDetalhadas]);
 
   return {
     epis,
@@ -370,6 +404,8 @@ export function useDashboardResumo() {
     entregasMesDetalhadas, 
     entregasTodasDetalhadas, 
     alertasDetalhados,
+    caVencendoDetalhado,
+    trocasDetalhadas,
     valorEstoqueDetalhado,
     carregarResumo,
   };

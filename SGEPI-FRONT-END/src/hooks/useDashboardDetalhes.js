@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { Package, Truck, AlertTriangle, CircleDollarSign } from "lucide-react";
+import { Package, Truck, AlertTriangle, CircleDollarSign, ShieldAlert, RefreshCw } from "lucide-react";
+import { DIAS_ALERTA_CA, DIAS_ALERTA_TROCA } from "./useDashboardResumo";
 import { formatarMoeda } from "../utils/dashboardFormatters";
 
 const VAZIO = {
@@ -16,6 +17,8 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
     estoqueDetalhado,
     entregasTodasDetalhadas,
     alertasDetalhados,
+    caVencendoDetalhado,
+    trocasDetalhadas,
     valorEstoqueDetalhado,
   } = resumoDetalhado;
 
@@ -194,6 +197,112 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
       };
     }
 
+    if (cardAberto === "ca") {
+      return {
+        titulo: "CA vencido ou vencendo",
+        subtitulo: `EPIs com CA vencendo nos próximos ${DIAS_ALERTA_CA} dias, vencido ou cancelado/suspenso no MTE. Os vencidos e os cancelados/suspensos não podem ser entregues.`,
+        icon: <ShieldAlert className="w-6 h-6" strokeWidth={2.5} />,
+        dados: caVencendoDetalhado,
+        subColunas: null,
+        colunas: [
+          {
+            key: "item",
+            label: "EPI",
+            render: (item) => (
+              <div className="font-semibold text-gray-900 dark:text-gray-100">{item.item}</div>
+            ),
+          },
+          {
+            key: "ca",
+            label: "CA",
+            render: (item) => (
+              <span className="inline-flex px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-mono font-bold border border-slate-200 dark:border-slate-700">
+                {item.ca}
+              </span>
+            ),
+          },
+          {
+            key: "validade",
+            label: "Validade",
+            render: (item) => (
+              <span className="font-semibold text-gray-700 dark:text-gray-300 text-sm">{item.validade}</span>
+            ),
+          },
+          {
+            key: "dias",
+            label: "Situação",
+            render: (item) =>
+              item.bloqueadoMte || item.dias < 0 ? (
+                <span className="font-bold text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-0.5 rounded-lg border border-red-200 dark:border-red-800 text-xs uppercase">
+                  {item.bloqueadoMte ? `${item.bloqueadoMte} no MTE` : "Vencido"}
+                </span>
+              ) : (
+                <span className="font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800 text-xs">
+                  {item.dias === 0 ? "Vence hoje" : `Vence em ${item.dias} dia${item.dias > 1 ? "s" : ""}`}
+                </span>
+              ),
+          },
+        ],
+      };
+    }
+
+    if (cardAberto === "trocas") {
+      return {
+        titulo: "Trocas periódicas pendentes",
+        subtitulo: `EPIs em posse dos funcionários com vida útil vencida ou vencendo nos próximos ${DIAS_ALERTA_TROCA} dias.`,
+        icon: <RefreshCw className="w-6 h-6" strokeWidth={2.5} />,
+        dados: trocasDetalhadas,
+        subColunas: null,
+        colunas: [
+          {
+            key: "funcionario",
+            label: "Funcionário",
+            render: (item) => (
+              <div>
+                <div className="font-semibold text-gray-900 dark:text-gray-100">{item.funcionario}</div>
+                <div className="text-xs text-gray-400 dark:text-gray-500">Matrícula {item.matricula}</div>
+              </div>
+            ),
+          },
+          {
+            key: "item",
+            label: "EPI",
+            render: (item) => (
+              <div className="font-semibold text-gray-800 dark:text-gray-200">{item.item}</div>
+            ),
+          },
+          {
+            key: "emPosse",
+            label: "Em posse",
+            render: (item) => (
+              <span className="font-bold text-gray-900 dark:text-white">{item.emPosse}</span>
+            ),
+          },
+          {
+            key: "ultimaEntrega",
+            label: "Última entrega",
+            render: (item) => (
+              <span className="font-semibold text-gray-700 dark:text-gray-300 text-sm">{item.ultimaEntrega}</span>
+            ),
+          },
+          {
+            key: "dias",
+            label: "Situação",
+            render: (item) =>
+              item.dias < 0 ? (
+                <span className="font-bold text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-0.5 rounded-lg border border-red-200 dark:border-red-800 text-xs">
+                  Atrasada há {-item.dias} dia{item.dias < -1 ? "s" : ""}
+                </span>
+              ) : (
+                <span className="font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800 text-xs">
+                  {item.dias === 0 ? "Trocar hoje" : `Trocar em ${item.dias} dia${item.dias > 1 ? "s" : ""}`}
+                </span>
+              ),
+          },
+        ],
+      };
+    }
+
     if (cardAberto === "valor") {
       return {
         titulo: "Valor em estoque",
@@ -244,6 +353,8 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
     estoqueDetalhado,
     entregasTodasDetalhadas,
     alertasDetalhados,
+    caVencendoDetalhado,
+    trocasDetalhadas,
     valorEstoqueDetalhado,
   ]);
 }

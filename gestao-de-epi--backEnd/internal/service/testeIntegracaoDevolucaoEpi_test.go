@@ -2,12 +2,12 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/configs"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/database/repository"
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
@@ -174,6 +174,44 @@ func TestDevolucao(t *testing.T) {
 		require.Equal(t, int32(95), estoqueAtual(t, base.db, base.identradaEpi), "estoque nao deveria ter sido alterado")
 	})
 
+	t.Run("saldo em posse ignora devolucao cancelada e entrega cancelada", func(t *testing.T) {
+		ctx := context.Background()
+		base := setupBaseDevolucao(t, 5)
+		defer base.db.Close()
+
+		idMotivo := CreateMotivoDevolucao(t, base.db, "motivo saldo", false, base.empresa)
+		devolver := func(qtd int, token string) error {
+			return base.devolucaoServ.SalvarDevolucao(ctx, model.DevolucaoInserir{
+				IdFuncionario:       int(base.idfuncionario),
+				IdEpi:               int(base.idepi),
+				IdMotivo:            int(idMotivo),
+				IdTamanho:           int(base.idtam),
+				DataDevolucao:       *configs.NewDataBrPtr(time.Now()),
+				QuantidadeADevolver: qtd,
+				Iduser:              int(base.iduser),
+				AssinaturaDigital:   "assinatura-devolucao",
+			}, int32(base.empresa), token)
+		}
+
+		// devolve tudo e cancela: as 5 unidades voltam para a posse e podem ser devolvidas de novo
+		require.NoError(t, devolver(5, "token-saldo-1"))
+		var idDevolucao int
+		require.NoError(t, base.db.QueryRow(ctx, "SELECT id FROM devolucao WHERE token_validacao = $1", "token-saldo-1").Scan(&idDevolucao))
+		require.NoError(t, base.devolucaoServ.CancelarDevolucao(ctx, idDevolucao, int(base.iduser), int(base.empresa)))
+		require.NoError(t, devolver(5, "token-saldo-2"), "devolução cancelada não deveria contar no saldo")
+
+		// cancela essa devolução e depois a entrega: o funcionário não tem mais nada em posse
+		require.NoError(t, base.db.QueryRow(ctx, "SELECT id FROM devolucao WHERE token_validacao = $1", "token-saldo-2").Scan(&idDevolucao))
+		require.NoError(t, base.devolucaoServ.CancelarDevolucao(ctx, idDevolucao, int(base.iduser), int(base.empresa)))
+		var idEntrega int
+		require.NoError(t, base.db.QueryRow(ctx, "SELECT id FROM entrega_epi WHERE token_validacao = $1", "token-entrega-base").Scan(&idEntrega))
+		require.NoError(t, base.entregaServ.CancelarEntrega(ctx, int(base.empresa), idEntrega, int(base.iduser)))
+
+		err := devolver(1, "token-saldo-3")
+		require.Error(t, err, "entrega cancelada não deveria contar no saldo")
+		require.Contains(t, err.Error(), "possui apenas")
+	})
+
 	t.Run("sucesso ao devolver com troca - gera nova entrega automaticamente e abate o estoque do epi novo", func(t *testing.T) {
 		ctx := context.Background()
 		base := setupBaseDevolucao(t, 10) // lote do epi velho: 100 -> 90
@@ -287,14 +325,49 @@ func TestDevolucao(t *testing.T) {
 		require.Equal(t, int32(100), estoqueAtual(t, base.db, identradaEpiNovo),
 			"cancelar a devolucao deveria reverter a entrega automatica da troca, devolvendo o lote novo ao estado original")
 
-		// GAP CONHECIDO: CancelarDevolucao só reverte a entrega vinculada gerada pela
-		// troca (via IdTroca). Ele NÃO reverte a reposição de estoque que a própria
-		// devolução fez no lote do EPI antigo. Se este teste falhar porque o valor
-		// abaixo virou 90, é porque esse comportamento foi corrigido — atualize o
-		// valor esperado. Ver DevolucaoService.CancelarDevolucao.
-		estoqueEpiAntigo := estoqueAtual(t, base.db, base.identradaEpi)
-		fmt.Printf("⚠️  [GAP CONHECIDO] Estoque do EPI original apos cancelar a devolucao: %d (nao volta para 90)\n", estoqueEpiAntigo)
-		require.Equal(t, int32(100), estoqueEpiAntigo, "documenta o comportamento atual: a reposicao da devolucao original NAO e revertida no cancelamento")
+		// a reposição que a própria devolução fez no lote do EPI antigo também é desfeita (devolucao_lote)
+		require.Equal(t, int32(90), estoqueAtual(t, base.db, base.identradaEpi),
+			"cancelar a devolucao deveria tirar do lote antigo as unidades que ela tinha reposto")
+	})
+
+	t.Run("ERRO - cancelar devolucao cujas unidades ja sairam de novo do lote", func(t *testing.T) {
+		ctx := context.Background()
+		base := setupBaseDevolucao(t, 5) // lote: 100 -> 95
+		defer base.db.Close()
+
+		idMotivo := CreateMotivoDevolucao(t, base.db, "motivo sem descarte", false, base.empresa)
+		err := base.devolucaoServ.SalvarDevolucao(ctx, model.DevolucaoInserir{
+			IdFuncionario:       int(base.idfuncionario),
+			IdEpi:               int(base.idepi),
+			IdMotivo:            int(idMotivo),
+			IdTamanho:           int(base.idtam),
+			DataDevolucao:       *configs.NewDataBrPtr(time.Now()),
+			QuantidadeADevolver: 5,
+			Iduser:              int(base.iduser),
+			AssinaturaDigital:   "assinatura-devolucao",
+		}, int32(base.empresa), "token-devolucao-relote")
+		require.NoError(t, err)
+		require.Equal(t, int32(100), estoqueAtual(t, base.db, base.identradaEpi))
+
+		// esvazia o lote: as 5 unidades devolvidas foram entregues de novo
+		err = base.entregaServ.Salvar(ctx, model.EntregaParaInserir{
+			ID_funcionario:     int32(base.idfuncionario),
+			Id_user:            int32(base.iduser),
+			Data_entrega:       *configs.NewDataBrPtr(time.Now()),
+			Assinatura_Digital: "assinatura",
+			Itens:              []model.ItemParaInserir{{ID_epi: int32(base.idepi), ID_tamanho: int32(base.idtam), Quantidade: 100}},
+		}, int32(base.empresa), "token-entrega-esvazia")
+		require.NoError(t, err)
+
+		var idDevolucao int
+		require.NoError(t, base.db.QueryRow(ctx, "SELECT id FROM devolucao WHERE token_validacao = $1", "token-devolucao-relote").Scan(&idDevolucao))
+		err = base.devolucaoServ.CancelarDevolucao(ctx, idDevolucao, int(base.iduser), int(base.empresa))
+		require.ErrorIs(t, err, helper.ErrEstoqueInsuficiente)
+
+		var ativo bool
+		require.NoError(t, base.db.QueryRow(ctx, "SELECT ativo FROM devolucao WHERE id = $1", idDevolucao).Scan(&ativo))
+		require.True(t, ativo, "o cancelamento deveria ter sofrido rollback")
+		require.Equal(t, int32(0), estoqueAtual(t, base.db, base.identradaEpi))
 	})
 
 	t.Run("sucesso ao devolver sem informar observacao (campo opcional, nil)", func(t *testing.T) {

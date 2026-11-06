@@ -8,6 +8,14 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Caepi struct {
+	Ca          string
+	Validade    pgtype.Date
+	Situacao    string
+	Fabricante  string
+	Equipamento string
+}
+
 type Departamento struct {
 	ID         int32
 	TenantID   int32
@@ -36,6 +44,14 @@ type Devolucao struct {
 	TokenValidacao                 pgtype.Text
 	HouveTroca                     pgtype.Bool
 	Observacao                     pgtype.Text
+}
+
+type DevolucaoLote struct {
+	ID            int32
+	TenantID      int32
+	IDDevolucao   int32
+	IDEntradaItem int32
+	Quantidade    int32
 }
 
 type Empresa struct {
@@ -112,6 +128,7 @@ type Epi struct {
 	AlertaMinimo   int32
 	Ativo          bool
 	DeletadoEm     pgtype.Timestamp
+	VidaUtilDias   pgtype.Int4
 }
 
 type EpisEntregue struct {

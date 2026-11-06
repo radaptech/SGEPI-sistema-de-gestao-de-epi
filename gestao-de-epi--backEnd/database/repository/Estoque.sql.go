@@ -67,6 +67,57 @@ func (q *Queries) DevolverItemAoEstoque(ctx context.Context, arg DevolverItemAoE
 	return err
 }
 
+const listarEpisCaVencido = `-- name: ListarEpisCaVencido :many
+SELECT e.id, e.nome, e.CA, e.validade_CA, COALESCE(c.situacao, '')::text AS situacao
+FROM epi e
+LEFT JOIN caepi c ON c.ca = ltrim(regexp_replace(e.CA, '\D', '', 'g'), '0')
+WHERE e.tenant_id = $1
+  AND e.id = ANY($2::int[])
+  AND (e.validade_CA < $3::date OR c.situacao IN ('CANCELADO', 'SUSPENSO'))
+`
+
+type ListarEpisCaVencidoParams struct {
+	TenantID    int32
+	Ids         []int32
+	DataEntrega pgtype.Date
+}
+
+type ListarEpisCaVencidoRow struct {
+	ID         int32
+	Nome       string
+	Ca         string
+	ValidadeCa pgtype.Date
+	Situacao   string
+}
+
+// Entregar EPI com CA vencido na data da entrega gera autuação (NR-6). CA cancelado ou suspenso
+// na base do MTE (caepi) também bloqueia, mesmo com a validade cadastrada ainda em dia.
+func (q *Queries) ListarEpisCaVencido(ctx context.Context, arg ListarEpisCaVencidoParams) ([]ListarEpisCaVencidoRow, error) {
+	rows, err := q.db.Query(ctx, listarEpisCaVencido, arg.TenantID, arg.Ids, arg.DataEntrega)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListarEpisCaVencidoRow
+	for rows.Next() {
+		var i ListarEpisCaVencidoRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Nome,
+			&i.Ca,
+			&i.ValidadeCa,
+			&i.Situacao,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listarEstoqueAtual = `-- name: ListarEstoqueAtual :many
 SELECT 
     e.id_epi, 

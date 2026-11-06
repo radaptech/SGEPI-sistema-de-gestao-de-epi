@@ -64,3 +64,14 @@ type EntregaDoFuncionarioDto struct {
 	Assinatura_Digital string            `json:"assinatura_digital"`
 	Itens              []ItemEntregueDto `json:"itens,omitempty"` // <-- AQUI ELA!
 }
+// TrocaPendenteDto é um EPI em posse do funcionário cuja vida útil vence até a data consultada
+type TrocaPendenteDto struct {
+	FuncionarioId   int32          `json:"funcionario_id"`
+	FuncionarioNome string         `json:"funcionario_nome"`
+	Matricula       int32          `json:"matricula"`
+	EpiId           int32          `json:"epi_id"`
+	EpiNome         string         `json:"epi_nome"`
+	EmPosse         int32          `json:"em_posse"`
+	UltimaEntrega   configs.DataBr `json:"ultima_entrega"`
+	VenceEm         configs.DataBr `json:"vence_em"`
+}

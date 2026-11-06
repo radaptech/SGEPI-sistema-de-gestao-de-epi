@@ -11,6 +11,28 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addDevolucaoLote = `-- name: AddDevolucaoLote :exec
+INSERT INTO devolucao_lote (tenant_id, id_devolucao, id_entrada_item, quantidade)
+VALUES ($1, $2, $3, $4)
+`
+
+type AddDevolucaoLoteParams struct {
+	TenantID      int32
+	IDDevolucao   int32
+	IDEntradaItem int32
+	Quantidade    int32
+}
+
+func (q *Queries) AddDevolucaoLote(ctx context.Context, arg AddDevolucaoLoteParams) error {
+	_, err := q.db.Exec(ctx, addDevolucaoLote,
+		arg.TenantID,
+		arg.IDDevolucao,
+		arg.IDEntradaItem,
+		arg.Quantidade,
+	)
+	return err
+}
+
 const addDevolucaoSimples = `-- name: AddDevolucaoSimples :exec
 INSERT INTO devolucao (
     tenant_id, IdFuncionario, IdEpi, IdMotivo, data_devolucao, IdTamanho, 
@@ -123,27 +145,8 @@ func (q *Queries) AddTrocaEpi(ctx context.Context, arg AddTrocaEpiParams) (int32
 	return id, err
 }
 
-const atualizarSaldoLote = `-- name: AtualizarSaldoLote :exec
-
-UPDATE entrada_epi_item
-SET quantidade_atual = $2
-WHERE id = $1 AND tenant_id = $3
-`
-
-type AtualizarSaldoLoteParams struct {
-	ID              int32
-	QuantidadeAtual int32
-	TenantID        int32
-}
-
-// Pega do lote mais recente para o mais antigo
-// Atualiza o saldo de um lote específico
-func (q *Queries) AtualizarSaldoLote(ctx context.Context, arg AtualizarSaldoLoteParams) error {
-	_, err := q.db.Exec(ctx, atualizarSaldoLote, arg.ID, arg.QuantidadeAtual, arg.TenantID)
-	return err
-}
-
 const buscarDadosPdfDevolucao = `-- name: BuscarDadosPdfDevolucao :one
+
 SELECT 
     em.razao_social AS nome_empresa, 
     f.nome AS funcionario_nome, 
@@ -196,6 +199,7 @@ type BuscarDadosPdfDevolucaoRow struct {
 	Quantidadenova      pgtype.Int4
 }
 
+// Pega do lote mais recente para o mais antigo
 func (q *Queries) BuscarDadosPdfDevolucao(ctx context.Context, arg BuscarDadosPdfDevolucaoParams) (BuscarDadosPdfDevolucaoRow, error) {
 	row := q.db.QueryRow(ctx, buscarDadosPdfDevolucao, arg.ID, arg.TenantID)
 	var i BuscarDadosPdfDevolucaoRow
@@ -255,6 +259,8 @@ SELECT
               AND eei.id_epi = $2
               AND eei.id_tamanho = $3
               AND ee.tenant_id = $4
+              AND ee.ativo = TRUE  -- entregas/itens cancelados não estão em posse
+              AND eei.ativo = TRUE
         ), 0)
         -
         -- Menos o total que ele já devolveu anteriormente
@@ -265,6 +271,7 @@ SELECT
               AND d.idepi = $2
               AND d.idtamanho = $3
               AND d.tenant_id = $4
+              AND d.ativo = TRUE   -- devolução cancelada volta para a posse
         ), 0)
     )::int AS saldo
 `
@@ -286,6 +293,43 @@ func (q *Queries) ConsultarSaldoEpiFuncionario(ctx context.Context, arg Consulta
 	var saldo int32
 	err := row.Scan(&saldo)
 	return saldo, err
+}
+
+const listarDevolucaoLotes = `-- name: ListarDevolucaoLotes :many
+SELECT id_entrada_item, quantidade
+FROM devolucao_lote
+WHERE id_devolucao = $1
+  AND tenant_id = $2
+`
+
+type ListarDevolucaoLotesParams struct {
+	IDDevolucao int32
+	TenantID    int32
+}
+
+type ListarDevolucaoLotesRow struct {
+	IDEntradaItem int32
+	Quantidade    int32
+}
+
+func (q *Queries) ListarDevolucaoLotes(ctx context.Context, arg ListarDevolucaoLotesParams) ([]ListarDevolucaoLotesRow, error) {
+	rows, err := q.db.Query(ctx, listarDevolucaoLotes, arg.IDDevolucao, arg.TenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListarDevolucaoLotesRow
+	for rows.Next() {
+		var i ListarDevolucaoLotesRow
+		if err := rows.Scan(&i.IDEntradaItem, &i.Quantidade); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listarDevolucoes = `-- name: ListarDevolucoes :many

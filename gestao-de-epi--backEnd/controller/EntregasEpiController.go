@@ -24,6 +24,7 @@ type EntregasService interface {
 	BuscaEntregaDash(ctx context.Context, tenantId int32) ([]model.EntregaDashbord, error)
 	BuscaItemDash(ctx context.Context, tenantID int32) ([]model.EntregaItensDashBord, error)
 	TokenEntrega(ctx context.Context, tenantId, idFuncionario int32) (string, error)
+	ListarTrocasPendentes(ctx context.Context, tenantId int32, dias int) ([]model.TrocaPendenteDto, error)
 }
 
 type EntregaController struct {
@@ -106,6 +107,10 @@ func (e *EntregaController) Adicionar() gin.HandlerFunc {
 			// Tratamento de erros específicos
 			if errors.Is(err, helper.ErrNaoEncontrado) {
 				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "funcionario ou registro não encontrado"})
+				return
+			}
+			if errors.Is(err, helper.ErrCaVencido) {
+				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 				return
 			}
 			if strings.Contains(err.Error(), "estoque insuficiente") {
@@ -320,6 +325,44 @@ func (e *EntregaController) GerarFichaEpiPDF() gin.HandlerFunc {
 		// Baixa o arquivo direto no navegador
 		ctx.Header("Content-Disposition", "attachment; filename=Ficha_EPI_"+matricula+".pdf")
 		ctx.Data(http.StatusOK, "application/pdf", documento.GetBytes()) // Extrai os bytes limpos!
+	}
+}
+
+// ListarTrocasPendentes godoc
+// @Summary      Trocas periódicas pendentes
+// @Description  EPIs em posse dos funcionários cuja vida útil já venceu ou vence nos próximos `dias` dias (padrão 30)
+// @Tags         Entregas
+// @Produce      json
+// @Param        dias  query    int  false  "Janela em dias a partir de hoje (0 a 365)"
+// @Success      200  {array}   model.TrocaPendenteDto
+// @Failure      400  {object}  helper.HTTPError "Parâmetro inválido"
+// @Failure      500  {object}  helper.HTTPError "Erro interno"
+// @Router       /trocas-pendentes [get]
+// @Security     BearerAuth
+func (e *EntregaController) ListarTrocasPendentes() gin.HandlerFunc {
+
+	return func(ctx *gin.Context) {
+
+		tenantId64, ok := ginmw.TenantID(ctx)
+		if !ok {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro interno de tenant"})
+			return
+		}
+
+		dias, err := strconv.Atoi(ctx.DefaultQuery("dias", "30"))
+		if err != nil || dias < 0 || dias > 365 {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "parâmetro dias deve ser um número entre 0 e 365"})
+			return
+		}
+
+		trocas, err := e.Service.ListarTrocasPendentes(ctx, int32(tenantId64), dias)
+		if err != nil {
+			ctx.Error(err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro ao listar trocas pendentes", "detalhes": err.Error()})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, trocas)
 	}
 }
 

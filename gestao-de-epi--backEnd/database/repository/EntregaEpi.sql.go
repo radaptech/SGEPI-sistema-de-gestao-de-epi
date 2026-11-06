@@ -578,3 +578,79 @@ func (q *Queries) ListarItensEntregueCancelados(ctx context.Context, arg ListarI
 	}
 	return items, nil
 }
+
+const listarTrocasPendentes = `-- name: ListarTrocasPendentes :many
+WITH entregue AS (
+    SELECT ee.idfuncionario, ie.id_epi, SUM(ie.quantidade)::int AS quantidade, MAX(ee.data_entrega)::date AS ultima_entrega
+    FROM entrega_epi ee
+    JOIN epis_entregues ie ON ie.id_entrega_cabecalho = ee.id AND ie.tenant_id = ee.tenant_id AND ie.ativo = TRUE
+    WHERE ee.tenant_id = $1 AND ee.ativo = TRUE
+    GROUP BY ee.idfuncionario, ie.id_epi
+), devolvido AS (
+    SELECT d.idfuncionario, d.idepi, SUM(d.quantidadeadevolver)::int AS quantidade
+    FROM devolucao d
+    WHERE d.tenant_id = $1 AND d.ativo = TRUE
+    GROUP BY d.idfuncionario, d.idepi
+)
+SELECT
+    f.id AS funcionario_id, f.nome AS funcionario_nome, f.matricula,
+    e.id AS epi_id, e.nome AS epi_nome,
+    (en.quantidade - COALESCE(dv.quantidade, 0))::int AS em_posse,
+    en.ultima_entrega,
+    (en.ultima_entrega + e.vida_util_dias)::date AS vence_em
+FROM entregue en
+JOIN epi e ON e.id = en.id_epi AND e.tenant_id = $1 AND e.ativo = TRUE AND e.vida_util_dias IS NOT NULL
+JOIN funcionario f ON f.id = en.idfuncionario AND f.tenant_id = $1 AND f.ativo = TRUE
+LEFT JOIN devolvido dv ON dv.idfuncionario = en.idfuncionario AND dv.idepi = en.id_epi
+WHERE en.quantidade - COALESCE(dv.quantidade, 0) > 0
+  AND en.ultima_entrega + e.vida_util_dias <= $2::date
+ORDER BY vence_em, f.nome
+`
+
+type ListarTrocasPendentesParams struct {
+	TenantID int32
+	Ate      pgtype.Date
+}
+
+type ListarTrocasPendentesRow struct {
+	FuncionarioID   int32
+	FuncionarioNome string
+	Matricula       int32
+	EpiID           int32
+	EpiNome         string
+	EmPosse         int32
+	UltimaEntrega   pgtype.Date
+	VenceEm         pgtype.Date
+}
+
+// EPIs com vida útil cadastrada que o funcionário ainda tem em posse (entregue − devolvido > 0)
+// e cuja última entrega + vida_util_dias vence até a data informada. A troca na devolução gera
+// uma entrega nova, então ela reinicia a contagem.
+func (q *Queries) ListarTrocasPendentes(ctx context.Context, arg ListarTrocasPendentesParams) ([]ListarTrocasPendentesRow, error) {
+	rows, err := q.db.Query(ctx, listarTrocasPendentes, arg.TenantID, arg.Ate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListarTrocasPendentesRow
+	for rows.Next() {
+		var i ListarTrocasPendentesRow
+		if err := rows.Scan(
+			&i.FuncionarioID,
+			&i.FuncionarioNome,
+			&i.Matricula,
+			&i.EpiID,
+			&i.EpiNome,
+			&i.EmPosse,
+			&i.UltimaEntrega,
+			&i.VenceEm,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

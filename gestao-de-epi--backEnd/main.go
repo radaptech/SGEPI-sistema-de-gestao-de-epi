@@ -40,6 +40,10 @@ func main() {
 		ExecutarBackupBanco(os.Args[2:])
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "atualizar-caepi" {
+		ExecutarAtualizacaoCaepi(os.Args[2:])
+		return
+	}
 
 	postgressConnection := configs.ConexaoDbPostgres{}
 

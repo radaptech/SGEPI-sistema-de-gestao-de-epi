@@ -6,6 +6,14 @@ export function obterHojeISO() {
   return `${ano}-${mes}-${dia}`;
 }
 
+// Dias de hoje até uma data DD/MM/YYYY (negativo = já passou); null se a data for inválida
+export function diasAte(dataBR) {
+  const [dia, mes, ano] = String(dataBR || "").split("/").map(Number);
+  if (!ano) return null;
+  const [anoH, mesH, diaH] = obterHojeISO().split("-").map(Number);
+  return Math.round((Date.UTC(ano, mes - 1, dia) - Date.UTC(anoH, mesH - 1, diaH)) / 86400000);
+}
+
 export function formatarData(data) {
   if (!data) return "--";
   const valor = String(data).substring(0, 10);
