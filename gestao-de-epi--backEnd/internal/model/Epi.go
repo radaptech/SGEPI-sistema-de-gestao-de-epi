@@ -13,7 +13,7 @@ type EpiInserir struct {
 	DataValidadeCa configs.DataBr `json:"data_validade_ca" binding:"required"`
 	IdTamanho      []int32        `json:"id_tamanho" binding:"required,min=1"` // Lista de tamanhos permitidos para este EPI
 	IDProtecao     int32          `json:"id_protecao" binding:"required,numeric"`
-	AlertaMinimo   int32          `json:"alerta_minimo" binding:"required,gte=0"`
+	AlertaMinimo   int32          `json:"alerta_minimo" binding:"gte=0"`
 }
 
 // EpiDto é o retorno completo usado na listagem de cadastros

@@ -204,6 +204,9 @@ Entregas e devoluções exigem assinatura. O fluxo no controller é sempre:
 3. Substituir `input.Assinatura_Digital` pela URL antes de chamar o service. **O banco guarda a URL,
    nunca o base64.**
 
+Com `SUPABASE_BUCKET` vazio (dev, CI, e2e) o upload é pulado: o formato ainda é validado, mas o banco
+recebe `sem-upload://<pasta>/<token>_<unix>.<ext>` e a ficha PDF sai sem a imagem da assinatura.
+
 ### Geração de PDF
 
 `internal/helper/pdfHelperEntrega.go` e `pdfHelperDevolucao.go` usam **maroto/v2** para montar a
@@ -352,6 +355,10 @@ os metadados globais estão em `main.go`. Rode `swag init` após alterar rotas �
 - **Requer Docker rodando.** Use sempre `-p 1` (containers não toleram pacotes em paralelo).
 - Os arquivos de setup **não** têm build tag: `go test ./...` já os compila. O `oque-fazer.txt`
   menciona `-tags=integration`, mas essa tag não existe mais no código.
+- **E2E**: `e2e/` na raiz do monorepo (Playwright) roda contra o `docker-compose.dev.yml` no ar:
+  login/sessão e o fluxo EPI → entrada → entrega → devolução num tenant criado na hora.
+  `make e2e` (passe `E2E_EMAIL`/`E2E_SENHA` se o super admin do seu `.env` não usar os defaults do
+  `seed.go`). O `/login` tem rate limit: rodar a suíte várias vezes seguidas dá 429.
 - CI (`.github/workflows/cicd.yml`): roda `go test -v ./... -p 1` nos pushes/PRs para
   `main`, `dev` e `homologacao`, com `setup-go` em `go-version: '1.26'` — alinhado ao `go.mod`.
   Ao subir a linha `go` do `go.mod`, atualize também essa chave e o `FROM golang:` dos Dockerfiles.

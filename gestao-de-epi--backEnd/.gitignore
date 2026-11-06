@@ -1,5 +1,6 @@
 # Variáveis de ambiente
 .env
+oque-fazer.txt
 
 # Binário da aplicação (gerado por `go build -o main .`)
 main

@@ -98,7 +98,7 @@ func (q *Queries) BuscarTodosDepartamentos(ctx context.Context, arg BuscarTodosD
 const criaDepartamento = `-- name: CriaDepartamento :one
 INSERT INTO departamento (tenant_id, nome) 
 VALUES ($1, $2)
-ON CONFLICT (tenant_id, nome) DO NOTHING
+ON CONFLICT (tenant_id, nome) WHERE deletado_em IS NULL DO NOTHING
 RETURNING id, tenant_id, nome, ativo, deletado_em
 `
 

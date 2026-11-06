@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
@@ -54,9 +55,17 @@ func UploadAssinaturaSupabase(base64str string, token, pasta string) (string, er
 	secretKey := os.Getenv("SUPABASE_SERVICE_ROLE_KEY")
 	bucket := os.Getenv("SUPABASE_BUCKET")
 
+	arquivo := fmt.Sprintf("%s/%s_%d.%s", pasta, token, time.Now().Unix(), extensao)
+
+	// Sem bucket configurado (dev/CI/e2e) não sobe nada: grava um caminho que não é URL,
+	// a ficha PDF sai sem a imagem (prepararImagemAssinatura falha o download e segue).
+	if bucket == "" {
+		slog.Warn("SUPABASE_BUCKET vazio: upload da assinatura pulado", "arquivo", arquivo)
+		return "sem-upload://" + arquivo, nil
+	}
+
 	cliente := storage_go.NewClient(supabaseUrl+"/storage/v1", secretKey, nil)
 
-	arquivo := fmt.Sprintf("%s/%s_%d.%s", pasta, token, time.Now().Unix(), extensao)
 	opts := storage_go.FileOptions{
 		ContentType: &contentType,
 	}

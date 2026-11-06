@@ -14,7 +14,7 @@ import (
 const addFuncao = `-- name: AddFuncao :exec
 INSERT INTO funcao (tenant_id, nome, IdDepartamento) 
 VALUES ($1, $2, $3)
-ON CONFLICT (tenant_id, nome, IdDepartamento) DO NOTHING
+ON CONFLICT (tenant_id, nome, IdDepartamento) WHERE deletado_em IS NULL DO NOTHING
 `
 
 type AddFuncaoParams struct {

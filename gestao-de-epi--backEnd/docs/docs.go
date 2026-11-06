@@ -2758,7 +2758,6 @@ const docTemplate = `{
         "model.EpiInserir": {
             "type": "object",
             "required": [
-                "alerta_minimo",
                 "ca",
                 "data_validade_ca",
                 "fabricante",

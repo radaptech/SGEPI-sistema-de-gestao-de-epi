@@ -530,7 +530,7 @@ function Entradas({ usuarioLogado }) {
           epis={epis}
           tamanhos={tamanhos}
           onClose={() => setModalAberto(false)}
-          onSucesso={async () => {
+          onSalvar={async () => {
             setModalAberto(false);
             await carregarEntradas();
             setPaginaAtual(1);
