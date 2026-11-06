@@ -255,8 +255,8 @@ e fica a linha com a validade mais recente.
 
 O CA do EPI é comparado com a `caepi` só pelos dígitos e sem zero à esquerda
 (`ltrim(regexp_replace(CA, '\D', '', 'g'), '0')`). Onde ela é usada:
-- `GET /api/gerencial/caepi/:ca`: o cadastro de EPI chama essa rota no blur do campo CA para preencher
-  fabricante, validade e nome. CA fora da base responde **204** sem corpo, e não 404, porque o
+- `GET /api/gerencial/caepi/:ca`: o botão "Buscar" (ou Enter) no campo CA do cadastro de EPI chama essa
+  rota e sobrescreve nome, fabricante e validade. CA fora da base responde **204** sem corpo, e não 404, porque o
   `services/api.js` do front mostra toast de erro em toda resposta que não é 2xx.
 - `ListarEpisCaVencido`: além da validade vencida, bloqueia a entrega de CA `CANCELADO` ou `SUSPENSO`
   (`ErrCaVencido`). `VENCIDO` na base não bloqueia sozinho, porque o arquivo pode estar desatualizado
