@@ -243,7 +243,7 @@ func (e *EpiController) ListarEpiPorId() gin.HandlerFunc {
 // @Param        ca   path      string  true  "Número do CA"
 // @Produce      json
 // @Success      200  {object}  model.CaepiDto
-// @Failure      404  {object}  helper.HTTPError "CA não está na base do MTE"
+// @Success      204  "CA não está na base do MTE (sem corpo, para o front não tratar como erro)"
 // @Failure      500  {object}  helper.HTTPError "Erro interno"
 // @Router       /gerencial/caepi/{ca} [get]
 // @Security     BearerAuth
@@ -254,8 +254,9 @@ func (e *EpiController) BuscarCaepi() gin.HandlerFunc {
 		ca, err := e.service.BuscarCaepi(ctx, ctx.Param("ca"))
 		if err != nil {
 
+			// CA fora da base é caso normal no cadastro: 204 em vez de 404, que o front mostra como erro
 			if errors.Is(err, helper.ErrNaoEncontrado) {
-				ctx.JSON(http.StatusNotFound, gin.H{"error": "CA não encontrado na base do MTE"})
+				ctx.Status(http.StatusNoContent)
 				return
 			}
 

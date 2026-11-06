@@ -27,8 +27,10 @@ func (d *DataBr) UnmarshalJSON(b []byte) error {
 }
 
 // Opcional: Para devolver o JSON no formato brasileiro também
-func (d *DataBr) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf("\"%s\"", time.Time(*d).Format("02/01/2006"))), nil
+// receiver de valor: com ponteiro, um DataBr não endereçável (struct devolvida por valor no
+// ctx.JSON) ignorava o método e saía como {}
+func (d DataBr) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%s\"", time.Time(d).Format("02/01/2006"))), nil
 }
 
 func NewDataBrPtr(t time.Time) *DataBr {
