@@ -1,55 +1,47 @@
 import { useEffect, useMemo, useState } from "react";
-import { api } from "../../services/api";
+import { listar } from "../../services/listas";
 import {
   X, Search, FileSearch, Loader2,
   SearchX, AlertCircle, CheckCircle2
 } from "lucide-react";
 
-// /entradas-estoque devolve array puro; /epis devolve envelope paginado {Epis, Total, ...}
-function extrairLista(resp) {
-  const dados = resp?.data ?? resp;
-  if (Array.isArray(dados)) return dados;
-
-  const lista = dados?.entradas ?? dados?.Epis ?? dados?.epis;
-  return Array.isArray(lista) ? lista : [];
-}
-
+// Lote de /entradas-estoque: o EPI aninhado vem em camelCase (validadeCa, alertaMinimo)
 function normalizarLote(item) {
-  const epi = item?.epi ?? {};
-
+  const { epi } = item;
   return {
-    id: `lote-${item?.id}`,
-    idEpi: Number(epi?.id ?? 0),
-    nome: epi?.nome ?? "",
-    fabricante: epi?.fabricante ?? "",
-    CA: epi?.ca ?? "",
-    descricao: epi?.descricao ?? "",
-    tipoProtecao: epi?.protecao?.nome ?? "",
-    alerta_minimo: Number(epi?.alertaMinimo ?? 0),
-    tamanho: item?.tamanho?.tamanho ?? "-",
-    lote: item?.lote ?? "-",
-    quantidade: Number(item?.quantidade_atual ?? 0),
-    data_validade_lote: item?.data_validade ?? "",
-    validade_CA: epi?.validadeCa ?? "",
-    valor_unitario: Number(item?.valor_unitario ?? 0),
+    id: `lote-${item.id}`,
+    idEpi: epi.id,
+    nome: epi.nome,
+    fabricante: epi.fabricante,
+    CA: epi.ca,
+    descricao: epi.descricao,
+    tipoProtecao: epi.protecao.nome,
+    alerta_minimo: epi.alertaMinimo,
+    tamanho: item.tamanho.tamanho,
+    lote: item.lote,
+    quantidade: item.quantidade_atual,
+    data_validade_lote: item.data_validade,
+    validade_CA: epi.validadeCa,
+    valor_unitario: Number(item.valor_unitario), // decimal vem como string
   };
 }
 
+// EPI de /epis que ainda não tem lote em estoque
 function normalizarEpiSemLote(epi) {
   return {
-    id: `epi-${epi?.id}`,
-    idEpi: Number(epi?.id ?? 0),
-    nome: epi?.nome ?? "",
-    fabricante: epi?.fabricante ?? "",
-    CA: epi?.ca ?? "",
-    descricao: epi?.descricao ?? "",
-    tipoProtecao: epi?.protecao?.nome ?? "",
-    alerta_minimo: Number(epi?.alerta_minimo ?? 0),
+    id: `epi-${epi.id}`,
+    idEpi: epi.id,
+    nome: epi.nome,
+    fabricante: epi.fabricante,
+    CA: epi.ca,
+    descricao: epi.descricao,
+    tipoProtecao: epi.protecao.nome,
+    alerta_minimo: epi.alerta_minimo,
     tamanho: "-",
     lote: "-",
     quantidade: 0,
     data_validade_lote: "",
-    validade_CA: epi?.validade_ca ?? "",
+    validade_CA: epi.validade_ca,
     valor_unitario: 0,
   };
 }
@@ -133,17 +125,17 @@ function ModalBusca({ onClose }) {
 
       try {
         const [respLotes, respEpis] = await Promise.all([
-          api.get("/entradas-estoque"),
-          api.get("/epis"),
+          listar("/entradas-estoque"),
+          listar("/epis"),
         ]);
 
         if (!ativo) return;
 
-        const lotes = extrairLista(respLotes).map(normalizarLote);
+        const lotes = respLotes.map(normalizarLote);
         const comLote = new Set(lotes.map((item) => item.idEpi));
 
-        const semLote = extrairLista(respEpis)
-          .filter((epi) => !comLote.has(Number(epi?.id ?? 0)))
+        const semLote = respEpis
+          .filter((epi) => !comLote.has(epi.id))
           .map(normalizarEpiSemLote);
 
         setItens(

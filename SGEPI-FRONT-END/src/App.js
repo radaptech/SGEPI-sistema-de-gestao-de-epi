@@ -19,7 +19,13 @@ import DetalhesEmpresa from "./pages/master/DetalhesEmpresa";
 import Mensalidades from "./pages/master/Mensalidades";
 import Planos from "./pages/master/Planos";
 import UsuariosMaster from "./pages/master/UsuariosMaster";
-import { api } from "./services/api"; // 👈 Garanta que aponta para o seu arquivo de API configurado com credentials: "include"
+import { api } from "./services/api";
+
+// usuario vem de /login e /me: {id, nome, email, role}; roles do back: super_admin, admin, colaborador
+const verificarSeUsuarioMaster = (u) => u?.role === "super_admin";
+const verificarSeAdminEmpresa = (u) => u?.role === "admin";
+const verificarSeFuncionario = (u) => u?.role === "colaborador";
+const definirPaginaInicialPorPerfil = (u) => (verificarSeUsuarioMaster(u) ? "DashboardMaster" : "Dashboard");
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -29,75 +35,20 @@ function App() {
     window.location.pathname === "/redefinir-senha"
   );
 
-  const obterTipoUsuario = (usuarioLogado) => {
-    const tipo =
-      usuarioLogado?.tipo ||
-      usuarioLogado?.perfil ||
-      usuarioLogado?.role ||
-      usuarioLogado?.nivelAcesso ||
-      usuarioLogado?.usuario?.tipo ||
-      usuarioLogado?.usuario?.perfil ||
-      usuarioLogado?.usuario?.role ||
-      "FUNCIONARIO";
-
-    return String(tipo).toUpperCase();
-  };
-
-  const verificarSeUsuarioMaster = (usuarioLogado) => {
-    const tipo = obterTipoUsuario(usuarioLogado);
-
-    return (
-      tipo === "SUPER_ADMIN" ||
-      tipo === "MASTER" ||
-      tipo === "ADMIN_MASTER"
-    );
-  };
-
-  const verificarSeAdminEmpresa = (usuarioLogado) => {
-    const tipo = obterTipoUsuario(usuarioLogado);
-
-    return tipo === "ADMIN_EMPRESA" || tipo === "ADMIN";
-  };
-
-  const verificarSeFuncionario = (usuarioLogado) => {
-    const tipo = obterTipoUsuario(usuarioLogado);
-
-    return tipo === "FUNCIONARIO" || tipo === "COLABORADOR";
-  };
-
-  const definirPaginaInicialPorPerfil = (usuarioLogado) => {
-    if (verificarSeUsuarioMaster(usuarioLogado)) {
-      return "DashboardMaster";
-    }
-
-    if (verificarSeAdminEmpresa(usuarioLogado)) {
-      return "Dashboard";
-    }
-
-    if (verificarSeFuncionario(usuarioLogado)) {
-      return "Dashboard";
-    }
-
-    return "Dashboard";
-  };
-
   // 🔑 1. RECUPERAÇÃO DE SESSÃO VIA COOKIE HTTPONLY
   useEffect(() => {
     async function verificarSessao() {
       try {
         // Tenta buscar o perfil do usuário logado na API.
         // O navegador enviará o cookie HttpOnly automaticamente se ele existir.
-        const dados = await api.get("/me"); // Ajuste o endpoint se no seu backend for /perfil ou /auth/me
-        const usuarioLogado = dados?.usuario ?? dados;
+        const usuarioLogado = await api.get("/me");
 
         if (usuarioLogado) {
-          console.log("Sessão ativa recuperada:", usuarioLogado);
           setUsuario(usuarioLogado);
           setPaginaAtual(definirPaginaInicialPorPerfil(usuarioLogado));
         }
       } catch (error) {
-        // Se der 401 ou erro, significa que o cookie expirou ou não existe.
-        console.log("Nenhuma sessão ativa encontrada.");
+        // 401: o cookie expirou ou não existe
         setUsuario(null);
       } finally {
         setCarregandoSessao(false);

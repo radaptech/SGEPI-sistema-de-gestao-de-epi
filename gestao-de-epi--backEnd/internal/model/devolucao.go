@@ -49,7 +49,7 @@ type DevolucaoResponse struct {
 	DataDevolucao        configs.DataBr `json:"data_devolucao"` // Formato ISO ou DD/MM/YYYY
 	IDFuncionario        int32          `json:"idFuncionario"`
 	FuncionarioNome      string         `json:"funcionarioNome"`
-	FuncionarioMatricula int32         `json:"funcionarioMatricula"`
+	FuncionarioMatricula int32          `json:"funcionarioMatricula"`
 
 	EpiNome             string `json:"epiNome"`
 	TamanhoNome         string `json:"tamanhoNome"`

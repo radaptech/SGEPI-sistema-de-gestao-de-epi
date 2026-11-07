@@ -45,7 +45,7 @@ export default function AbaFuncoes() {
 
   useEffect(() => {
     carregarDados();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- carrega uma vez ao abrir a aba
 
   const mostrarToast = (mensagem, tipo = "sucesso") => {
     setToast({ mensagem, tipo });
@@ -91,9 +91,8 @@ export default function AbaFuncoes() {
 
       setFuncoes(listaFuncoes);
       setDepartamentos(respDepartamentos?.departamentos || []);
-    } catch (erro) {
-      console.error("Erro ao carregar dados de funções:", erro);
-      mostrarToast("Erro ao carregar dados de funções.", "erro");
+    } catch {
+      // o api.js já mostrou o erro
     }
   };
 
@@ -218,8 +217,8 @@ export default function AbaFuncoes() {
 
   const iniciarEdicao = (f) => {
     setNovaFuncao({
-      funcao: f.cargo || f.funcao || "",
-      id_departamento: f.departamento?.id || f.id_departamento || "",
+      funcao: f.cargo,
+      id_departamento: f.departamento.id,
     });
 
     setEditandoId(f.id);
@@ -395,7 +394,7 @@ export default function AbaFuncoes() {
                         Função
                       </span>
                       <span className="text-slate-800 dark:text-slate-200 font-extrabold capitalize text-base">
-                        {f.cargo || f.funcao || "-"}
+                        {f.cargo}
                       </span>
                     </div>
 
@@ -452,7 +451,7 @@ export default function AbaFuncoes() {
                       <td className="p-4 pl-6 font-bold text-slate-800 dark:text-slate-200 capitalize transition-colors">
                         <div className="flex items-center gap-2">
                           <Briefcase className="w-4 h-4 text-slate-400 dark:text-slate-500" />
-                          {f.cargo || f.funcao || "-"}
+                          {f.cargo}
                         </div>
                       </td>
 

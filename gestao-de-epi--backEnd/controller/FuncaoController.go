@@ -446,7 +446,6 @@ func (f *FuncaoController) AtualizarFuncao() gin.HandlerFunc {
 	}
 }
 
-
 // ListarKitFuncao godoc
 // @Summary      Kit de EPI da função
 // @Description  Lista os EPIs (e quantidades) que a função recebe na entrega

@@ -22,13 +22,11 @@ func SeedEmpresaMatriz(db *pgxpool.Pool) error {
 	// 1. CONFIGURAÇÃO DO PLANO MATRIZ
 	// ==========================================
 	errPlano := db.QueryRow(ctx, `SELECT id FROM planos WHERE nome = $1`, "plano de testes").Scan(&planoid)
-	
+
 	if errPlano != nil {
 		if errors.Is(errPlano, pgx.ErrNoRows) {
 			slog.Info("seed: criando plano matriz")
 
-			
-			
 			errPlano = db.QueryRow(ctx, `
 				INSERT INTO planos (nome, mensalidade, limite_funcionarios, limite_usuarios, limite_epis, status, descricao, criado_em)
 				VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
@@ -47,19 +45,18 @@ func SeedEmpresaMatriz(db *pgxpool.Pool) error {
 	// 2. CONFIGURAÇÃO DA EMPRESA MATRIZ
 	// ==========================================
 	err := db.QueryRow(ctx, `SELECT id FROM empresas WHERE nome_fantasia = $1`, "sge-gestaoEpi").Scan(&empresaID)
-	
+
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			slog.Info("seed: criando empresa matriz")
 
-			
 			err = db.QueryRow(ctx, `
 				INSERT INTO empresas (nome_fantasia, razao_social, cnpj, subdominio, criado_em, plano_id, status, vencimento, observacoes, responsavel, email, telefone) 
 				VALUES ($1, $2, $3, $4, NOW(), $5, $6, $7, $8, $9, $10, $11)
 				RETURNING id;
-			`, 
-				"sge-gestaoEpi", "radaptech", "53563447", "painel-homologacao", 
-				planoid, "Ativa", "2099-03-14", "testes", "radaptech", 
+			`,
+				"sge-gestaoEpi", "radaptech", "53563447", "painel-homologacao",
+				planoid, "Ativa", "2099-03-14", "testes", "radaptech",
 				"radaptech@gmail.com", "34998972788",
 			).Scan(&empresaID)
 

@@ -2625,17 +2625,16 @@ const docTemplate = `{
         "model.EntradaDashbord": {
             "type": "object",
             "properties": {
-                "dataEntrada": {
-                    "description": "Usa o helper para garantir o ponteiro da data formatada",
+                "data_entrada": {
                     "type": "string"
                 },
                 "id": {
                     "type": "integer"
                 },
-                "idEpi": {
+                "id_epi": {
                     "type": "integer"
                 },
-                "idTamanho": {
+                "id_tamanho": {
                     "type": "integer"
                 },
                 "lote": {
@@ -2644,10 +2643,10 @@ const docTemplate = `{
                 "quantidade": {
                     "type": "integer"
                 },
-                "quantidadeAtual": {
+                "quantidade_atual": {
                     "type": "integer"
                 },
-                "valorUnitario": {
+                "valor_unitario": {
                     "type": "number"
                 }
             }

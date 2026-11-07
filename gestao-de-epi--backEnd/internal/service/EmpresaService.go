@@ -147,7 +147,7 @@ func (e *EmpresaService) DadosEmpresas(ctx context.Context) ([]model.Empresa, er
 	return dto, nil
 }
 
-func (e *EmpresaService) EditarEmpresa(ctx context.Context,  id int32, model model.EditarEmpresaRequest) error {
+func (e *EmpresaService) EditarEmpresa(ctx context.Context, id int32, model model.EditarEmpresaRequest) error {
 
 	err := e.repo.EditarEmpresa(ctx, repository.EditarEmpresaParams{
 		NomeFantasia: model.Nome,
@@ -159,14 +159,13 @@ func (e *EmpresaService) EditarEmpresa(ctx context.Context,  id int32, model mod
 		PlanoID:      pgtype.Int4{Int32: int32(model.PlanoID), Valid: int32(model.PlanoID) != 0},
 		Status:       model.Status,
 		Vencimento:   pgtype.Date{Time: time.Time(*configs.NewDataBrPtr(model.Vencimento.Time())), Valid: true},
-		Observacoes: pgtype.Text{String: model.Observacoes, Valid: model.Observacoes != ""},
-		ID: id,
+		Observacoes:  pgtype.Text{String: model.Observacoes, Valid: model.Observacoes != ""},
+		ID:           id,
 	})
 	if err != nil {
 
 		return err
 	}
-
 
 	return nil
 

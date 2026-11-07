@@ -5,6 +5,7 @@ import {
   Building2, Briefcase, Plus, Search, Trash2, 
   ChevronLeft, ChevronRight, X, AlertTriangle, Layers
 } from "lucide-react";
+import { toast } from "react-toastify";
 
 const PaginacaoBotao = ({ atual, total, onChange }) => (
   <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4 w-full">
@@ -39,10 +40,8 @@ const PaginacaoBotao = ({ atual, total, onChange }) => (
 function Departamentos({ usuarioLogado }) {
   const {
     departamentos,
-    funcoes,
     departamentosComFuncoes,
     totalFuncoes,
-    erroTela,
     carregandoTela,
     carregandoDepartamento,
     carregandoFuncao,
@@ -78,29 +77,29 @@ function Departamentos({ usuarioLogado }) {
 
   async function handleAdicionarDepartamento(e) {
     e.preventDefault();
-    if (!podeCadastrarDepartamento) return alert("Sem permissão");
+    if (!podeCadastrarDepartamento) return toast.warning("Sem permissão");
     const nome = formDepartamento.nome.trim();
-    if (!nome) return alert("Informe o nome");
+    if (!nome) return toast.warning("Informe o nome");
     try {
       await adicionarDepartamento(nome);
       setFormDepartamento({ nome: "" });
-    } catch (erro) { alert(erro?.message); }
+    } catch { /* o api.js já mostrou o erro */ }
   }
 
   async function handleAdicionarFuncao(e) {
     e.preventDefault();
-    if (!podeGerenciarFuncoes) return alert("Sem permissão");
+    if (!podeGerenciarFuncoes) return toast.warning("Sem permissão");
     const { departamentoId, nome } = formFuncao;
-    if (!departamentoId || !nome.trim()) return alert("Preencha todos os campos");
+    if (!departamentoId || !nome.trim()) return toast.warning("Preencha todos os campos");
     try {
       await adicionarFuncao({ nome: nome.trim(), departamentoId: Number(departamentoId) });
       setFormFuncao((prev) => ({ ...prev, nome: "" }));
-    } catch (erro) { alert(erro?.message); }
+    } catch { /* o api.js já mostrou o erro */ }
   }
 
   async function handleExcluirDepartamento(id) {
     if (!window.confirm("Excluir departamento e funções vinculadas?")) return;
-    try { await excluirDepartamento(id); } catch (erro) { alert(erro?.message); }
+    try { await excluirDepartamento(id); } catch { /* o api.js já mostrou o erro */ }
   }
 
   if (!podeVisualizar) {

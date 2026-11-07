@@ -23,8 +23,3 @@ type AtualizarPlanoParams struct {
 	Status             *string          `json:"status"`
 	ID                 int32            `json:"id"`
 }
-
-type PlanoNome struct {
-	Id   int
-	Nome string
-}

@@ -20,21 +20,19 @@ func NewPlanosRepository(pool *pgxpool.Pool) *PlanosRepository {
 	}
 }
 
+func (p *PlanosRepository) Adicionar(ctx context.Context, arg AddPlanoParams) (int32, error) {
 
-func (p *PlanosRepository) Adicionar(ctx context.Context, arg AddPlanoParams)(int32, error){
-
-	planoId, err:= p.q.AddPlano(ctx, arg)
+	planoId, err := p.q.AddPlano(ctx, arg)
 	if err != nil {
-		return  0, helper.TraduzErroPostgres(err)
+		return 0, helper.TraduzErroPostgres(err)
 	}
 
 	return planoId, nil
 }
 
+func (p *PlanosRepository) MostrarPlanos(ctx context.Context) ([]BuscaPlanosRow, error) {
 
-func (p *PlanosRepository) MostrarPlanos(ctx context.Context)([]BuscaPlanosRow, error){
-
-	planos,err:= p.q.BuscaPlanos(ctx)
+	planos, err := p.q.BuscaPlanos(ctx)
 	if err != nil {
 
 		return []BuscaPlanosRow{}, helper.TraduzErroPostgres(err)
@@ -43,22 +41,21 @@ func (p *PlanosRepository) MostrarPlanos(ctx context.Context)([]BuscaPlanosRow, 
 	return planos, err
 }
 
-func (p *PlanosRepository) AtualizarPlanos(ctx context.Context, arg AtualizarPlanoParams) (error) {
+func (p *PlanosRepository) AtualizarPlanos(ctx context.Context, arg AtualizarPlanoParams) error {
 
-	err:= p.q.AtualizarPlano(ctx, arg)
-	if err != nil{
+	err := p.q.AtualizarPlano(ctx, arg)
+	if err != nil {
 
 		return helper.TraduzErroPostgres(err)
 	}
 
-	return  nil
+	return nil
 
 }
 
+func (p *PlanosRepository) AtualizaStatus(ctx context.Context, arg AtualizarStatusPlanoParams) error {
 
-func (p *PlanosRepository) AtualizaStatus(ctx context.Context, arg AtualizarStatusPlanoParams)(error){
-
-	err:= p.q.AtualizarStatusPlano(ctx, arg)
+	err := p.q.AtualizarStatusPlano(ctx, arg)
 	if err != nil {
 
 		return helper.TraduzErroPostgres(err)
@@ -67,13 +64,12 @@ func (p *PlanosRepository) AtualizaStatus(ctx context.Context, arg AtualizarStat
 	return nil
 }
 
-func(p *PlanosRepository) BuscarPlanoPorNome(ctx context.Context, nome string)(BuscarPlanoPorNomeRow, error){
+func (p *PlanosRepository) BuscarPlanoPorNome(ctx context.Context, nome string) (BuscarPlanoPorNomeRow, error) {
 
-	plano, err:= p.q.BuscarPlanoPorNome(ctx, nome)
+	plano, err := p.q.BuscarPlanoPorNome(ctx, nome)
 	if err != nil {
 		return BuscarPlanoPorNomeRow{}, helper.TraduzErroPostgres(err)
 	}
-
 
 	return plano, nil
 }

@@ -18,8 +18,6 @@ function EntregaItensForm({
   kitPendente = [],
   usarItemKit,
 }) {
-  console.log("DEBUG: Lista 'tamanhos' recebida no Form:", tamanhos);
-
   const baseInputClass = "w-full px-4 h-[46px] rounded-xl text-sm font-medium outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-700/60 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:text-white appearance-none";
   const labelClass = "block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 transition-colors";
 
@@ -104,8 +102,7 @@ function EntregaItensForm({
 
                 {tamanhos.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.tamanho || item.Tamanho || "Sem nome"}{" "}
-                    {item.saldo_atual !== undefined ? `(Estoque: ${item.saldo_atual})` : ""}
+                    {item.tamanho} (Estoque: {item.saldo_atual})
                   </option>
                 ))}
               </select>

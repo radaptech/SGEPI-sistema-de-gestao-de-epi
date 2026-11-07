@@ -17,8 +17,7 @@ export default function ModalKitFuncao({ funcao, onClose, mostrarToast }) {
       .then(([listaEpis, respKit]) => {
         if (!ativo) return;
         setEpis(listaEpis.map(normalizarEpiEntrega));
-        const itens = respKit?.data ?? respKit;
-        setKit(Object.fromEntries((Array.isArray(itens) ? itens : []).map((i) => [i.id_epi, i.quantidade])));
+        setKit(Object.fromEntries((respKit ?? []).map((i) => [i.id_epi, i.quantidade])));
       })
       .catch((erro) => console.error("Erro ao carregar kit da função:", erro))
       .finally(() => ativo && setCarregando(false));
@@ -61,7 +60,7 @@ export default function ModalKitFuncao({ funcao, onClose, mostrarToast }) {
           <div className="flex items-center gap-2.5">
             <ShieldCheck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             <h3 className="text-base font-bold text-slate-800 dark:text-slate-200 capitalize">
-              Kit de EPI: {funcao.cargo || funcao.funcao}
+              Kit de EPI: {funcao.cargo}
             </h3>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600" title="Fechar">

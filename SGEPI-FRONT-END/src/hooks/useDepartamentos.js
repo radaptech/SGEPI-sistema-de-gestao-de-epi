@@ -102,21 +102,13 @@ const carregarDados = useCallback(async () => {
   };
 
   const excluirDepartamento = async (id) => {
-    try {
-      await api.delete(`/gerencial/departamento/${id}`);
-      await carregarDados();
-    } catch (erro) {
-      throw new Error(erro?.response?.data?.message || "Erro ao excluir departamento.");
-    }
+    await api.delete(`/gerencial/departamento/${id}`);
+    await carregarDados();
   };
 
   const excluirFuncao = async (id) => {
-    try {
-      await api.delete(`/gerencial/funcao/${id}`);
-      await carregarDados();
-    } catch (erro) {
-      throw new Error(erro?.response?.data?.message || "Erro ao excluir função.");
-    }
+    await api.delete(`/gerencial/funcao/${id}`);
+    await carregarDados();
   };
 
   return {

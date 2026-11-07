@@ -1,18 +1,14 @@
 package auth
 
 import (
-
 	"github.com/alexedwards/argon2id"
-	
 )
 
-
 func HashPassword(senha string) ([]byte, error) {
-	
 
-	hashSenha, err:= argon2id.CreateHash(senha,argon2id.DefaultParams)
+	hashSenha, err := argon2id.CreateHash(senha, argon2id.DefaultParams)
 	if err != nil {
-		return  nil, err
+		return nil, err
 	}
 
 	return []byte(hashSenha), nil

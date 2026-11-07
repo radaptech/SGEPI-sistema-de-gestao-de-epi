@@ -9,13 +9,13 @@ import {
 import {
   normalizarEpiEntrega,
   normalizarFuncionarioEntrega,
-  normalizarTamanhoEntrega, // 🌟 Normalizer de volta à ativa
+  normalizarTamanhoEntrega,
 } from "../utils/entregaNormalizers";
 import {
   montarItemEntrega,
-  resolverIdEntrega,
   validarQuantidade,
 } from "../utils/entregaHelpers";
+import { toast } from "react-toastify";
 
 export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
   const [funcionarios, setFuncionarios] = useState([]);
@@ -68,7 +68,7 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
     return () => { ativo = false; };
   }, []);
 
-  // 🌟 2. BUSCA DE TAMANHOS POR EPI (DINÂMICA)
+  // 2. Tamanhos do EPI escolhido, com o saldo de cada um
   useEffect(() => {
     let ativo = true;
     async function buscarTamanhos() {
@@ -83,15 +83,7 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
         
         if (!ativo) return;
         
-        // 🛡️ Captura protegida: Aceita response.data ou o próprio response (caso haja interceptor)
-        const dadosBrutos = response?.data || response || [];
-        
-        // 🔄 Aplica a normalização para garantir que o objeto use sempre 'tamanho' minúsculo
-        const dadosNormalizados = Array.isArray(dadosBrutos) 
-          ? dadosBrutos.map(normalizarTamanhoEntrega)
-          : [];
-
-        setTamanhosFiltrados(dadosNormalizados);
+        setTamanhosFiltrados((response ?? []).map(normalizarTamanhoEntrega));
       } catch (erro) {
         console.error("Erro ao buscar tamanhos por EPI:", erro);
         setTamanhosFiltrados([]);
@@ -133,10 +125,7 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
     setKitFuncao([]);
     if (!funcaoId) return;
     api.get(`/funcao/${funcaoId}/kit`)
-      .then((resp) => {
-        const lista = resp?.data ?? resp;
-        if (ativo) setKitFuncao(Array.isArray(lista) ? lista : []);
-      })
+      .then((kit) => ativo && setKitFuncao(kit ?? []))
       .catch((erro) => console.error("Erro ao buscar kit da função:", erro));
     return () => { ativo = false; };
   }, [funcaoId]);
@@ -157,12 +146,12 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
   // 4. Ações do Formulário
   function adicionarItem() {
     if (!idEpiTemp || !idTamanhoTemp || !qtdTemp) {
-      alert("Selecione o EPI, o tamanho e a quantidade.");
+      toast.warning("Selecione o EPI, o tamanho e a quantidade.");
       return;
     }
 
     if (!validarQuantidade(qtdTemp)) {
-      alert("Informe uma quantidade válida.");
+      toast.warning("Informe uma quantidade válida.");
       return;
     }
 
@@ -173,13 +162,13 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
     );
 
     if (itemDuplicado) {
-      alert("Esse item com esse tamanho já foi adicionado à entrega.");
+      toast.warning("Esse item com esse tamanho já foi adicionado à entrega.");
       return;
     }
 
     // Trava de segurança extra no botão "Adicionar"
     if (tamanhoSelecionadoObj?.saldo_atual !== undefined && qtdTemp > tamanhoSelecionadoObj.saldo_atual) {
-      alert(`Você só tem ${tamanhoSelecionadoObj.saldo_atual} unidades deste tamanho no estoque.`);
+      toast.warning(`Você só tem ${tamanhoSelecionadoObj.saldo_atual} unidades deste tamanho no estoque.`);
       return;
     }
 
@@ -200,9 +189,9 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
   }
 
   async function salvarEntrega() {
-    if (!funcionario) return alert("Selecione o funcionário.");
-    if (itensParaEntregar.length === 0) return alert("Adicione pelo menos um item.");
-    if (!assinaturaPreview) return alert("Peça a assinatura do colaborador.");
+    if (!funcionario) return toast.warning("Selecione o funcionário.");
+    if (itensParaEntregar.length === 0) return toast.warning("Adicione pelo menos um item.");
+    if (!assinaturaPreview) return toast.warning("Peça a assinatura do colaborador.");
 
     setCarregando(true);
 
@@ -218,15 +207,11 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
     };
 
     try {
-      const respostaEntrega = await criarEntrega(payloadEntregaBase);
-      const idEntregaFinal = resolverIdEntrega(respostaEntrega);
-
-      if (onSalvar) {
-        await onSalvar({ ...payloadEntregaBase, id: idEntregaFinal || Date.now() });
-      }
+      await criarEntrega(payloadEntregaBase);
+      if (onSalvar) await onSalvar();
       onClose();
-    } catch (erro) {
-      alert(erro?.message || "Erro ao registrar a entrega.");
+    } catch {
+      // o api.js já mostrou o erro do servidor
     } finally {
       setCarregando(false);
     }
@@ -254,7 +239,7 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
     carregandoDados,
     funcionarioSelecionado,
     funcionariosFiltrados,
-    tamanhoSelecionadoObj, // 🌟 EXPORTADO AQUI PARA A TELA USAR
+    tamanhoSelecionadoObj,
     kitPendente,
     usarItemKit,
     adicionarItem,

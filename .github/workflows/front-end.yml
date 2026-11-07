@@ -27,7 +27,5 @@ jobs:
       - run: npm ci
 
       - name: build
-        # ponytail: CRA com CI=true trata warning de lint como erro; tirar quando zerar os warnings
-        env:
-          CI: false
+        # CI=true (padrão do Actions): warning de lint quebra o build
         run: npm run build

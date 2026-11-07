@@ -1,23 +1,6 @@
 import React, { useEffect, useState } from "react";
 import formatarData from "../../../utils/DatasFormater";
 
-const converterDataParaInput = (dataString) => {
-  if (!dataString) return "";
-  
-  if (dataString.includes("-")) {
-    return dataString.split("T")[0]; 
-  }
-  
-  if (dataString.includes("/")) {
-    const [dia, mes, ano] = dataString.split("/");
-    if (dia && mes && ano) {
-      return `${ano}-${mes}-${dia}`;
-    }
-  }
-  
-  return dataString;
-};
-
 function ModalEditarEmpresa({ aberto, empresa, planos = [], onFechar, onSalvar, onExcluir }) {
   const [form, setForm] = useState({
     nome: "",
@@ -57,7 +40,7 @@ function ModalEditarEmpresa({ aberto, empresa, planos = [], onFechar, onSalvar, 
       setErro("");
     }
 
-  }, [empresa?.id, aberto, planos]);
+  }, [empresa?.id, aberto, planos]); // eslint-disable-line react-hooks/exhaustive-deps -- só reinicia o form ao trocar de empresa
 
   if (!aberto || !empresa) return null;
 

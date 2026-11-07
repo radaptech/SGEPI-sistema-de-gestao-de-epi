@@ -16,8 +16,7 @@ function resumirItens(entrega) {
 
   return itens
     .map((item) => {
-      const tamanho = item.tamanhoNome || item.tamanho || "-";
-      return `${item.epiNome} (${tamanho}) x${item.quantidade}`;
+      return `${item.epiNome} (${item.tamanhoNome}) x${item.quantidade}`;
     })
     .join(", ");
 }
@@ -45,8 +44,6 @@ function Entregas({ usuarioLogado }) {
     podeCadastrar,
     aoSalvarEntrega,
     estatisticasTela = { totalEntregas: 0, totalItens: 0, totalTipos: 0 },
-    funcionarios,
-    epis,
   } = useEntregas({ usuarioLogado });
 
   const [baixandoPdfId, setBaixandoPdfId] = useState(null);
@@ -61,22 +58,17 @@ function Entregas({ usuarioLogado }) {
     try {
       setBaixandoPdfId(idEntrega);
       await baixarFichaPDF(matricula, idEntrega);
-    } catch (error) {
-      console.log("Falha no download");
-      toast.error("Não foi possível baixar o PDF da entrega.");
+    } catch {
+      // o api.js já mostrou o erro do servidor
     } finally {
       setBaixandoPdfId(null);
     }
   };
 
-  const handleSalvarEntrega = async (novaEntrega) => {
-    try {
-      await aoSalvarEntrega(novaEntrega);
-      setModalAberto(false);
-      toast.success("Entrega cadastrada com sucesso!");
-    } catch (error) {
-      toast.error(error?.message || "Não foi possível cadastrar a entrega.");
-    }
+  // a entrega já foi gravada pelo modal; aqui só recarrega a lista
+  const handleSalvarEntrega = async () => {
+    await aoSalvarEntrega();
+    toast.success("Entrega cadastrada com sucesso!");
   };
 
   if (!podeVisualizar) {
@@ -205,14 +197,8 @@ function Entregas({ usuarioLogado }) {
                     </tr>
                   ) : (
                     entregasVisiveis.map((entrega) => {
-                      const nomeFunc =
-                        entrega.funcionario?.nome ||
-                        entrega.nomeFuncionario ||
-                        "Não identificado";
-                      const matriculaFunc =
-                        entrega.funcionario?.matricula ||
-                        entrega.matriculaFuncionario ||
-                        "-";
+                      const nomeFunc = entrega.funcionario.nome;
+                      const matriculaFunc = entrega.funcionario.matricula;
                       const isBaixando = baixandoPdfId === entrega.id;
 
                       return (
@@ -269,14 +255,8 @@ function Entregas({ usuarioLogado }) {
                 </div>
               ) : (
                 entregasVisiveis.map((entrega) => {
-                  const nomeFunc =
-                    entrega.funcionario?.nome ||
-                    entrega.nomeFuncionario ||
-                    "Não identificado";
-                  const matriculaFunc =
-                    entrega.funcionario?.matricula ||
-                    entrega.matriculaFuncionario ||
-                    "-";
+                  const nomeFunc = entrega.funcionario.nome;
+                  const matriculaFunc = entrega.funcionario.matricula;
                   const isBaixando = baixandoPdfId === entrega.id;
 
                   return (
@@ -373,8 +353,6 @@ function Entregas({ usuarioLogado }) {
         <ModalEntrega
           onClose={() => setModalAberto(false)}
           onSalvar={handleSalvarEntrega}
-          funcionarios={funcionarios}
-          epis={epis}
         />
       )}
     </>

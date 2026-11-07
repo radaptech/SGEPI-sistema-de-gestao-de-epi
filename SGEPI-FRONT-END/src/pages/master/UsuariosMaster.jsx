@@ -22,13 +22,8 @@ function UsuariosMaster() {
   useEffect(() => {
     const carregarDados = async () => {
       try {
-        const resUsuarios = await masterDashboardService.buscarUsuarios(); 
-        const dadosUsuarios = resUsuarios?.data || resUsuarios;            
-        setUsuarios(Array.isArray(dadosUsuarios) ? dadosUsuarios : []);    
-
-        const resEmpresas = await masterDashboardService.buscarEmpresas(); 
-        const dadosEmpresas = resEmpresas?.data || resEmpresas;            
-        setEmpresasDisponiveis(Array.isArray(dadosEmpresas) ? dadosEmpresas : []); 
+        setUsuarios((await masterDashboardService.buscarUsuarios()) ?? []);
+        setEmpresasDisponiveis((await masterDashboardService.buscarEmpresas()) ?? []);
         
       } catch (error) {
         toast.error("Falha ao carregar os dados. Verifique sua conexão.");

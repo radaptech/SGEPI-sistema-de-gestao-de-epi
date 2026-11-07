@@ -61,7 +61,7 @@ function RedefinirSenha({ onIrParaLogin }) {
       setConfirmarSenha("");
       
     } catch (err) {
-      setErro(err?.response?.data?.error || err?.message || "Erro ao redefinir a senha.");
+      setErro(err.message);
     } finally {
       setCarregando(false);
     }

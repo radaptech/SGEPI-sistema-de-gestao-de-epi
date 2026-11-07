@@ -6,10 +6,10 @@ import (
 
 // ItemParaInserir representa cada EPI saindo do estoque
 type ItemParaInserir struct {
-	ID_epi        int32 `json:"id_epi" binding:"required"`
-	ID_tamanho    int32 `json:"id_tamanho" binding:"required"`
+	ID_epi          int32 `json:"id_epi" binding:"required"`
+	ID_tamanho      int32 `json:"id_tamanho" binding:"required"`
 	ID_entrada_item int32 `json:"id_entrada_item"` // 🔑 NOVO: Precisamos saber de qual lote saiu!
-	Quantidade    int32 `json:"quantidade" binding:"required,gt=0"`
+	Quantidade      int32 `json:"quantidade" binding:"required,gt=0"`
 }
 
 // EntregaParaInserir é o DTO que a Paloma envia do Frontend
@@ -64,6 +64,7 @@ type EntregaDoFuncionarioDto struct {
 	Assinatura_Digital string            `json:"assinatura_digital"`
 	Itens              []ItemEntregueDto `json:"itens,omitempty"` // <-- AQUI ELA!
 }
+
 // FaltaKitDto é um EPI do kit da função que o funcionário tem em posse em quantidade menor que a exigida
 type FaltaKitDto struct {
 	FuncionarioId   int32  `json:"funcionario_id"`

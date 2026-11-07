@@ -44,21 +44,13 @@ export default function AbaEpis() {
 
       const resposta = await api.get("/epis");
 
-      const listaBruta =
-        resposta?.Epis || resposta?.data?.Epis || resposta?.data || [];
-
-      const dadosNormalizados = listaBruta.map((epi) => ({
+      setEpis((resposta.Epis ?? []).map((epi) => ({
         ...epi,
-        ca: epi.ca || epi.CA || "N/A",
-        data_validadeCa: epi.validade_ca || epi.data_validade_ca || "---",
-        protecao: epi.protecao || { nome: "Geral" },
-        tamanhos: epi.tamanhos || [],
-      }));
-
-      setEpis([...dadosNormalizados]);
-    } catch (erro) {
-      console.error("Erro ao carregar EPIs:", erro);
-      mostrarToast("Erro ao carregar EPIs.", "erro");
+        data_validadeCa: epi.validade_ca, // nome que o ModalNovoEpi lê na edição
+        tamanhos: epi.tamanhos ?? [],
+      })));
+    } catch {
+      // o api.js já mostrou o erro
     } finally {
       setCarregando(false);
     }
@@ -105,7 +97,7 @@ export default function AbaEpis() {
 
   useEffect(() => {
     carregarEpis();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- carrega uma vez ao abrir a aba
 
   const episFiltrados = useMemo(() => {
     const termo = buscaEpi.toLowerCase().trim();

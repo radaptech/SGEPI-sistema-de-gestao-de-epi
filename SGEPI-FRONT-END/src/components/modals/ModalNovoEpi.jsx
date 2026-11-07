@@ -182,33 +182,21 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
     }
     try {
       setSalvandoNovoTamanho(true);
-      const res = await api.post("/gerencial/cadastro-tamanho", {
-        tamanho: novoTamanhoNome,
-      });
-      const novo = res?.tamanho_criado || res?.data?.tamanho_criado || res;
+      // a resposta é só {"mensagem"}: recarrega a lista e marca o tamanho novo pelo nome
+      await api.post("/gerencial/cadastro-tamanho", { tamanho: novoTamanhoNome });
+      const lista = (await api.get("/tamanhos")) ?? [];
+      const novo = lista.find((t) => t.tamanho === novoTamanhoNome);
 
-      if (novo && (novo.id || novo.Id || novo.ID)) {
-        const novoItem = {
-          id: novo.id || novo.Id || novo.ID,
-          tamanho: novo.tamanho || novo.Tamanho || novo.nome || novoTamanhoNome,
-        };
-        setTamanhosDisponiveis((prev) => [...prev, novoItem]);
-        setForm((prev) => ({
-          ...prev,
-          id_tamanho: [...prev.id_tamanho, novoItem.id],
-        }));
-        setNovoTamanhoNome("");
-        setMostrandoAddTamanho(false);
+      setTamanhosDisponiveis(lista);
+      if (novo) {
+        setForm((prev) => ({ ...prev, id_tamanho: [...prev.id_tamanho, novo.id] }));
         limparErroCampo("id_tamanho");
-        mostrarToast("Tamanho adicionado com sucesso!", "sucesso");
-      } else {
-        const listaAtualizada = await api.get("/tamanhos");
-        setTamanhosDisponiveis(Array.isArray(listaAtualizada) ? listaAtualizada : []);
-        setMostrandoAddTamanho(false);
       }
-    } catch (erro) {
-      console.error("Erro ao salvar tamanho:", erro);
-      mostrarToast("Erro ao salvar tamanho.", "erro");
+      setNovoTamanhoNome("");
+      setMostrandoAddTamanho(false);
+      mostrarToast("Tamanho adicionado com sucesso!", "sucesso");
+    } catch {
+      // o api.js já mostrou o erro do servidor
     } finally {
       setSalvandoNovoTamanho(false);
     }

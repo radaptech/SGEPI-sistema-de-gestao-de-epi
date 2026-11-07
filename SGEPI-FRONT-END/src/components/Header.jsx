@@ -1,41 +1,14 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 function Header({ paginaAtual, setPagina, onLogout, usuario }) {
   const [menuAberto, setMenuAberto] = useState(false);
   const [menuMaisAberto, setMenuMaisAberto] = useState(false);
   const menuMaisRef = useRef(null);
 
-  const perfilUsuario = useMemo(() => {
-    return (
-      usuario?.tipo ||
-      usuario?.perfil ||
-      usuario?.role ||
-      usuario?.nivelAcesso ||
-      usuario?.usuario?.tipo ||
-      usuario?.usuario?.perfil ||
-      usuario?.usuario?.role ||
-      "FUNCIONARIO"
-    );
-  }, [usuario]);
-
-  const nomeUsuario = useMemo(() => {
-    return usuario?.nome || usuario?.usuario?.nome || "Usuário";
-  }, [usuario]);
-
-  const perfilNormalizado = String(perfilUsuario).toUpperCase();
-
-  const isSuperAdmin =
-    perfilNormalizado === "SUPER_ADMIN" ||
-    perfilNormalizado === "MASTER" ||
-    perfilNormalizado === "ADMIN_MASTER";
-
-  const isAdminEmpresa =
-    perfilNormalizado === "ADMIN_EMPRESA" ||
-    perfilNormalizado === "ADMIN";
-
-  const isFuncionario =
-    perfilNormalizado === "FUNCIONARIO" ||
-    perfilNormalizado === "COLABORADOR";
+  const nomeUsuario = usuario?.nome || "Usuário";
+  const isSuperAdmin = usuario?.role === "super_admin";
+  const isAdminEmpresa = usuario?.role === "admin";
+  const perfilNormalizado = String(usuario?.role ?? "").toUpperCase();
 
   useEffect(() => {
     function handleClickFora(event) {
@@ -180,12 +153,7 @@ function Header({ paginaAtual, setPagina, onLogout, usuario }) {
     { label: "Devoluções", nome: "Devoluções", principal: true, icon: IconDevolucoes },
   ];
 
-  const navItems = useMemo(() => {
-    if (isSuperAdmin) return itensSuperAdmin;
-    if (isAdminEmpresa) return itensAdminEmpresa;
-    if (isFuncionario) return itensFuncionario;
-    return itensFuncionario;
-  }, [isSuperAdmin, isAdminEmpresa, isFuncionario]);
+  const navItems = isSuperAdmin ? itensSuperAdmin : isAdminEmpresa ? itensAdminEmpresa : itensFuncionario;
 
   const menuPrincipal = navItems.filter((item) => item.principal);
   const menuSecundario = navItems.filter((item) => !item.principal);

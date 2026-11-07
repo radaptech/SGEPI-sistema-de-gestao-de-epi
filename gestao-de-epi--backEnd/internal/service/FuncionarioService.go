@@ -65,7 +65,7 @@ func (f *FuncionarioService) SalvarFuncionario(ctx context.Context, model model.
 	defer tx.Rollback(ctx)
 
 	qtx := f.queries.WithTx(tx)
-	
+
 	totalFuncionarioPlano, err := qtx.ValidaTotalFuncionarios(ctx, tenantId)
 	if err != nil {
 		return err
@@ -80,7 +80,7 @@ func (f *FuncionarioService) SalvarFuncionario(ctx context.Context, model model.
 
 		return helper.ErrLimiteExcedido
 	}
-	
+
 	err = f.repo.Adicionar(ctx, qtx, args)
 	if err != nil {
 
@@ -272,7 +272,7 @@ func (f *FuncionarioService) AtualizaNomeFuncionario(ctx context.Context, id int
 	return nil
 }
 
-func (f * FuncionarioService) AtualizaCpfFuncionario(ctx context.Context, id int, cpf string, tenantId int32, qtx *repository.Queries) error {
+func (f *FuncionarioService) AtualizaCpfFuncionario(ctx context.Context, id int, cpf string, tenantId int32, qtx *repository.Queries) error {
 
 	if id <= 0 {
 		return helper.ErrId
@@ -519,7 +519,7 @@ func (f *FuncionarioService) FuncionarioCompleto(ctx context.Context, tenantId i
 			ID:        int32(funcID),
 			Nome:      funcionario.Nome,
 			Matricula: matricula,
-			Cpf: funcionario.Cpf.String,
+			Cpf:       funcionario.Cpf.String,
 			Funcao: model.FuncaoDto{
 				ID:     int(funcionario.Idfuncao),
 				Funcao: funcionario.FuncaoNome,

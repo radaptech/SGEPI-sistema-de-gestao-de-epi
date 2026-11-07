@@ -19,13 +19,8 @@ function Empresas() {
   useEffect(() => {
     const carregarDados = async () => {
       try {
-        const responseEmpresas = await masterDashboardService.buscarEmpresas();
-        const dadosEmpresas = responseEmpresas?.data || responseEmpresas;
-        setEmpresas(Array.isArray(dadosEmpresas) ? dadosEmpresas : []);
-
-        const responsePlanos = await masterDashboardService.buscarPlanos();
-        const dadosPlanos = responsePlanos?.data || responsePlanos;
-        setPlanosDisponiveis(Array.isArray(dadosPlanos) ? dadosPlanos : []);
+        setEmpresas((await masterDashboardService.buscarEmpresas()) ?? []);
+        setPlanosDisponiveis((await masterDashboardService.buscarPlanos()) ?? []);
       } catch (error) {
         setEmpresas([]);
         setPlanosDisponiveis([]);

@@ -26,15 +26,7 @@ function Planos() {
   const carregarPlanos = async () => {
     try {
       setCarregando(true);
-      const resposta = await masterDashboardService.buscarPlanos();
-
-      const dados = resposta?.data || resposta;
-
-      if (Array.isArray(dados)) {
-        setPlanos(dados);
-      } else {
-        setPlanos([]);
-      }
+      setPlanos((await masterDashboardService.buscarPlanos()) ?? []);
     } catch (error) {
       toast.error("Erro ao carregar a lista de planos.");
       setPlanos([]);

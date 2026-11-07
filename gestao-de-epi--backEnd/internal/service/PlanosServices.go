@@ -15,7 +15,7 @@ type PlanosRepository interface {
 	MostrarPlanos(ctx context.Context) ([]repository.BuscaPlanosRow, error)
 	AtualizarPlanos(ctx context.Context, arg repository.AtualizarPlanoParams) error
 	AtualizaStatus(ctx context.Context, arg repository.AtualizarStatusPlanoParams) error
-	BuscarPlanoPorNome(ctx context.Context, nome string)(repository.BuscarPlanoPorNomeRow, error)
+	BuscarPlanoPorNome(ctx context.Context, nome string) (repository.BuscarPlanoPorNomeRow, error)
 }
 
 type PlanosService struct {
@@ -157,13 +157,12 @@ func (p *PlanosService) AtualizarPlano(ctx context.Context, input model.Atualiza
 	return err
 }
 
-func (p *PlanosService) AtualizaStatus(ctx context.Context, status string, id int32)error{
+func (p *PlanosService) AtualizaStatus(ctx context.Context, status string, id int32) error {
 
-	err:= p.repo.AtualizaStatus(ctx, repository.AtualizarStatusPlanoParams{
+	err := p.repo.AtualizaStatus(ctx, repository.AtualizarStatusPlanoParams{
 		Status: pgtype.Text{String: status, Valid: true},
-		ID: id,
+		ID:     id,
 	})
 
 	return err
 }
-

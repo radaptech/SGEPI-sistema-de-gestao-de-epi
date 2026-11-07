@@ -49,8 +49,9 @@ function DashboardMaster({ usuarioLogado }) {
   const [resumo, setResumo] = useState({});
   const [empresasRecentes, setEmpresasRecentes] = useState([]);
   const [planosDisponiveis, setPlanosDisponiveis] = useState([]);
-  const [alertas, setAlertas] = useState([]);
-  const [atividadesRecentes, setAtividadesRecentes] = useState([]);
+  // ponytail: o back ainda não tem rota de alertas/atividades; os blocos mostram o estado vazio
+  const alertas = [];
+  const atividadesRecentes = [];
 
   const [carregando, setCarregando] = useState(false);
   const [modalNovaEmpresaAberto, setModalNovaEmpresaAberto] = useState(false);
@@ -68,9 +69,9 @@ function DashboardMaster({ usuarioLogado }) {
       const empresasResposta = await masterDashboardService.buscarEmpresasRecentes();
       const planosResposta = await masterDashboardService.buscarPlanos();
 
-      setResumo(resumoResposta?.data || resumoResposta || {});
-      setEmpresasRecentes(empresasResposta?.data || empresasResposta || []);
-      setPlanosDisponiveis(planosResposta?.data || planosResposta || []);
+      setResumo(resumoResposta);
+      setEmpresasRecentes(empresasResposta ?? []);
+      setPlanosDisponiveis(planosResposta ?? []);
 
       setPaginaAtual(1);
     } catch (error) {
@@ -90,9 +91,8 @@ function DashboardMaster({ usuarioLogado }) {
       toast.success("Empresa cadastrada com sucesso!");
       await carregarDashboard();
       setModalNovaEmpresaAberto(false);
-    } catch (error) {
-      const mensagemErro = error.response?.data?.error || "Erro ao salvar a empresa.";
-      toast.error(mensagemErro);
+    } catch {
+      // o api.js já mostrou o erro do servidor
     }
   };
 

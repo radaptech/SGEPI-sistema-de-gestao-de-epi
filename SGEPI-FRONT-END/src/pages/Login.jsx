@@ -47,11 +47,7 @@ function Login({ onLogin }) {
         });
       }
     } catch (err) {
-      setErro(
-        err?.response?.data?.error ||
-          err?.message ||
-          "Erro ao realizar login."
-      );
+      setErro(err.message);
     } finally {
       setCarregando(false);
     }

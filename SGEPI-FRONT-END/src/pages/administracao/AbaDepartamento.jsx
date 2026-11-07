@@ -30,7 +30,7 @@ export default function AbaDepartamentos() {
 
   useEffect(() => {
     carregarDepartamentos();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- carrega uma vez ao abrir a aba
 
   const mostrarToast = (mensagem, tipo = "sucesso") => {
     setToast({ mensagem, tipo });
@@ -54,10 +54,8 @@ export default function AbaDepartamentos() {
     try {
       const resposta = await api.get("/departamentos");
       setDepartamentos(resposta?.departamentos || []);
-    } catch (erro) {
-      console.error("Erro ao carregar departamentos:", erro);
-      setDepartamentos([]);
-      mostrarToast("Erro ao carregar departamentos.", "erro");
+    } catch {
+      // o api.js já mostrou o erro
     }
   };
 

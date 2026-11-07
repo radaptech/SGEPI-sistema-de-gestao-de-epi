@@ -65,7 +65,7 @@ type UpdateEpiInput struct {
 	IdProtecao     *int32          `json:"id_protecao"`
 	AlertaMinimo   *int32          `json:"alerta_minimo"`
 	VidaUtilDias   *int32          `json:"vida_util_dias" binding:"omitempty,gte=0"` // 0 desliga
-	Tamanhos       []int32         `json:"tamanhos"` // Se enviado, você deve resetar os tamanhos no banco
+	Tamanhos       []int32         `json:"tamanhos"`                                 // Se enviado, você deve resetar os tamanhos no banco
 }
 
 // EpiResponse é a versão simplificada para compor outros DTOs (como o de Entrega)

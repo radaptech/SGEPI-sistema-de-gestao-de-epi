@@ -33,7 +33,7 @@ export default function AbaFornecedores() {
 
   useEffect(() => {
     carregarFornecedores();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- carrega uma vez ao abrir a aba
 
   const mostrarToast = (mensagem, tipo = "sucesso") => {
     setToast({ mensagem, tipo });
@@ -216,13 +216,9 @@ export default function AbaFornecedores() {
     try {
       const resposta = await api.get("/fornecedores");
 
-      const listaFornecedores =
-        resposta.data?.Fornecedores || resposta?.Fornecedores || [];
-
-      setFornecedores(listaFornecedores);
-    } catch (erro) {
-      console.error("Erro ao carregar fornecedores:", erro);
-      mostrarToast("Erro ao carregar fornecedores.", "erro");
+      setFornecedores(resposta.Fornecedores ?? []);
+    } catch {
+      // o api.js já mostrou o erro
     }
   };
 
