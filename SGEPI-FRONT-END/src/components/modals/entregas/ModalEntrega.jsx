@@ -78,6 +78,8 @@ function ModalEntrega({ onClose, onSalvar, funcionarios = [], epis = [] }) {
               itensParaEntregar={entrega.itensParaEntregar}
               removerItem={entrega.removerItem}
               tamanhoSelecionadoObj={entrega.tamanhoSelecionadoObj}
+              kitPendente={entrega.kitPendente}
+              usarItemKit={entrega.usarItemKit}
             />
           </div>
 

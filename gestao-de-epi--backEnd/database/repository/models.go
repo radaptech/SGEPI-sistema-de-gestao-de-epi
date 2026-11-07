@@ -163,6 +163,13 @@ type Funcao struct {
 	DeletadoEm     pgtype.Timestamp
 }
 
+type FuncaoEpi struct {
+	TenantID   int32
+	IDFuncao   int32
+	IDEpi      int32
+	Quantidade int32
+}
+
 type Funcionario struct {
 	ID             int32
 	TenantID       int32

@@ -55,3 +55,28 @@ WHERE id = $1
 SELECT id, nome
 from departamento
 where tenant_id = @id and deletado_em IS NULL;
+
+-- name: ListarKitFuncao :many
+SELECT e.id AS id_epi, e.nome, e.CA, fe.quantidade
+FROM funcao_epi fe
+INNER JOIN epi e ON e.id = fe.id_epi AND e.tenant_id = fe.tenant_id
+WHERE fe.tenant_id = @tenant_id -- SEGURANÇA
+  AND fe.id_funcao = @id_funcao
+  AND e.ativo = TRUE
+ORDER BY e.nome;
+
+-- name: SalvarKitFuncao :exec
+-- Troca o kit inteiro numa instrução só (atômica): apaga os EPIs que saíram e faz upsert dos que ficaram.
+-- Os JOINs com epi/funcao filtrados por tenant impedem gravar id de outra empresa.
+WITH removidos AS (
+    DELETE FROM funcao_epi
+    WHERE tenant_id = @tenant_id -- SEGURANÇA
+      AND id_funcao = @id_funcao
+      AND NOT (id_epi = ANY(@ids_epi::int[]))
+)
+INSERT INTO funcao_epi (tenant_id, id_funcao, id_epi, quantidade)
+SELECT f.tenant_id, f.id, e.id, (@quantidades::int[])[i.n]
+FROM unnest(@ids_epi::int[]) WITH ORDINALITY AS i(id_epi, n)
+INNER JOIN epi e ON e.id = i.id_epi AND e.tenant_id = @tenant_id AND e.ativo = TRUE
+INNER JOIN funcao f ON f.id = @id_funcao AND f.tenant_id = @tenant_id AND f.ativo = TRUE
+ON CONFLICT (tenant_id, id_funcao, id_epi) DO UPDATE SET quantidade = EXCLUDED.quantidade;

@@ -80,3 +80,22 @@ func (f *FuncaoRepository) MapDepartamentosParaFuncao(ctx context.Context, tenan
 	return deps, nil
 
 }
+
+func (f *FuncaoRepository) ListarKit(ctx context.Context, arg ListarKitFuncaoParams) ([]ListarKitFuncaoRow, error) {
+
+	kit, err := f.q.ListarKitFuncao(ctx, arg)
+	if err != nil {
+		return nil, helper.TraduzErroPostgres(err)
+	}
+
+	return kit, nil
+}
+
+func (f *FuncaoRepository) SalvarKit(ctx context.Context, arg SalvarKitFuncaoParams) error {
+
+	if err := f.q.SalvarKitFuncao(ctx, arg); err != nil {
+		return helper.TraduzErroPostgres(err)
+	}
+
+	return nil
+}

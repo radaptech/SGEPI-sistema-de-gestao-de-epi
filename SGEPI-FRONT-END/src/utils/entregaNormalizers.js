@@ -3,6 +3,7 @@ export function normalizarFuncionarioEntrega(item) {
     id: Number(item?.id ?? item?.ID ?? 0),
     nome: item?.nome ?? item?.Nome ?? "",
     matricula: String(item?.matricula ?? item?.Matricula ?? ""),
+    funcaoId: Number(item?.funcao?.id ?? 0),
   };
 }
 
