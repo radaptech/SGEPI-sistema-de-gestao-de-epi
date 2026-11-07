@@ -23,7 +23,7 @@ var (
 	ErrDataMenorValidade   = errors.New("A data de validade não pode ser menor que a data de fabricação")
 	ErrLimiteExcedido      = errors.New("limite de funcionários e/ou de usuarios do plano excedido")
 	ErrCpfInvalido         = errors.New("CPF inválido")
-	 ErrCaVencido           = errors.New("CA do EPI vencido, cancelado ou suspenso na data da entrega")
+	ErrCaVencido           = errors.New("CA do EPI vencido, cancelado ou suspenso na data da entrega")
 )
 
 // Códigos de Erro Oficiais do PostgreSQL

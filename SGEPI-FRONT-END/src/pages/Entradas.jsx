@@ -7,7 +7,6 @@ import {
   listarEpis,
   listarFornecedores,
   listarTamanhos,
-  extrairLista,
 } from "../services/entradaService";
 import { temPermissao } from "../utils/permissoes";
 import { formatarMoedaEntrada } from "../utils/entradaHelpers";
@@ -46,7 +45,7 @@ function Entradas({ usuarioLogado }) {
     ? true
     : temPermissao(usuarioLogado, "visualizar_estoque");
 
-  const perfilUsuario = usuarioLogado?.perfil || usuarioLogado?.role || "";
+  const perfilUsuario = usuarioLogado?.role;
   const podeCadastrar = !usuarioLogado
     ? true
     : perfilUsuario === "admin" || perfilUsuario === "gerente";
@@ -114,12 +113,10 @@ function Entradas({ usuarioLogado }) {
           listarEntradas(),
         ]);
 
-      setFornecedores(
-        extrairLista(resFornecedores).map(normalizarFornecedorEntrada)
-      );
-      setEpis(extrairLista(resEpis).map(normalizarEpiEntrada));
-      setTamanhos(extrairLista(resTamanhos).map(normalizarTamanhoEntrada));
-      setEntradas(extrairLista(resEntradas).map(normalizarEntrada));
+      setFornecedores(resFornecedores.map(normalizarFornecedorEntrada));
+      setEpis(resEpis.map(normalizarEpiEntrada));
+      setTamanhos(resTamanhos.map(normalizarTamanhoEntrada));
+      setEntradas(resEntradas.map(normalizarEntrada));
     } catch (erro) {
       setErroTela("Falha ao carregar dados do servidor.");
       console.error(erro);

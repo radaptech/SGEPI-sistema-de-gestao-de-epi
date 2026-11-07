@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { api } from "../services/api";
+import { listar } from "../services/listas";
 
-import { obterHojeISO, formatarData, diasAte } from "../utils/dashboardFormatters";
+import { obterHojeISO, diasAte } from "../utils/dashboardFormatters";
 
 import {
   normalizarEpi,
@@ -10,29 +10,11 @@ import {
   normalizarEntrada,
   normalizarEntrega,
   normalizarItemEntregue,
-  normalizarDevolucao, // <-- Descomentado
+  normalizarDevolucao,
 } from "../utils/dashboardNormalizers";
 
 export const DIAS_ALERTA_CA = 30;
 export const DIAS_ALERTA_TROCA = 7;
-
-function extrairLista(resp, fallback = []) {
-  const dados = resp?.data ?? resp ?? fallback;
-  return Array.isArray(dados) ? dados : fallback;
-}
-
-async function buscarPrimeiraLista(rotas) {
-  for (const rota of rotas) {
-    try {
-      const resp = await api.get(rota);
-      const lista = extrairLista(resp, []);
-      if (Array.isArray(lista)) return lista;
-    } catch (erro) {
-      // tenta próxima rota
-    }
-  }
-  return [];
-}
 
 export function useDashboardResumo() {
   const [epis, setEpis] = useState([]);
@@ -41,7 +23,7 @@ export function useDashboardResumo() {
   const [entradas, setEntradas] = useState([]);
   const [entregas, setEntregas] = useState([]);
   const [itensEntregues, setItensEntregues] = useState([]);
-  const [devolucoes, setDevolucoes] = useState([]); // <-- Descomentado
+  const [devolucoes, setDevolucoes] = useState([]);
   const [trocas, setTrocas] = useState([]);
   const [faltasKit, setFaltasKit] = useState([]);
   const [carregandoResumo, setCarregandoResumo] = useState(true);
@@ -61,30 +43,26 @@ export function useDashboardResumo() {
         listaTrocas,
         listaFaltasKit,
       ] = await Promise.all([
-        api.get("/epis-dashbord").catch(() => []),
-        api.get("/tamanhos").catch(() => []),
-        api.get("/funcionarios-dashbord").catch(() => []),
-        api.get("/entradas-dashbord").catch(() => []),
-        api.get("/entregas-dashbord").catch(() => []),
-        api.get("/entrega-itens-dashbord").catch(() => []),
-        api.get("/devolucao").catch(() => {
-          console.warn("Rota /devolucoes ainda não implementada no Back-end");
-          return []; // Retorna lista vazia e o código continua rodando
-        }),
-        api.get(`/trocas-pendentes?dias=${DIAS_ALERTA_TROCA}`).catch(() => []),
-        api.get("/faltas-kit").catch(() => []),
+        listar("/epis-dashbord"),
+        listar("/tamanhos"),
+        listar("/funcionarios-dashbord"),
+        listar("/entradas-dashbord"),
+        listar("/entregas-dashbord"),
+        listar("/entrega-itens-dashbord"),
+        listar("/devolucao"),
+        listar(`/trocas-pendentes?dias=${DIAS_ALERTA_TROCA}`),
+        listar("/faltas-kit"),
       ]);
       
-      setEpis((listaEpis || []).map(normalizarEpi));
-      setTamanhos((listaTamanhos || []).map(normalizarTamanho));
-      setFuncionarios((listaFuncionarios || []).map(normalizarFuncionario));
-      setEntradas((listaEntradas || []).map(normalizarEntrada));
-      setEntregas((listaEntregas || []).map(normalizarEntrega));
-      setItensEntregues((listaItensEntregues || []).map(normalizarItemEntregue));
-      setDevolucoes((listaDevolucoes || []).map(normalizarDevolucao)); // <-- Descomentado
-      setTrocas(Array.isArray(listaTrocas) ? listaTrocas : []);
-      setFaltasKit(Array.isArray(listaFaltasKit) ? listaFaltasKit : []);
-
+      setEpis(listaEpis.map(normalizarEpi));
+      setTamanhos(listaTamanhos.map(normalizarTamanho));
+      setFuncionarios(listaFuncionarios.map(normalizarFuncionario));
+      setEntradas(listaEntradas.map(normalizarEntrada));
+      setEntregas(listaEntregas.map(normalizarEntrega));
+      setItensEntregues(listaItensEntregues.map(normalizarItemEntregue));
+      setDevolucoes(listaDevolucoes.map(normalizarDevolucao));
+      setTrocas(listaTrocas);
+      setFaltasKit(listaFaltasKit);
     } finally {
       setCarregandoResumo(false);
     }
@@ -177,7 +155,7 @@ export function useDashboardResumo() {
 
     entregasDoMes.forEach((entrega) => {
       const idEnt = String(entrega.id);
-      const idFunc = String(entrega.idFuncionario || entrega.funcionario?.id || 0);
+      const idFunc = String(entrega.idFuncionario);
       const funcionario = funcionariosMap[idFunc];
       const itensDaEntrega = itensEntreguesPorEntrega[idEnt] || [];
 
@@ -205,15 +183,15 @@ export function useDashboardResumo() {
           data: entrega.data_entrega,
           funcionario: funcionario?.nome || "Desconhecido",
           matricula: funcionario?.matricula || "--",
-          item: epi?.nome || item.epiNome || `EPI #${idEpi}`,
-          tamanho: tam?.tamanho || item.tamanhoTexto || "?",
+          item: epi?.nome || `EPI #${idEpi}`,
+          tamanho: tam?.tamanho || "?",
           quantidade: Number(item.quantidade || 0),
         });
       });
     });
 
     return lines.sort((a, b) => a.funcionario.localeCompare(b.funcionario));
-  }, [entradas, funcionariosMap, itensEntreguesPorEntrega, episMap, tamanhosMap]);
+  }, [entregas, funcionariosMap, itensEntreguesPorEntrega, episMap, tamanhosMap]);
 
   // ======= BLOCO: entregasTodasDetalhadas (Para o Filtro do Modal) =======
   const entregasTodasDetalhadas = useMemo(() => {
@@ -221,7 +199,7 @@ export function useDashboardResumo() {
 
     entregas.forEach((entrega) => {
       const idEnt = String(entrega.id);
-      const idFunc = String(entrega.idFuncionario || entrega.funcionario?.id || 0);
+      const idFunc = String(entrega.idFuncionario);
       const funcionario = funcionariosMap[idFunc];
       const itensDaEntrega = itensEntreguesPorEntrega[idEnt] || [];
 
@@ -249,8 +227,8 @@ export function useDashboardResumo() {
           data: entrega.data_entrega,
           funcionario: funcionario?.nome || "Desconhecido",
           matricula: funcionario?.matricula || "--",
-          item: epi?.nome || item.epiNome || `EPI #${idEpi}`,
-          tamanho: tam?.tamanho || item.tamanhoTexto || "?",
+          item: epi?.nome || `EPI #${idEpi}`,
+          tamanho: tam?.tamanho || "?",
           quantidade: Number(item.quantidade || 0),
         });
       });

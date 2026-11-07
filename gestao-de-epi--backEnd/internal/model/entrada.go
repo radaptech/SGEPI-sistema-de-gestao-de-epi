@@ -65,15 +65,14 @@ type EntradaEstoqueDto struct {
 }
 
 type EntradaDashbord struct {
-	Id              int
-	IdEpi           int
-	IdTamanho       int
-	QuantidadeAtual int
-	ValorUnitario   decimal.Decimal
-	Quantidade      int
-	// Usa o helper para garantir o ponteiro da data formatada
-	DataEntrada configs.DataBr
-	Lote        string
+	Id              int             `json:"id"`
+	IdEpi           int             `json:"id_epi"`
+	IdTamanho       int             `json:"id_tamanho"`
+	QuantidadeAtual int             `json:"quantidade_atual"`
+	ValorUnitario   decimal.Decimal `json:"valor_unitario"`
+	Quantidade      int             `json:"quantidade"`
+	DataEntrada     configs.DataBr  `json:"data_entrada"`
+	Lote            string          `json:"lote"`
 }
 
 type EpiSimples struct {

@@ -150,7 +150,7 @@ func (e *EntregaService) RegistrarEntrega(ctx context.Context, qtx *repository.Q
 		if len(lotes) == 0 {
 			// Essa é a mensagem que vai viajar até o React:
 			return fmt.Errorf("Não foi possível entregar. O estoque deste item está zerado ou com a validade vencida.")
-		}	
+		}
 
 		for _, lote := range lotes {
 			if quantidadeNecessaria <= 0 {
@@ -376,14 +376,14 @@ func (e *EntregaService) GerarDadosPdfService(ctx context.Context, matricula str
 
 	primeira := entregas[0]
 	return helper.DadosPdf{
-		NomeEmpresa: primeira.RazaoSocial,
+		NomeEmpresa:     primeira.RazaoSocial,
 		NomeFuncionario: primeira.FuncNome,
-		Cpf: primeira.Cpf.String,
-		Matricula: strconv.Itoa(int(primeira.Matricula)),
-		Setor: primeira.DepNome,
-		Cargo: primeira.FuncaoNome,
-		Assinatura: primeira.Assinatura,
-		Epi: epis,
+		Cpf:             primeira.Cpf.String,
+		Matricula:       strconv.Itoa(int(primeira.Matricula)),
+		Setor:           primeira.DepNome,
+		Cargo:           primeira.FuncaoNome,
+		Assinatura:      primeira.Assinatura,
+		Epi:             epis,
 	}, nil
 }
 

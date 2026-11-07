@@ -92,7 +92,7 @@ func CreatePdfDevolucao(dados DadosDevolucaoPdf, auditoria Auditoria, responsave
 		),
 	)
 
-// CORPO DA TABELA (Item Único)
+	// CORPO DA TABELA (Item Único)
 	// ==========================================
 	// Como agora a struct recebe apenas um item, acessamos ele diretamente.
 	// (Certifique-se de que sua struct DadosDevolucaoPdf agora tenha "Item ItemDevolvidoPdf" em vez de "Itens []...")
@@ -107,7 +107,7 @@ func CreatePdfDevolucao(dados DadosDevolucaoPdf, auditoria Auditoria, responsave
 	epiFormatado := truncarTexto(item.NomeEpi, 25)
 	motivoFormatado := truncarTexto(item.Motivo, 18)
 	qtdFormatada := strconv.Itoa(int(item.QuantidadeADevolver))
-	
+
 	// Formata a data no padrão brasileiro (DD/MM/YYYY)
 	dataFormatada := item.DataDevolucao.Time().Format("02/01/2006")
 
@@ -123,7 +123,7 @@ func CreatePdfDevolucao(dados DadosDevolucaoPdf, auditoria Auditoria, responsave
 		),
 	)
 
-	// 2. Linhas vazias para manter o layout da tabela (padrão de 3 linhas no total). 
+	// 2. Linhas vazias para manter o layout da tabela (padrão de 3 linhas no total).
 	// Como já preenchemos 1 linha real acima, sobram sempre 2 vazias.
 	for range 2 {
 		m.AddRows(
@@ -154,7 +154,6 @@ func CreatePdfDevolucao(dados DadosDevolucaoPdf, auditoria Auditoria, responsave
 		row.New(12).Add(text.NewCol(12, textoB, props.Text{Size: 8, Align: align.Left})),
 		row.New(8).Add(text.NewCol(12, textoC, props.Text{Size: 8, Align: align.Left})),
 	)
-
 
 	// ==========================================
 	// ASSINATURA DIGITAL

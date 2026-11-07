@@ -124,7 +124,7 @@ func (t *TamanhoService) CancelarTamanho(ctx context.Context, id int, tenantId i
 func (t *TamanhoService) ListarTamanhoPorIdEpi(ctx context.Context, idEpi, tenantId int32) ([]model.TamanhoEntregaDto, error) {
 
 	tamanhos, err := t.repo.BuscarTamanhoPorIdePI(ctx, repository.BuscarTamanhosPorIdEpiParams{
-		IDEpi: idEpi,
+		IDEpi:    idEpi,
 		TenantID: tenantId,
 	})
 
@@ -138,11 +138,10 @@ func (t *TamanhoService) ListarTamanhoPorIdEpi(ctx context.Context, idEpi, tenan
 	for _, tamanho := range tamanhos {
 
 		tt := model.TamanhoEntregaDto{
-			ID:      int(tamanho.ID),
-			Tamanho: tamanho.Tamanho,
-			Id_epi:  tamanho.Idepi,
+			ID:              int(tamanho.ID),
+			Tamanho:         tamanho.Tamanho,
+			Id_epi:          tamanho.Idepi,
 			QuantidadeAtual: tamanho.SaldoAtual,
-			
 		}
 
 		dto = append(dto, tt)

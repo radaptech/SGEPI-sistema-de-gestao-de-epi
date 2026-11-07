@@ -201,7 +201,7 @@ func CreateFuncionario(t *testing.T, db *pgxpool.Pool, IdDepartamento, IdFuncao,
 	`
 
 	nome := randomString("Funcionario")
-	matriculo:= randomInt()
+	matriculo := randomInt()
 	// cpf precisa caber em VARCHAR(11) e ser único por tenant (UNIQUE(tenant_id, cpf))
 	cpf := fmt.Sprintf("%011d", time.Now().UnixNano()%100000000000)
 
@@ -405,7 +405,7 @@ RETURNING id;
 	`
 	assinatura := randomString("AssinaturaBase64")
 	token := randomString("TokenValidacao")
-	idtroca:= 1
+	idtroca := 1
 
 	err := db.QueryRow(context.Background(), query,
 		tenantID,
@@ -491,7 +491,7 @@ func CreateFornecedor(t *testing.T, db *pgxpool.Pool, tenantID int64) int64 {
 		razaoSocial, // $2: Razão Social
 		fantasia,    // $3: Nome Fantasia (repetido para facilitar)
 		cnpj,        // $4: CNPJ
-		"ISENTO",    // $5: Inscrição Estadual (valor padrão     
+		"ISENTO",    // $5: Inscrição Estadual (valor padrão
 	).Scan(&id)
 
 	if err != nil {

@@ -2,13 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../services/api";
 import { formatarDataParaGo } from "../../utils/entradaHelpers";
 import Toast from "../Toast";
+import { listar } from "../../services/listas";
 import {
-  buscarPrimeiraLista,
   normalizarFuncionario,
   normalizarEpi,
   normalizarTamanho,
   normalizarMotivo,
-  salvarEmAlgumaRota,
 } from "../../services/DevolucaoModal";
 
 import { useSignaturePad } from "../../hooks/useSignaturePad";
@@ -40,7 +39,6 @@ function ModalBaixa({ onClose, onSalvar }) {
   const [funcionarios, setFuncionarios] = useState([]);
   const [episFuncionario, setEpisFuncionario] = useState([]);
   const [episEstoque, setEpisEstoque] = useState([]);
-  const [tamanhos, setTamanhos] = useState([]);
   const [motivos, setMotivos] = useState([]);
   const [idFuncionario, setIdFuncionario] = useState("");
   const [buscaFuncionario, setBuscaFuncionario] = useState("");
@@ -61,16 +59,14 @@ function ModalBaixa({ onClose, onSalvar }) {
 
   useEffect(() => {
     async function carregarDadosIniciais() {
-      const [listaF, listaE, listaT, listaM] = await Promise.all([
-        buscarPrimeiraLista(["/funcionarios"]),
-        buscarPrimeiraLista(["/epis", "/epi"]),
-        buscarPrimeiraLista(["/tamanhos"]),
-        buscarPrimeiraLista(["/motivos"]),
+      const [listaF, listaE, listaM] = await Promise.all([
+        listar("/funcionarios"),
+        listar("/epis"),
+        listar("/motivos"),
       ]);
 
       setFuncionarios(listaF.map(normalizarFuncionario));
       setEpisEstoque(listaE.map(normalizarEpi));
-      setTamanhos(listaT.map(normalizarTamanho));
       setMotivos(listaM.map(normalizarMotivo));
     }
     carregarDadosIniciais();
@@ -82,7 +78,7 @@ function ModalBaixa({ onClose, onSalvar }) {
       setEpisFuncionario([]);
       return;
     }
-    buscarPrimeiraLista([`/funcionarios/${idFuncionario}/epis`]).then((lista) => {
+    listar(`/funcionarios/${idFuncionario}/epis`).then((lista) => {
       setEpisFuncionario(lista.map(normalizarEpi));
     });
   }, [idFuncionario]);
@@ -99,16 +95,11 @@ function ModalBaixa({ onClose, onSalvar }) {
         const response = await api.get(`/tamanhos-id-epi/${idEpiNovo}`);
         if (!ativo) return;
 
-        const dadosBrutos = response?.data || response || [];
-        const dadosNormalizados = Array.isArray(dadosBrutos)
-          ? dadosBrutos.map(item => ({
-            id: Number(item?.id || 0),
-            tamanho: String(item?.tamanho || item?.Tamanho || ""),
-            saldo_atual: Number(item?.quantidade_atual ?? item?.quantidadeAtual ?? item?.saldo_atual ?? 0)
-          }))
-          : [];
-
-        setTamanhosEstoqueNovo(dadosNormalizados);
+        setTamanhosEstoqueNovo((response ?? []).map((item) => ({
+          id: item.id,
+          tamanho: item.tamanho,
+          saldo_atual: item.quantidade_atual,
+        })));
       } catch (err) {
         console.error("Erro ao buscar tamanhos do novo EPI:", err);
         setTamanhosEstoqueNovo([]);
@@ -130,24 +121,15 @@ function ModalBaixa({ onClose, onSalvar }) {
         gera_descarte: geraDescarteNovoMotivo
       });
 
-      const dados = response.data || response;
-      const novoId = dados?.id || dados?.Id;
-      const textoMotivo = dados?.motivo || novoMotivoNome;
-
-      if (novoId) {
-        const novoItem = { id: Number(novoId), nome: textoMotivo };
-        setMotivos(prev => [...prev, novoItem]);
-        setIdMotivo(novoId);
-        setNovoMotivoNome("");
-        setGeraDescarteNovoMotivo(false);
-        setMostrandoAddMotivo(false);
-        setNotificacao({ exibir: true, type: "success", message: "Motivo cadastrado com sucesso!" });
-      } else {
-        throw new Error("O servidor não retornou o ID do registro.");
-      }
-    } catch (err) {
-      const msgErro = err.response?.data?.error || "Erro ao salvar novo motivo.";
-      setNotificacao({ exibir: true, type: "error", message: msgErro });
+      const novoItem = normalizarMotivo(response);
+      setMotivos(prev => [...prev, novoItem]);
+      setIdMotivo(novoItem.id);
+      setNovoMotivoNome("");
+      setGeraDescarteNovoMotivo(false);
+      setMostrandoAddMotivo(false);
+      setNotificacao({ exibir: true, type: "success", message: "Motivo cadastrado com sucesso!" });
+    } catch {
+      // o api.js já mostrou o erro do servidor
     } finally {
       setSalvandoNovoMotivo(false);
     }
@@ -181,14 +163,14 @@ function ModalBaixa({ onClose, onSalvar }) {
     };
 
     try {
-      await salvarEmAlgumaRota(["/cadastro-devolucao"], payload);
+      await api.post("/cadastro-devolucao", payload);
       setNotificacao({ exibir: true, type: "success", message: "Baixa realizada com sucesso!" });
       setTimeout(async () => {
         if (onSalvar) await onSalvar();
         onClose();
       }, 2000);
-    } catch (erro) {
-      setNotificacao({ exibir: true, type: "error", message: "Erro ao processar a baixa no servidor." });
+    } catch {
+      // o api.js já mostrou o erro do servidor
     } finally {
       setCarregando(false);
     }

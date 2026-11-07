@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	
+
 	"fmt"
 	"math"
 	"strings"
@@ -10,7 +10,7 @@ import (
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/database/repository"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
-	
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -48,8 +48,6 @@ func (f *FuncaoService) SalvarFuncao(ctx context.Context, model model.Funcao, te
 
 	return nil
 }
-
-
 
 type FiltroFuncao struct {
 	Id_funcao        int32  `form:"idFuncao"`
@@ -109,9 +107,9 @@ func (fu *FuncaoService) ListasTodasFuncao(ctx context.Context, f FiltroFuncao, 
 	ultimaPagina := int32(math.Ceil(float64(total) / float64(p.Limit)))
 
 	return FuncaoPaginado{
-		Funcao: dto,
-		Total: total,
-		Pagina: p.PaginaAtual,
+		Funcao:      dto,
+		Total:       total,
+		Pagina:      p.PaginaAtual,
 		PaginaFinal: ultimaPagina,
 	}, nil
 
@@ -173,29 +171,26 @@ func (f *FuncaoService) AtualizarFuncao(ctx context.Context, id int, funcao stri
 	return nil
 }
 
+func (f *FuncaoService) BuscaDepartamentosParaFuncao(ctx context.Context, tenantId int32) (map[string]int, error) {
 
-func (f *FuncaoService) BuscaDepartamentosParaFuncao(ctx context.Context, tenantId int32) (map[string]int, error){
-
-	deps, err:= f.repo.MapDepartamentosParaFuncao(ctx, tenantId)
+	deps, err := f.repo.MapDepartamentosParaFuncao(ctx, tenantId)
 	if err != nil {
 
 		return nil, err
 	}
 
-	mapsDeps:= make(map[string]int, len(deps))
+	mapsDeps := make(map[string]int, len(deps))
 
+	for _, dep := range deps {
 
-	for _, dep:= range deps {
-
-		key:= strings.ToLower(strings.TrimSpace(dep.Nome))
-		if key != ""{
+		key := strings.ToLower(strings.TrimSpace(dep.Nome))
+		if key != "" {
 			mapsDeps[key] = int(dep.ID)
 		}
-		
+
 	}
 
-
-	return mapsDeps, nil 
+	return mapsDeps, nil
 
 }
 

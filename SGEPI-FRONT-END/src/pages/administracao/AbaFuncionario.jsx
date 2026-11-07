@@ -46,7 +46,7 @@ export default function AbaFuncionarios() {
 
   useEffect(() => {
     carregarDados();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- carrega uma vez ao abrir a aba
 
   const mostrarToast = (mensagem, tipo = "sucesso") => {
     setToast({ mensagem, tipo });
@@ -69,9 +69,8 @@ export default function AbaFuncionarios() {
       setFuncionarios(respFunc?.funcionario || []);
       setDepartamentos(respDepto?.departamentos || []);
       setFuncoes(respFuncs?.funcoes || []);
-    } catch (erro) {
-      console.error("Erro ao carregar dados de funcionários:", erro);
-      mostrarToast("Erro ao carregar dados de funcionários.", "erro");
+    } catch {
+      // o api.js já mostrou o erro
     } finally {
       setCarregando(false);
     }

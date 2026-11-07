@@ -79,12 +79,12 @@ func (f *FornecedorService) ListarFornecedor(ctx context.Context, filt FiltroFor
 	offset := max((paginaAtual-1)*limit, 0)
 
 	filtro := repository.ListarFornecedoresParams{
-		TenantID:   tenantId,
-		Nome:       pgtype.Text{String: filt.Nome, Valid: filt.Nome != ""},
-		Cnpj:       pgtype.Text{String: filt.Cnpj, Valid: filt.Cnpj != ""},
-		Canceladas: false,
-		Offset:     offset,
-		Limit:      limit,
+		TenantID:               tenantId,
+		Nome:                   pgtype.Text{String: filt.Nome, Valid: filt.Nome != ""},
+		Cnpj:                   pgtype.Text{String: filt.Cnpj, Valid: filt.Cnpj != ""},
+		Canceladas:             false,
+		Offset:                 offset,
+		Limit:                  limit,
 		IgnorarFiltroCancelado: pgtype.Bool{Bool: false, Valid: false},
 	}
 

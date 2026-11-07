@@ -51,7 +51,6 @@ function ModalCriarFornecedor({ aberto, onClose, onSucesso }) {
       onClose();
     } catch (err) {
       console.error("❌ ERRO AO SALVAR FORNECEDOR:", err);
-      console.log("Detalhes extras do erro:", err?.message);
       setErro(err?.message || "Erro ao salvar o fornecedor.");
     } finally {
       setSalvando(false);

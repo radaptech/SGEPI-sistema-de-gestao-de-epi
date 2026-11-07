@@ -3,16 +3,10 @@ import { toast } from "react-toastify";
 import { api } from "../services/api";
 
 import ModalBaixa from "../components/modals/ModalBaixa";
-import ModalPeriodoRelatorioDevolucao from "../components/modals/ModalPeriodoRelatorioDevolucao";
 import ModalDetalhesTroca from "../components/modals/ModalDetalhesTroca";
 import { useDevolucoes } from "../hooks/useDevolucoes";
 import { temPermissao } from "../utils/permissoes";
-import {
-  abrirJanelaImpressao,
-  filtrarPorPeriodo,
-  formatarData,
-  gerarHtmlRelatorioDevolucoes,
-} from "../utils/devolucoes";
+import { formatarData } from "../utils/devolucoes";
 
 import { 
   RotateCcw, AlertTriangle, Plus, Search, 
@@ -23,9 +17,8 @@ import {
 function Devolucoes({ usuarioLogado }) {
   const {
     carregando,
-    erro,
-    devolucoesResolvidas,
-    salvarLocal,
+    devolucoes,
+    carregar,
   } = useDevolucoes();
 
   const [modalAberto, setModalAberto] = useState(false);
@@ -35,12 +28,6 @@ function Devolucoes({ usuarioLogado }) {
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [filtroTroca, setFiltroTroca] = useState("todos");
 
-  const [modalPeriodoAberto, setModalPeriodoAberto] = useState(false);
-  const [tipoRelatorioModal, setTipoRelatorioModal] = useState("geral");
-  const [funcionarioSelecionado, setFuncionarioSelecionado] = useState(null);
-  const [periodoRelatorioInicio, setPeriodoRelatorioInicio] = useState("");
-  const [periodoRelatorioFim, setPeriodoRelatorioFim] = useState("");
-  const [erroPeriodoModal, setErroPeriodoModal] = useState("");
 
   const [baixandoPdfId, setBaixandoPdfId] = useState(null);
 
@@ -50,7 +37,7 @@ function Devolucoes({ usuarioLogado }) {
   const itensPorPagina = 5;
 
   const podeVisualizar = !usuarioLogado ? true : temPermissao(usuarioLogado, "visualizar_estoque");
-  const perfilUsuario = usuarioLogado?.perfil || usuarioLogado?.role || "";
+  const perfilUsuario = usuarioLogado?.role;
   const podeCadastrar = !usuarioLogado || perfilUsuario === "admin" || perfilUsuario === "gerente";
 
   const aoMudarFiltro = (setter, valor) => {
@@ -88,7 +75,7 @@ function Devolucoes({ usuarioLogado }) {
   const devolucoesPreFiltroTroca = useMemo(() => {
     const termo = busca.toLowerCase().trim();
 
-    return devolucoesResolvidas.filter((d) => {
+    return devolucoes.filter((d) => {
       const matchTexto =
         !termo ||
         (d.funcionarioNome || "").toLowerCase().includes(termo) ||
@@ -105,7 +92,7 @@ function Devolucoes({ usuarioLogado }) {
 
       return matchTexto && matchData;
     });
-  }, [devolucoesResolvidas, busca, dataInicio, dataFim]);
+  }, [devolucoes, busca, dataInicio, dataFim]);
 
   const resumoTela = useMemo(() => {
     const totalDevolucoes = devolucoesPreFiltroTroca.length;
@@ -146,8 +133,9 @@ function Devolucoes({ usuarioLogado }) {
   const devolucoesVisiveis = devolucoesOrdenadas.slice(indexPrimeiroItem, indexUltimoItem);
   const totalPaginas = Math.max(1, Math.ceil(devolucoesOrdenadas.length / itensPorPagina));
 
-  const aoSalvarDevolucao = async (novaDevolucao) => {
-    salvarLocal(novaDevolucao);
+  // a devolução já foi gravada pelo modal; aqui só recarrega a lista
+  const aoSalvarDevolucao = async () => {
+    await carregar();
     setPaginaAtual(1);
     setModalAberto(false);
   };
@@ -192,13 +180,6 @@ function Devolucoes({ usuarioLogado }) {
             </button>
           )}
         </div>
-
-        {erro && (
-          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 rounded-2xl px-4 py-3 text-sm font-medium flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-            {erro}
-          </div>
-        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-8">
           <button
@@ -496,16 +477,6 @@ function Devolucoes({ usuarioLogado }) {
         aberto={modalTrocaAberto}
         devolucao={devolucaoParaTroca}
         onClose={() => setModalTrocaAberto(false)}
-      />
-
-      <ModalPeriodoRelatorioDevolucao
-        aberto={modalPeriodoAberto}
-        tipo={tipoRelatorioModal}
-        funcionario={funcionarioSelecionado}
-        inicio={periodoRelatorioInicio}
-        fim={periodoRelatorioFim}
-        erro={erroPeriodoModal}
-        onClose={() => setModalPeriodoAberto(false)}
       />
 
       {modalAberto && (

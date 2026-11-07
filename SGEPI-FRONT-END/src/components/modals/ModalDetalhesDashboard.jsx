@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, Fragment } from "react";
 import {
   X, Search, FilterX, ChevronDown, ChevronUp,
-  ChevronLeft, ChevronRight, CalendarDays, Inbox
+  ChevronLeft, ChevronRight, Inbox
 } from "lucide-react";
 
 function ModalDetalhesDashboard({

@@ -57,14 +57,8 @@ function Estoque({ usuarioLogado }) {
     setErroTela("");
 
     try {
-      const response = await api.get("/entradas-estoque"); 
-      const dados = response?.data?.entradas || response?.data || response || [];
-      
-      const dadosNormalizados = Array.isArray(dados) 
-        ? dados.map(normalizarEntradaCompleta) 
-        : [];
-
-      setEntradas(dadosNormalizados);
+      const lotes = await api.get("/entradas-estoque");
+      setEntradas((lotes ?? []).map(normalizarEntradaCompleta));
     } catch (erro) {
       console.error("Erro ao buscar estoque:", erro);
       setErroTela("Não foi possível carregar o estoque.");
@@ -84,13 +78,7 @@ function Estoque({ usuarioLogado }) {
   }, [erroTela]);
 
   const handleCancelarEntrada = async (item) => {
-    const idParaApagar = item?.id || item?.Id || item?.ID;
-
-    if (!idParaApagar) {
-      toast.error("Erro interno: O item selecionado não possui um ID válido.");
-      console.error("Item com falha:", item);
-      return;
-    }
+    const idParaApagar = item.id;
 
     try {
       ValidarRegrasCancelamento(item);

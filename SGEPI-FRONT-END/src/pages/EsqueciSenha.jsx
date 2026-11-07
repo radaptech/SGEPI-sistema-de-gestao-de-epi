@@ -38,11 +38,7 @@ function EsqueciSenha({ onVoltar }) {
 
       setEmail("");
     } catch (err) {
-      setErro(
-        err?.response?.data?.error || 
-        err?.message || 
-        "Erro ao solicitar recuperação de senha."
-      );
+      setErro(err.message);
     } finally {
       setCarregando(false);
     }

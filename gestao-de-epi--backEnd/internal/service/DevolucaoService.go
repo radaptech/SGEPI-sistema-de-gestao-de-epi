@@ -22,7 +22,7 @@ type DevolucaoRepository interface {
 	AdicionarTroca(ctx context.Context, qtx *repository.Queries, arg repository.AddTrocaEpiParams) (int32, error)
 	Cancelar(ctx context.Context, qtx *repository.Queries, arg repository.CancelarDevolucaoParams) (int32, error)
 	Listar(ctx context.Context, tenantId int32) ([]repository.ListarDevolucoesRow, error)
-	DadosPdfDevolucao(ctx context.Context, arg repository.BuscarDadosPdfDevolucaoParams)(repository.BuscarDadosPdfDevolucaoRow, error)
+	DadosPdfDevolucao(ctx context.Context, arg repository.BuscarDadosPdfDevolucaoParams) (repository.BuscarDadosPdfDevolucaoRow, error)
 }
 
 type DevolucaoService struct {
@@ -182,8 +182,8 @@ func (d *DevolucaoService) SalvarDevolucao(ctx context.Context, modelDevolucao m
 		AssinaturaDigital:     modelDevolucao.AssinaturaDigital,
 		IDUsuarioCancelamento: pgtype.Int4{Int32: int32(modelDevolucao.Iduser), Valid: true},
 		TokenValidacao:        pgtype.Text{String: token, Valid: true},
-		HouveTroca: pgtype.Bool{Bool: modelDevolucao.Troca, Valid: true},
-		Observacao: pgtype.Text{String: observacao, Valid: observacao != ""},
+		HouveTroca:            pgtype.Bool{Bool: modelDevolucao.Troca, Valid: true},
+		Observacao:            pgtype.Text{String: observacao, Valid: observacao != ""},
 	}
 
 	idDevolucao, err := d.repo.AdicionarTroca(ctx, qtx, arg)
@@ -309,11 +309,8 @@ func (d *DevolucaoService) CancelarDevolucao(ctx context.Context, id, iduser, te
 	return tx.Commit(ctx)
 }
 
-
-
 // ListarDevolucoes gerencia a busca paginada com filtros
-func (d *DevolucaoService) ListarDevolucoes(ctx context.Context,tenantId int32) ([]model.DevolucaoResponse, error) {
-
+func (d *DevolucaoService) ListarDevolucoes(ctx context.Context, tenantId int32) ([]model.DevolucaoResponse, error) {
 
 	devolucoes, err := d.repo.Listar(ctx, tenantId)
 	if err != nil {
@@ -323,31 +320,31 @@ func (d *DevolucaoService) ListarDevolucoes(ctx context.Context,tenantId int32) 
 	dto := make([]model.DevolucaoResponse, 0, len(devolucoes))
 
 	for _, dev := range devolucoes {
-	
-		obs:= dev.Observacao.String
-		assinaturta:= dev.AssinaturaDigital
-		token:=dev.TokenValidacao.String
-		devo:= model.DevolucaoResponse{
-			ID: dev.ID,
-			DataDevolucao: *configs.NewDataBrPtr(dev.DataDevolucao.Time),
-			IDFuncionario: dev.Idfuncionario,
-			FuncionarioNome: dev.Funcionarionome,
+
+		obs := dev.Observacao.String
+		assinaturta := dev.AssinaturaDigital
+		token := dev.TokenValidacao.String
+		devo := model.DevolucaoResponse{
+			ID:                   dev.ID,
+			DataDevolucao:        *configs.NewDataBrPtr(dev.DataDevolucao.Time),
+			IDFuncionario:        dev.Idfuncionario,
+			FuncionarioNome:      dev.Funcionarionome,
 			FuncionarioMatricula: dev.Matricula,
-			EpiNome: dev.Epinome,
-			TamanhoNome: dev.Tamanho,
-			QuantidadeADevolver: dev.Quantidadeadevolver,
-			MotivoNome: dev.Motivo,
-			HouveTroca: dev.HouveTroca.Bool,
-			Observacao: &obs,
-			AssinaturaDigital: &assinaturta,
-			TokenValidacao: &token,
+			EpiNome:              dev.Epinome,
+			TamanhoNome:          dev.Tamanho,
+			QuantidadeADevolver:  dev.Quantidadeadevolver,
+			MotivoNome:           dev.Motivo,
+			HouveTroca:           dev.HouveTroca.Bool,
+			Observacao:           &obs,
+			AssinaturaDigital:    &assinaturta,
+			TokenValidacao:       &token,
 		}
 
-		if devo.HouveTroca == true{
+		if devo.HouveTroca == true {
 
-			epinovo:= dev.Epinovo.String
-			tamanhoNovo:= dev.Tamanhonovo.String
-			quantidadeNova:=dev.Quantidadenova.Int32
+			epinovo := dev.Epinovo.String
+			tamanhoNovo := dev.Tamanhonovo.String
+			quantidadeNova := dev.Quantidadenova.Int32
 			devo.EpiNovoNome = &epinovo
 			devo.TamanhoNovoNome = &tamanhoNovo
 			devo.QuantidadeNova = &quantidadeNova
@@ -355,16 +352,15 @@ func (d *DevolucaoService) ListarDevolucoes(ctx context.Context,tenantId int32) 
 
 		dto = append(dto, devo)
 	}
-		
-	return dto,nil
+
+	return dto, nil
 
 }
 
-func (d *DevolucaoService) GerarDadosPdf(ctx context.Context, idDevolucao, tenantId int32)(helper.DadosDevolucaoPdf, error){
+func (d *DevolucaoService) GerarDadosPdf(ctx context.Context, idDevolucao, tenantId int32) (helper.DadosDevolucaoPdf, error) {
 
-	
-	devolucao, err:= d.repo.DadosPdfDevolucao(ctx, repository.BuscarDadosPdfDevolucaoParams{
-		ID: idDevolucao,
+	devolucao, err := d.repo.DadosPdfDevolucao(ctx, repository.BuscarDadosPdfDevolucaoParams{
+		ID:       idDevolucao,
 		TenantID: tenantId,
 	})
 	if err != nil {
@@ -372,14 +368,14 @@ func (d *DevolucaoService) GerarDadosPdf(ctx context.Context, idDevolucao, tenan
 		return helper.DadosDevolucaoPdf{}, err
 	}
 
-	matString:= strconv.Itoa(int(devolucao.Matricula))
-	epi:= helper.ItemDevolvidoPdf{
-		DataDevolucao: configs.DataBr(devolucao.DataDevolucao.Time),
-		NomeEpi: devolucao.EpiNome,
-		Tamanho: devolucao.Tamanho,
+	matString := strconv.Itoa(int(devolucao.Matricula))
+	epi := helper.ItemDevolvidoPdf{
+		DataDevolucao:       configs.DataBr(devolucao.DataDevolucao.Time),
+		NomeEpi:             devolucao.EpiNome,
+		Tamanho:             devolucao.Tamanho,
 		QuantidadeADevolver: devolucao.Quantidadeadevolver,
-		Motivo: devolucao.Motivo,
-		HouveTroca: devolucao.HouveTroca.Bool,
+		Motivo:              devolucao.Motivo,
+		HouveTroca:          devolucao.HouveTroca.Bool,
 	}
 
 	if devolucao.HouveTroca.Bool {
@@ -389,14 +385,13 @@ func (d *DevolucaoService) GerarDadosPdf(ctx context.Context, idDevolucao, tenan
 
 	}
 	return helper.DadosDevolucaoPdf{
-		NomeEmpresa: devolucao.NomeEmpresa,
+		NomeEmpresa:     devolucao.NomeEmpresa,
 		NomeFuncionario: devolucao.FuncionarioNome,
-		Matricula: matString,
-		Setor: devolucao.Setor,
-		Cargo: devolucao.Cargo,
-		Assinatura: devolucao.AssinaturaDigital,
-		Itens: epi,
-
+		Matricula:       matString,
+		Setor:           devolucao.Setor,
+		Cargo:           devolucao.Cargo,
+		Assinatura:      devolucao.AssinaturaDigital,
+		Itens:           epi,
 	}, nil
 
 }

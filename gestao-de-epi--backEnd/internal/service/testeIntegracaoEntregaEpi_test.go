@@ -28,7 +28,7 @@ func TestEntrega(t *testing.T) {
 
 	// 1. CENÁRIO SAAS: CRIAR TENANT
 
-	planos:= CreatePlanos(t, db)
+	planos := CreatePlanos(t, db)
 	empresa := CreateEmpresa(t, db, planos)
 	user := CreateUser(t, db, empresa)
 	dep := CreateDepartamento(t, db, empresa)
@@ -38,7 +38,7 @@ func TestEntrega(t *testing.T) {
 	tamanho := CreateTamanho(t, db, empresa)
 	epi := CreateEpi(t, db, protec, empresa)
 	fornecedor := CreateFornecedor(t, db, empresa)
-	entradaNf := CreateEntradaNfEpi(t, db, empresa, user,fornecedor)
+	entradaNf := CreateEntradaNfEpi(t, db, empresa, user, fornecedor)
 	entradaEpi := CreateEntradaEpi(t, db, empresa, epi, tamanho, user, entradaNf)
 	entrega := CreateEntregaEpi(t, db, funcionario, user, empresa)
 	_ = CreateEpiEntregues(t, db, entrega, entradaEpi, epi, tamanho, empresa)
@@ -229,7 +229,7 @@ func TestEntrega(t *testing.T) {
 
 	t.Run("trocas pendentes - vida útil vencida, em dia, sem vida útil e devolvido", func(t *testing.T) {
 		func2 := CreateFuncionario(t, db, dep, funcc, empresa)
-		epiVida := CreateEpi(t, db, protec, empresa)  // vida útil 10 dias
+		epiVida := CreateEpi(t, db, protec, empresa)    // vida útil 10 dias
 		epiSemVida := CreateEpi(t, db, protec, empresa) // sem troca periódica
 		CreateEntradaEpi(t, db, empresa, epiVida, tamanho, user, entradaNf)
 		CreateEntradaEpi(t, db, empresa, epiSemVida, tamanho, user, entradaNf)
@@ -286,7 +286,7 @@ func TestEntrega(t *testing.T) {
 		require.True(t, atrasados[0].VenceEm.Time().Before(time.Now()))
 	})
 
-	 t.Run("teste de concorrencia (nao deixar 2 usuarios fazer uma entrega do mesmo lote de uma vez)", func(t *testing.T) {
+	t.Run("teste de concorrencia (nao deixar 2 usuarios fazer uma entrega do mesmo lote de uma vez)", func(t *testing.T) {
 		// Setup Específico para garantir isolamento deste teste
 		db2 := SetupTestDB(t)
 		defer db2.Close()
@@ -294,7 +294,7 @@ func TestEntrega(t *testing.T) {
 		repo2 := repository.NewEntregaRepository(db2)
 		serv2 := NewEntregaService(repo2, db2)
 
-		planos2:= CreatePlanos(t, db2)
+		planos2 := CreatePlanos(t, db2)
 		idEmpresa2 := CreateEmpresa(t, db2, planos2)
 		iduser2 := CreateUser(t, db2, idEmpresa2)
 		iddep2 := CreateDepartamento(t, db2, idEmpresa2)
@@ -305,7 +305,7 @@ func TestEntrega(t *testing.T) {
 		idfuncionarioC := CreateFuncionario(t, db2, iddep2, IdFuncao2, idEmpresa2)
 		//fornecedores
 		Idfornecedor1 := CreateFornecedor(t, db2, idEmpresa2)
-		entrada2 := CreateEntradaNfEpi(t, db2, idEmpresa2, iduser2,Idfornecedor1)
+		entrada2 := CreateEntradaNfEpi(t, db2, idEmpresa2, iduser2, Idfornecedor1)
 		entradaEpi2 := CreateEntradaEpi1(t, db2, idEmpresa2, idepi2, idtam2, iduser2, entrada2)
 
 		var wg sync.WaitGroup

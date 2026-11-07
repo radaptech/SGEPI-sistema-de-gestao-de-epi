@@ -21,22 +21,22 @@ func TestProtecaoGlobal(t *testing.T) {
 
 	// nomes reais da base do MTE → código esperado
 	casos := map[string]string{
-		"LUVA PARA PROTEÇÃO CONTRA AGENTES MECÂNICOS":                       "F",
-		"CALÇADO":                                                           "G",
-		"BOTINA":                                                            "G",
-		"VESTIMENTA PARA PROTEÇÃO DO TRONCO":                                "E",
-		"VESTIMENTA DE CORPO INTEIRO":                                       "H",
-		"VESTIMENTA TIPO CONJUNTO":                                          "H",
-		"MACACÃO":                                                           "H",
-		"VESTIMENTA DE SEGURANÇA TIPO TOUCA":                                "A",
-		"CAPUZ OU BALACLAVA":                                                "A",
-		"ÓCULOS":                                                            "B",
-		"MÁSCARA DE SOLDA TIPO ESCURECIMENTO AUTOMÁTICO":                    "B",
+		"LUVA PARA PROTEÇÃO CONTRA AGENTES MECÂNICOS": "F",
+		"CALÇADO":                            "G",
+		"BOTINA":                             "G",
+		"VESTIMENTA PARA PROTEÇÃO DO TRONCO": "E",
+		"VESTIMENTA DE CORPO INTEIRO":        "H",
+		"VESTIMENTA TIPO CONJUNTO":           "H",
+		"MACACÃO":                            "H",
+		"VESTIMENTA DE SEGURANÇA TIPO TOUCA": "A",
+		"CAPUZ OU BALACLAVA":                 "A",
+		"ÓCULOS":                             "B",
+		"MÁSCARA DE SOLDA TIPO ESCURECIMENTO AUTOMÁTICO":                      "B",
 		"CONJUGADO MASCARA DE SOLDA DE ESCURECIMENTO AUTOMATICO E RESPIRADOR": "D",
-		"PROTETOR AUDITIVO":                                                 "C",
-		"x - DISPOSITIVO TRAVA QUEDA COM CINTURÃO DE SEGURANÇA":             "I",
-		"COLETE À PROVA DE BALAS - NÍVEL II":                                "E",
-		"MANGOTE":                                                           "F",
+		"PROTETOR AUDITIVO": "C",
+		"x - DISPOSITIVO TRAVA QUEDA COM CINTURÃO DE SEGURANÇA": "I",
+		"COLETE À PROVA DE BALAS - NÍVEL II":                    "E",
+		"MANGOTE":                                               "F",
 	}
 	for equipamento, esperado := range casos {
 		var codigo *string

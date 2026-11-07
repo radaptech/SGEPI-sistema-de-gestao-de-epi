@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-
 func TestIsCNPJ(t *testing.T) {
 	// 1. Nossa "Tabela" de casos de teste
 	testCases := []struct {
@@ -38,10 +37,10 @@ func TestIsCNPJ(t *testing.T) {
 	// 2. O Loop que roda todos os testes mágicamente
 	for _, tc := range testCases {
 		t.Run(tc.nome, func(t *testing.T) {
-			
+
 			// Chama a função pura
 			resultado := IsCNPJ(tc.cnpj)
-			
+
 			// Compara se o resultado é igual ao que esperávamos
 			assert.Equal(t, tc.esperado, resultado, "Falhou no cenário: %s", tc.nome)
 		})

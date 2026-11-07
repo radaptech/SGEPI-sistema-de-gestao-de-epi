@@ -45,9 +45,9 @@ type UsuarioService struct {
 func NewUsuarioService(repo UsuarioRepository, emailSrv EmailService, db *pgxpool.Pool) *UsuarioService {
 
 	return &UsuarioService{
-		repo: repo, 
-		db: db,
-		emailService: emailSrv,}
+		repo:         repo,
+		db:           db,
+		emailService: emailSrv}
 }
 
 func (u *UsuarioService) Registrar(ctx context.Context, model model.Usuario) error {
@@ -100,7 +100,7 @@ func (u *UsuarioService) Registrar(ctx context.Context, model model.Usuario) err
 		Role:      pgtype.Text{String: model.Role, Valid: model.Role != ""},
 	}
 
-	err = u.repo.Cadastrar(ctx, qtx ,arg)
+	err = u.repo.Cadastrar(ctx, qtx, arg)
 	if err != nil {
 
 		if errors.Is(err, helper.ErrDadoDuplicado) {

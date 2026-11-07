@@ -101,9 +101,9 @@ func (e *EmpresaRepository) ResumoDashboard(ctx context.Context) (int64, int64, 
 		return err
 	})
 
-	if err:= eg.Wait(); err != nil {
+	if err := eg.Wait(); err != nil {
 
-		return 0,0,0,0,0,0,0,0,err
+		return 0, 0, 0, 0, 0, 0, 0, 0, err
 	}
 
 	TotalEmpresas := EmpresasAtivas + EmpresasEmTeste + EmpresasBloqueadas
@@ -142,12 +142,11 @@ func (e *EmpresaRepository) EditarEmpresa(ctx context.Context, arg EditarEmpresa
 
 func (e *EmpresaRepository) ValidaTotalFuncionario(ctx context.Context, id int32) (ValidaTotalFuncionariosRow, error) {
 
-	total, err:= e.q.ValidaTotalFuncionarios(ctx, id)
+	total, err := e.q.ValidaTotalFuncionarios(ctx, id)
 	if err != nil {
 
-		return ValidaTotalFuncionariosRow{},helper.TraduzErroPostgres(err)
+		return ValidaTotalFuncionariosRow{}, helper.TraduzErroPostgres(err)
 	}
-
 
 	return total, nil
 

@@ -8,7 +8,7 @@ import EntregaFooter from "./EntregaFooter";
 import ModalAssinatura from "./ModalAssinatura";
 import ModalFoto from "./ModalFoto";
 
-function ModalEntrega({ onClose, onSalvar, funcionarios = [], epis = [] }) {
+function ModalEntrega({ onClose, onSalvar }) {
   const assinatura = useSignaturePad();
   const [modalFotoAberto, setModalFotoAberto] = useState(false);
   const [fotoCapturada, setFotoCapturada] = useState(null);
@@ -25,7 +25,6 @@ function ModalEntrega({ onClose, onSalvar, funcionarios = [], epis = [] }) {
     assinaturaPreview: previewFinal,
     onClose,
     onSalvar,
-    funcionarios,
   });
 
   const handleMudancaEpi = (valor) => {
@@ -65,7 +64,7 @@ function ModalEntrega({ onClose, onSalvar, funcionarios = [], epis = [] }) {
             />
 
             <EntregaItensForm
-              epis={epis}
+              epis={entrega.epis}
               tamanhos={entrega.tamanhosFiltrados || []}
               carregandoTamanhos={entrega.carregandoTamanhos}
               idEpiTemp={entrega.idEpiTemp}

@@ -5,6 +5,7 @@ import {
   gerarAssinaturaAjustada,
   preencherCanvasBranco,
 } from "../utils/assinaturaCanvas";
+import { toast } from "react-toastify";
 
 export function useSignaturePad() {
   const [modalAssinaturaAberto, setModalAssinaturaAberto] = useState(false);
@@ -236,7 +237,7 @@ export function useSignaturePad() {
 
   function concluirAssinatura() {
     if (!assinaturaPreviewRef.current) {
-      alert("Peça para o colaborador assinar antes de concluir.");
+      toast.warning("Peça para o colaborador assinar antes de concluir.");
       return;
     }
 

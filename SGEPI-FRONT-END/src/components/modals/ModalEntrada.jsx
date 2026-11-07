@@ -235,14 +235,8 @@ function ModalEntrada({ onClose, onSalvar }) {
         });
       }
       onClose();
-    } catch (erro) {
-      console.error("❌ Erro ao salvar entrada:", erro);
-      const detalhesErro = erro.response?.data?.detalhes || erro.response?.data?.error;
-      toast.error(
-        detalhesErro
-          ? `Erro: ${detalhesErro}`
-          : "Erro interno no servidor ao processar entrada."
-      );
+    } catch {
+      // o api.js já mostrou o erro do servidor
     } finally {
       setCarregando(false);
     }

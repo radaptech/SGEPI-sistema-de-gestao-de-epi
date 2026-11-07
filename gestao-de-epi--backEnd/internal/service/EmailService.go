@@ -2,34 +2,33 @@ package service
 
 import (
 	"fmt"
-	
-	"os"
+
 	"github.com/resend/resend-go/v2"
+	"os"
 )
 
 // Estrutura do seu serviço de e-mail
 type EmailService struct {
-
 }
 
-
-func NewEmail() *EmailService{
+func NewEmail() *EmailService {
 
 	return &EmailService{}
 }
+
 // Função responsável por montar e enviar o e-mail de recuperação
 func (e *EmailService) EnviarEmailRecuperacao(emailDestino string, token string, slugEmpresa string) error {
 	// 1. Monta o link dinâmico
-	
-	URL:= os.Getenv("URL_FRONTEND_FORMATO")
-	apikey:= os.Getenv("RESEND_API_KEY")
-	client:= resend.NewClient(apikey)
+
+	URL := os.Getenv("URL_FRONTEND_FORMATO")
+	apikey := os.Getenv("RESEND_API_KEY")
+	client := resend.NewClient(apikey)
 
 	if URL == "" {
 		URL = "http://%s:3000"
 	}
 	linkBase := fmt.Sprintf(URL, slugEmpresa)
-	link:= fmt.Sprintf("%s/redefinir-senha?token=%s", linkBase, token)
+	link := fmt.Sprintf("%s/redefinir-senha?token=%s", linkBase, token)
 
 	// 2. Configura os cabeçalhos do e-mail (Assunto e tipo HTML)
 	//emetente := "nao-responda@radaptech.com.br"
@@ -80,16 +79,14 @@ func (e *EmailService) EnviarEmailRecuperacao(emailDestino string, token string,
 		</div>
 	`, link, link, link)
 
-
-
-	params:= &resend.SendEmailRequest{
-		From: "SGEPI <contato@radaptech.com.br>",
-		To: []string{emailDestino},
+	params := &resend.SendEmailRequest{
+		From:    "SGEPI <contato@radaptech.com.br>",
+		To:      []string{emailDestino},
 		Subject: assunto,
-		Html: corpo,
+		Html:    corpo,
 	}
 
-	_, err:= client.Emails.Send(params)
-	
+	_, err := client.Emails.Send(params)
+
 	return err
 }

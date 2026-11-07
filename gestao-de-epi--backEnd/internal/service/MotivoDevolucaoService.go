@@ -16,7 +16,7 @@ type MotivoDevolucaoRepository interface {
 	ListarMotivos(ctx context.Context, tenantId int32) ([]repository.BuscaTodosMotivosDevolucaoRow, error)
 	CancelarMotivoDevolucao(ctx context.Context, arg repository.DeleteMotivoDevolucaoParams) (int64, error)
 	Descarte(ctx context.Context, arg repository.EhDescarteParams) (bool, error)
-	ConsultaSaldo(ctx context.Context, arg repository.ConsultarSaldoEpiFuncionarioParams)(int32, error)
+	ConsultaSaldo(ctx context.Context, arg repository.ConsultarSaldoEpiFuncionarioParams) (int32, error)
 }
 
 type MotivoDevolucaoService struct {
@@ -32,10 +32,10 @@ func (m *MotivoDevolucaoService) Salvar(ctx context.Context, modelM model.Motivo
 
 	modelM.Motivo = strings.TrimSpace(modelM.Motivo)
 
-	motivo, err:= m.repo.Adicionar(ctx,repository.AddMotivoDevolucaoParams{
-		TenantID: tenantId,
-		Motivo: modelM.Motivo,
-		GeraDescarte: modelM.Descaste,  
+	motivo, err := m.repo.Adicionar(ctx, repository.AddMotivoDevolucaoParams{
+		TenantID:     tenantId,
+		Motivo:       modelM.Motivo,
+		GeraDescarte: modelM.Descaste,
 	})
 	if err != nil {
 
@@ -43,7 +43,7 @@ func (m *MotivoDevolucaoService) Salvar(ctx context.Context, modelM model.Motivo
 	}
 
 	return model.MotivoDevolucaoEpiDto{
-		Id: int(motivo.ID),
+		Id:     int(motivo.ID),
 		Motivo: motivo.Motivo,
 	}, nil
 }
@@ -55,8 +55,8 @@ func (m *MotivoDevolucaoService) ListarMotivo(ctx context.Context, id int, tenan
 		return model.MotivoDevolucaoEpiDto{}, helper.ErrId
 	}
 
-	motivo, err:= m.repo.ListarMotivo(ctx,repository.BuscaMotivoDevolucaoParams{
-		ID: int32(id),
+	motivo, err := m.repo.ListarMotivo(ctx, repository.BuscaMotivoDevolucaoParams{
+		ID:       int32(id),
 		TenantID: tenantid,
 	})
 	if err != nil {
@@ -66,25 +66,25 @@ func (m *MotivoDevolucaoService) ListarMotivo(ctx context.Context, id int, tenan
 
 	return model.MotivoDevolucaoEpiDto{
 
-		Id: int(motivo.ID),
+		Id:     int(motivo.ID),
 		Motivo: motivo.Motivo,
 	}, nil
 }
 
-func (m *MotivoDevolucaoService) ListarMotivos(ctx context.Context, tenantId int32) ([]model.MotivoDevolucaoEpiDto, error){
+func (m *MotivoDevolucaoService) ListarMotivos(ctx context.Context, tenantId int32) ([]model.MotivoDevolucaoEpiDto, error) {
 
-	motivos, err:= m.repo.ListarMotivos(ctx, tenantId)
+	motivos, err := m.repo.ListarMotivos(ctx, tenantId)
 	if err != nil {
 
-		return []model.MotivoDevolucaoEpiDto{},err
+		return []model.MotivoDevolucaoEpiDto{}, err
 	}
 
-	dto:= make([]model.MotivoDevolucaoEpiDto, 0, len(motivos))
+	dto := make([]model.MotivoDevolucaoEpiDto, 0, len(motivos))
 
 	for _, mot := range motivos {
 
 		M := model.MotivoDevolucaoEpiDto{
-			Id: int(mot.ID),
+			Id:     int(mot.ID),
 			Motivo: mot.Motivo,
 		}
 		dto = append(dto, M)
@@ -94,26 +94,25 @@ func (m *MotivoDevolucaoService) ListarMotivos(ctx context.Context, tenantId int
 }
 
 func (m *MotivoDevolucaoService) DeletarMotivo(ctx context.Context, id int, tenantId int32) error {
-	
+
 	if id <= 0 {
 
-		return  helper.ErrId
+		return helper.ErrId
 	}
 
-	linha,err := m.repo.CancelarMotivoDevolucao(ctx,repository.DeleteMotivoDevolucaoParams{
-		ID: int32(id),
+	linha, err := m.repo.CancelarMotivoDevolucao(ctx, repository.DeleteMotivoDevolucaoParams{
+		ID:       int32(id),
 		TenantID: tenantId,
 	})
 	if err != nil {
 
-		return  fmt.Errorf("erro ao deletar a funcao, %w", err)
+		return fmt.Errorf("erro ao deletar a funcao, %w", err)
 	}
-
 
 	if linha == 0 {
 
 		return helper.ErrNaoEncontrado
 	}
-	
-	return  nil
+
+	return nil
 }

@@ -10,8 +10,6 @@ if (envUrl && !envUrl.startsWith("http")) {
 
 export const BASE_URL = envUrl.replace(/\/+$/, "");
 
-console.log("BASE_URL configurada para:", BASE_URL);
-
 function normalizarRota(rota = "") {
     if (!rota) return "";
     return rota.startsWith("/") ? rota : `/${rota}`;
@@ -172,10 +170,6 @@ async function request(
             ? dados
             : JSON.stringify(dados);
     }
-
-    console.log(
-        `[Requisição API] Disparando ${method} para: ${url}`
-    );
 
     const resposta = await fetch(
         url,

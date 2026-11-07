@@ -71,7 +71,6 @@ func (e *EmpresaController) Salvar() gin.HandlerFunc {
 	}
 }
 
-
 // ResumoDashboard godoc
 // @Summary      Dashboard
 // @Description  Retorna o resumo para o dashboard da empresa
@@ -99,7 +98,6 @@ func (e *EmpresaController) ResumoDashboard() gin.HandlerFunc {
 		ctx.JSON(http.StatusOK, resumo)
 	}
 }
-
 
 // EmpresaRecentes godoc
 // @Summary      Empresas recentes

@@ -1,6 +1,5 @@
 package model
 
-
 type Departamento struct {
 	Departamento string `json:"departamento" binding:"required,max=50"`
 }

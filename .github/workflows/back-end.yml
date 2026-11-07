@@ -23,5 +23,11 @@ jobs:
           go-version-file: gestao-de-epi--backEnd/go.mod
           cache-dependency-path: gestao-de-epi--backEnd/go.sum
 
+      - name: Formatação (gofmt)
+        run: test -z "$(gofmt -l . | tee /dev/stderr)"
+
+      - name: go vet
+        run: go vet ./...
+
       - name: Rodando os testes Unitarios
         run: go test -v ./... -p 1
