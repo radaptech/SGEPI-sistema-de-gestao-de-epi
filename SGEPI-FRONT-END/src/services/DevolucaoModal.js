@@ -4,9 +4,9 @@ export function normalizarFuncionario(item) {
   return { id: item.id, nome: item.nome, matricula: item.matricula };
 }
 
-// /epis e /funcionarios/:id/epis; só a segunda traz saldoAtual (quanto o funcionário tem em posse)
+// /epis e /funcionarios/:id/epis; só a segunda traz saldo_atual (quanto o funcionário tem em posse)
 export function normalizarEpi(item) {
-  return { id: item.id, nome: item.nome, tamanhos: item.tamanhos ?? [], saldo_atual: item.saldoAtual ?? 0 };
+  return { id: item.id, nome: item.nome, tamanhos: item.tamanhos ?? [], saldo_atual: item.saldo_atual ?? 0 };
 }
 
 export function normalizarTamanho(item) {

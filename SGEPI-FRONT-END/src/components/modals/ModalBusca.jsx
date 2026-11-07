@@ -5,7 +5,7 @@ import {
   SearchX, AlertCircle, CheckCircle2
 } from "lucide-react";
 
-// Lote de /entradas-estoque: o EPI aninhado vem em camelCase (validadeCa, alertaMinimo)
+// Lote de /entradas-estoque
 function normalizarLote(item) {
   const { epi } = item;
   return {
@@ -16,12 +16,12 @@ function normalizarLote(item) {
     CA: epi.ca,
     descricao: epi.descricao,
     tipoProtecao: epi.protecao.nome,
-    alerta_minimo: epi.alertaMinimo,
+    alerta_minimo: epi.alerta_minimo,
     tamanho: item.tamanho.tamanho,
     lote: item.lote,
     quantidade: item.quantidade_atual,
     data_validade_lote: item.data_validade,
-    validade_CA: epi.validadeCa,
+    validade_CA: epi.validade_ca,
     valor_unitario: Number(item.valor_unitario), // decimal vem como string
   };
 }

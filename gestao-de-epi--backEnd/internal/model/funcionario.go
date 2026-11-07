@@ -12,7 +12,7 @@ type FuncionarioInserir struct {
 type Funcionario_Dto struct {
 	ID        int32     `json:"id"`
 	Nome      string    `json:"nome"`
-	Matricula string    `json:"matricula"`
+	Matricula int32     `json:"matricula"`
 	Funcao    FuncaoDto `json:"funcao"`
 	Cpf       string    `json:"cpf"`
 }
@@ -29,14 +29,14 @@ type UpdateFuncionarioRequest struct {
 type FuncionarioDashbord struct {
 	Id        int32  `json:"id"`
 	Nome      string `json:"nome"`
-	Matricula string `json:"matricula"`
+	Matricula int32  `json:"matricula"`
 }
 
 // FuncionarioCompletoDto para o perfil detalhado com histórico
 type FuncionarioCompletoDto struct {
 	ID        int32                     `json:"id"`
 	Nome      string                    `json:"nome"`
-	Matricula string                    `json:"matricula"`
+	Matricula int32                     `json:"matricula"`
 	Cpf       string                    `json:"cpf"`
 	Funcao    FuncaoDto                 `json:"funcao"`
 	Entregas  []EntregaDoFuncionarioDto `json:"entregas"`

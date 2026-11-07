@@ -129,16 +129,16 @@ function DashboardMaster({ usuarioLogado }) {
 
   const resumoSeguro = useMemo(() => {
     return {
-      totalEmpresas: resumo?.totalEmpresas ?? 0,
-      empresasAtivas: resumo?.empresasAtivas ?? 0,
-      empresasBloqueadas: resumo?.empresasBloqueadas ?? 0,
-      empresasEmTeste: resumo?.empresasEmTeste ?? 0,
-      totalFuncionarios: resumo?.totalFuncionarios ?? 0,
-      totalEpis: resumo?.totalEpis ?? 0,
-      totalEntregas: resumo?.totalEntregas ?? 0,
+      totalEmpresas: resumo?.total_empresas ?? 0,
+      empresasAtivas: resumo?.empresas_ativas ?? 0,
+      empresasBloqueadas: resumo?.empresas_bloqueadas ?? 0,
+      empresasEmTeste: resumo?.empresas_em_teste ?? 0,
+      totalFuncionarios: resumo?.total_funcionarios ?? 0,
+      totalEpis: resumo?.total_epis ?? 0,
+      totalEntregas: resumo?.total_entregas ?? 0,
       mensalidadesPagas: resumo?.mensalidadesPagas ?? 0,
       mensalidadesAtrasadas: resumo?.mensalidadesAtrasadas ?? 0,
-      receitaMensal: resumo?.receitaMensal ?? 0,
+      receitaMensal: resumo?.receita_mensal ?? 0,
     };
   }, [resumo]);
 

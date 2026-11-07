@@ -66,7 +66,7 @@ test.beforeAll(async ({ browser }) => {
     email: admin.email,
     senha: admin.senha,
     role: "admin",
-    empresaId: empresa.id,
+    empresa_id: empresa.id,
   });
   // o cookie de sessão vale para qualquer subdomínio: sem logout o tenant abriria logado como super admin
   await chamarApi(page, "POST", "/logout");

@@ -61,7 +61,7 @@ type FuncaoPaginado struct {
 	Funcao      []model.FuncaoDto `json:"funcoes"`
 	Total       int64             `json:"total"`
 	Pagina      int32             `json:"pagina"`
-	PaginaFinal int32             `json:"paginaFinal"`
+	PaginaFinal int32             `json:"pagina_final"`
 }
 
 func (fu *FuncaoService) ListasTodasFuncao(ctx context.Context, f FiltroFuncao, tenantId int32) (FuncaoPaginado, error) {

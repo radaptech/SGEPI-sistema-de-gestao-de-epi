@@ -52,7 +52,7 @@ type EpiDtoDevolucao struct {
 	DataValidadeCa configs.DataBr  `json:"validade_ca"`
 	Protecao       TipoProtecaoDto `json:"protecao"`
 	AlertaMinimo   int32           `json:"alerta_minimo"`
-	SaldoAtual     int32           `json:"saldoAtual"`
+	SaldoAtual     int32           `json:"saldo_atual"`
 }
 
 // UpdateEpiInput usa ponteiros para permitir atualização parcial (PATCH)
@@ -106,8 +106,8 @@ type EpiDtoEstoque struct {
 	Nome           string          `json:"nome"`
 	Fabricante     string          `json:"fabricante"`
 	Descricao      string          `json:"descricao"`
-	DataValidadeCa configs.DataBr  `json:"validadeCa"`
+	DataValidadeCa configs.DataBr  `json:"validade_ca"`
 	Ca             string          `json:"ca"`
-	AlertaMinimo   int             `json:"alertaMinimo"`
+	AlertaMinimo   int             `json:"alerta_minimo"`
 	Protecao       TipoProtecaoDto `json:"protecao"`
 }

@@ -66,7 +66,7 @@ export default function AbaFuncionarios() {
         api.get("/funcoes"),
       ]);
 
-      setFuncionarios(respFunc?.funcionario || []);
+      setFuncionarios(respFunc.funcionarios ?? []);
       setDepartamentos(respDepto?.departamentos || []);
       setFuncoes(respFuncs?.funcoes || []);
     } catch {
@@ -88,7 +88,7 @@ export default function AbaFuncionarios() {
 
       return (
         (f.nome || "").toLowerCase().includes(termo) ||
-        (f.matricula || "").toLowerCase().includes(termo) ||
+        String(f.matricula).includes(termo) ||
         (f.cpf || "").toLowerCase().includes(termo) ||
         cpfLimpo.includes(termo) ||
         nomeDepto.toLowerCase().includes(termo) ||

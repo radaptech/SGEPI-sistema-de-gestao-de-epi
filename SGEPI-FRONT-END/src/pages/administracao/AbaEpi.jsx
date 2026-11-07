@@ -44,7 +44,7 @@ export default function AbaEpis() {
 
       const resposta = await api.get("/epis");
 
-      setEpis((resposta.Epis ?? []).map((epi) => ({
+      setEpis((resposta.epis ?? []).map((epi) => ({
         ...epi,
         data_validadeCa: epi.validade_ca, // nome que o ModalNovoEpi lê na edição
         tamanhos: epi.tamanhos ?? [],

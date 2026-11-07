@@ -272,7 +272,7 @@ function UsuariosMaster() {
 
                       <td className="px-6 py-4 text-center">
                         <p className="text-[12px] font-semibold text-slate-500">
-                          {usuario.ultimoAcesso || "-"}
+                          {usuario.ultimo_acesso || "-"}
                         </p>
                       </td>
 

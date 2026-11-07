@@ -78,11 +78,11 @@ function Devolucoes({ usuarioLogado }) {
     return devolucoes.filter((d) => {
       const matchTexto =
         !termo ||
-        (d.funcionarioNome || "").toLowerCase().includes(termo) ||
-        String(d.funcionarioMatricula || "").includes(termo) ||
-        (d.motivoNome || "").toLowerCase().includes(termo) ||
-        (d.epiNome || "").toLowerCase().includes(termo) ||
-        String(d.tamanhoNome || "").toLowerCase().includes(termo);
+        (d.funcionario_nome || "").toLowerCase().includes(termo) ||
+        String(d.funcionario_matricula || "").includes(termo) ||
+        (d.motivo_nome || "").toLowerCase().includes(termo) ||
+        (d.epi_nome || "").toLowerCase().includes(termo) ||
+        String(d.tamanho_nome || "").toLowerCase().includes(termo);
 
       let matchData = true;
       const data = String(d.data_devolucao || "").substring(0, 10);
@@ -96,7 +96,7 @@ function Devolucoes({ usuarioLogado }) {
 
   const resumoTela = useMemo(() => {
     const totalDevolucoes = devolucoesPreFiltroTroca.length;
-    const totalTrocas = devolucoesPreFiltroTroca.filter((item) => item.houveTroca).length;
+    const totalTrocas = devolucoesPreFiltroTroca.filter((item) => item.houve_troca).length;
 
     return {
       totalDevolucoes,
@@ -107,8 +107,8 @@ function Devolucoes({ usuarioLogado }) {
 
   const devolucoesFiltradas = useMemo(() => {
     return devolucoesPreFiltroTroca.filter((d) => {
-      if (filtroTroca === "com_troca") return d.houveTroca === true;
-      if (filtroTroca === "sem_troca") return d.houveTroca === false;
+      if (filtroTroca === "com_troca") return d.houve_troca === true;
+      if (filtroTroca === "sem_troca") return d.houve_troca === false;
       return true;
     });
   }, [devolucoesPreFiltroTroca, filtroTroca]);
@@ -312,27 +312,27 @@ function Devolucoes({ usuarioLogado }) {
                         </td>
                         <td className="p-4">
                           <div className="font-extrabold text-sm text-slate-800 dark:text-slate-200 transition-colors">
-                            {d.funcionarioNome}
+                            {d.funcionario_nome}
                           </div>
                           <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 uppercase tracking-widest">
-                            MAT: {d.funcionarioMatricula}
+                            MAT: {d.funcionario_matricula}
                           </div>
                         </td>
                         <td className="p-4">
                           <div className="font-bold text-sm text-slate-700 dark:text-slate-300 transition-colors">
-                            {d.epiNome}
+                            {d.epi_nome}
                           </div>
                           <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            Tam: {d.tamanhoNome} | Qtd: <span className="font-bold">{d.quantidadeADevolver}</span>
+                            Tam: {d.tamanho_nome} | Qtd: <span className="font-bold">{d.quantidade_a_devolver}</span>
                           </div>
                         </td>
                         <td className="p-4">
                            <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 rounded-md border border-slate-200 dark:border-slate-600/50 text-xs font-bold whitespace-nowrap">
-                            {d.motivoNome}
+                            {d.motivo_nome}
                           </span>
                         </td>
                         <td className="p-4 text-center">
-                          {d.houveTroca ? (
+                          {d.houve_troca ? (
                             <button
                               onClick={() => abrirModalTroca(d)}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-lg text-xs font-bold border border-emerald-200/50 dark:border-emerald-800/50 shadow-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
@@ -378,13 +378,13 @@ function Devolucoes({ usuarioLogado }) {
                         {formatarData(d.data_devolucao)}
                       </span>
                       <h3 className="font-extrabold text-slate-900 dark:text-white transition-colors">
-                        {d.funcionarioNome}
+                        {d.funcionario_nome}
                       </h3>
                       <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 uppercase tracking-widest">
-                        MAT: {d.funcionarioMatricula}
+                        MAT: {d.funcionario_matricula}
                       </p>
                     </div>
-                    {d.houveTroca ? (
+                    {d.houve_troca ? (
                       <button
                         onClick={() => abrirModalTroca(d)}
                         className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/50 text-[10px] font-black px-2 py-1 rounded-md flex items-center gap-1 shadow-sm"
@@ -402,19 +402,19 @@ function Devolucoes({ usuarioLogado }) {
                     <div className="flex justify-between items-start">
                       <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">Item</span>
                       <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 text-right max-w-[180px]">
-                        {d.epiNome} <span className="text-slate-400">({d.tamanhoNome})</span>
+                        {d.epi_nome} <span className="text-slate-400">({d.tamanho_nome})</span>
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Motivo</span>
                       <span className="text-xs font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
-                        {d.motivoNome}
+                        {d.motivo_nome}
                       </span>
                     </div>
                     <div className="flex justify-between items-center border-t border-slate-200 dark:border-slate-700/80 pt-2 mt-2">
                       <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Quantidade</span>
                       <span className="text-xs font-black text-slate-700 dark:text-slate-300">
-                        {d.quantidadeADevolver} un
+                        {d.quantidade_a_devolver} un
                       </span>
                     </div>
                   </div>

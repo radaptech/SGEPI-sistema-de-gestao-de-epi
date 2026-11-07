@@ -60,10 +60,10 @@ type FiltroFornecedores struct {
 }
 
 type FornecedoresPaginados struct {
-	Fornecedores []model.FornecedorDto
-	Total        int64
-	Pagina       int32
-	PaginaFinal  int32
+	Fornecedores []model.FornecedorDto `json:"fornecedores"`
+	Total        int64                 `json:"total"`
+	Pagina       int32                 `json:"pagina"`
+	PaginaFinal  int32                 `json:"pagina_final"`
 }
 
 func (f *FornecedorService) ListarFornecedor(ctx context.Context, filt FiltroFornecedores, tenantId int32) (FornecedoresPaginados, error) {
