@@ -97,6 +97,8 @@ type CaepiDto struct {
 	Situacao    string         `json:"situacao"`
 	Fabricante  string         `json:"fabricante"`
 	Equipamento string         `json:"equipamento"`
+	// grupo da NR-6 deduzido do nome do equipamento; nil quando nenhuma regra bate
+	IdProtecaoSugerida *int32 `json:"id_protecao_sugerida"`
 }
 
 type EpiDtoEstoque struct {

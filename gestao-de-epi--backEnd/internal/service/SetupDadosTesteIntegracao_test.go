@@ -222,18 +222,10 @@ func CreateFuncionario(t *testing.T, db *pgxpool.Pool, IdDepartamento, IdFuncao,
 
 // --- 4. CATALOGO DE EPIs ---
 
-func CreateProtecao(t *testing.T, db *pgxpool.Pool, tenantID int64) int64 {
+// CreateProtecao devolve um grupo de proteção global da NR-6 (a migração 000040 já cria os 9).
+func CreateProtecao(t *testing.T, db *pgxpool.Pool) int64 {
 	var id int64
-	query := `
-		INSERT INTO tipo_protecao (tenant_id, nome) 
-		VALUES ($1, $2)
-		RETURNING id;
-	`
-	err := db.QueryRow(context.Background(), query,
-		tenantID,
-		randomString("Protecao"),
-	).Scan(&id)
-
+	err := db.QueryRow(context.Background(), `SELECT id FROM tipo_protecao WHERE codigo = 'F'`).Scan(&id)
 	if err != nil {
 		t.Fatalf("Helper CreateProtecao falhou: %v", err)
 	}

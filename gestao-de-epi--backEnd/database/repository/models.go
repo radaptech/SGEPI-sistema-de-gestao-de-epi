@@ -228,11 +228,9 @@ type TamanhosEpi struct {
 }
 
 type TipoProtecao struct {
-	ID         int32
-	TenantID   int32
-	Nome       string
-	Ativo      bool
-	DeletadoEm pgtype.Timestamp
+	ID     int32
+	Nome   string
+	Codigo string
 }
 
 type Usuario struct {

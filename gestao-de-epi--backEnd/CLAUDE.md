@@ -169,7 +169,7 @@ Rotas públicas: `GET /`, `GET /api` (health) e `GET /swagger/*any`.
 ```
 empresas (tenant) ──┬── usuarios (role, ultimo_acesso, token_recuperacao_senha)
                     ├── departamento ── funcao ── funcionario (matricula, cpf)
-                    ├── tipo_protecao ── epi ── tamanhos_epis ── tamanho
+                    ├── epi ── tamanhos_epis ── tamanho   (epi → tipo_protecao, global: 9 grupos da NR-6)
                     ├── fornecedor
                     ├── entrada_nf ── entrada_epi_item   (o "lote": quantidade_atual, validade)
                     ├── entrega_epi ── epis_entregues    (aponta para o lote de origem)

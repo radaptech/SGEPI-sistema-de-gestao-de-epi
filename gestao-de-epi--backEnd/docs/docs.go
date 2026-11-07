@@ -2171,6 +2171,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/protecoes": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lista os 9 grupos de proteção do Anexo I da NR-6 (globais, iguais para todas as empresas)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "protecao"
+                ],
+                "summary": "Grupos de proteção",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.TipoProtecaoDto"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno",
+                        "schema": {
+                            "$ref": "#/definitions/helper.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/trocas-pendentes": {
             "get": {
                 "security": [
@@ -2243,6 +2277,10 @@ const docTemplate = `{
                 },
                 "fabricante": {
                     "type": "string"
+                },
+                "id_protecao_sugerida": {
+                    "description": "grupo da NR-6 deduzido do nome do equipamento; nil quando nenhuma regra bate",
+                    "type": "integer"
                 },
                 "situacao": {
                     "type": "string"

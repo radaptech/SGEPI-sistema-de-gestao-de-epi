@@ -98,13 +98,13 @@ func (e *EpiRepository) BuscaEpiDashbord(ctx context.Context, tenant int32) ([]B
 }
 
 // BuscarCaepi consulta a base pública de CAs do MTE (tabela global, sem tenant)
-func (e *EpiRepository) BuscarCaepi(ctx context.Context, ca string) (Caepi, error) {
+func (e *EpiRepository) BuscarCaepi(ctx context.Context, ca string) (BuscarCaepiRow, error) {
 	c, err := e.q.BuscarCaepi(ctx, ca)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return Caepi{}, helper.ErrNaoEncontrado
+			return BuscarCaepiRow{}, helper.ErrNaoEncontrado
 		}
-		return Caepi{}, helper.TraduzErroPostgres(err)
+		return BuscarCaepiRow{}, helper.TraduzErroPostgres(err)
 	}
 	return c, nil
 }

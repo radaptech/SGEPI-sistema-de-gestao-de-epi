@@ -15,6 +15,10 @@ definitions:
         type: string
       fabricante:
         type: string
+      id_protecao_sugerida:
+        description: grupo da NR-6 deduzido do nome do equipamento; nil quando nenhuma
+          regra bate
+        type: integer
       situacao:
         type: string
       validade:
@@ -2270,6 +2274,28 @@ paths:
       summary: Consultar CA na base do MTE
       tags:
       - EPIs
+  /protecoes:
+    get:
+      description: Lista os 9 grupos de proteção do Anexo I da NR-6 (globais, iguais
+        para todas as empresas)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.TipoProtecaoDto'
+            type: array
+        "500":
+          description: Erro interno
+          schema:
+            $ref: '#/definitions/helper.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Grupos de proteção
+      tags:
+      - protecao
   /trocas-pendentes:
     get:
       description: EPIs em posse dos funcionários cuja vida útil já venceu ou vence

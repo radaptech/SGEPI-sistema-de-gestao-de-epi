@@ -34,7 +34,7 @@ func TestEntrega(t *testing.T) {
 	dep := CreateDepartamento(t, db, empresa)
 	funcc := CreateFuncao(t, db, dep, empresa)
 	funcionario := CreateFuncionario(t, db, dep, funcc, empresa)
-	protec := CreateProtecao(t, db, empresa)
+	protec := CreateProtecao(t, db)
 	tamanho := CreateTamanho(t, db, empresa)
 	epi := CreateEpi(t, db, protec, empresa)
 	fornecedor := CreateFornecedor(t, db, empresa)
@@ -300,7 +300,7 @@ func TestEntrega(t *testing.T) {
 		iddep2 := CreateDepartamento(t, db2, idEmpresa2)
 		IdFuncao2 := CreateFuncao(t, db2, iddep2, idEmpresa2)
 		idtam2 := CreateTamanho(t, db2, idEmpresa2)
-		idprotec2 := CreateProtecao(t, db2, idEmpresa2)
+		idprotec2 := CreateProtecao(t, db2)
 		idepi2 := CreateEpi(t, db2, idprotec2, idEmpresa2)
 		idfuncionarioC := CreateFuncionario(t, db2, iddep2, IdFuncao2, idEmpresa2)
 		//fornecedores
@@ -376,7 +376,7 @@ func TestEntrega(t *testing.T) {
 		iddep := CreateDepartamento(t, db, empresa)
 		IdFuncao := CreateFuncao(t, db, iddep, empresa)
 		idtam := CreateTamanho(t, db, empresa)
-		idprotec := CreateProtecao(t, db, empresa)
+		idprotec := CreateProtecao(t, db)
 		idepi := CreateEpi(t, db, idprotec, empresa)
 		idfuncionario := CreateFuncionario(t, db, iddep, IdFuncao, empresa)
 		//fornecedores

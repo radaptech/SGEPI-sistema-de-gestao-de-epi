@@ -191,7 +191,6 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 
 		//proteções dedicada a cada epi
 		api.GET("/protecoes", c.Protecao.ListarProtecoes())
-		api.GET("/protecao/:id", c.Protecao.ListarProtecaoPorId())
 
 		//Epi´s
 		api.GET("/epis", c.Epi.ListarEpis())
@@ -250,8 +249,6 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 			rotasAdm.DELETE("/tamanho/:id", c.Tamanho.DeletarTamanho())
 
 			//proteções epis
-			rotasAdm.POST("/cadastro-protecao", c.Protecao.AdicionarProtecao())
-			rotasAdm.DELETE("/protecao/:id", c.Protecao.DeletarProtecao())
 
 			//epis
 			rotasAdm.DELETE("/epi/:id", c.Epi.DeletarEpi())
