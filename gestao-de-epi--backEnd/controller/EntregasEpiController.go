@@ -25,6 +25,7 @@ type EntregasService interface {
 	BuscaItemDash(ctx context.Context, tenantID int32) ([]model.EntregaItensDashBord, error)
 	TokenEntrega(ctx context.Context, tenantId, idFuncionario int32) (string, error)
 	ListarTrocasPendentes(ctx context.Context, tenantId int32, dias int) ([]model.TrocaPendenteDto, error)
+	ListarFaltasKit(ctx context.Context, tenantId int32) ([]model.FaltaKitDto, error)
 }
 
 type EntregaController struct {
@@ -363,6 +364,36 @@ func (e *EntregaController) ListarTrocasPendentes() gin.HandlerFunc {
 		}
 
 		ctx.JSON(http.StatusOK, trocas)
+	}
+}
+
+// ListarFaltasKit godoc
+// @Summary      Funcionários sem o EPI do kit
+// @Description  Funcionários ativos com menos EPI em posse (entregue − devolvido) do que o kit da função exige
+// @Tags         Entregas
+// @Produce      json
+// @Success      200  {array}   model.FaltaKitDto
+// @Failure      500  {object}  helper.HTTPError "Erro interno"
+// @Router       /faltas-kit [get]
+// @Security     BearerAuth
+func (e *EntregaController) ListarFaltasKit() gin.HandlerFunc {
+
+	return func(ctx *gin.Context) {
+
+		tenantId64, ok := ginmw.TenantID(ctx)
+		if !ok {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro interno de tenant"})
+			return
+		}
+
+		faltas, err := e.Service.ListarFaltasKit(ctx, int32(tenantId64))
+		if err != nil {
+			ctx.Error(err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro ao listar faltas do kit", "detalhes": err.Error()})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, faltas)
 	}
 }
 

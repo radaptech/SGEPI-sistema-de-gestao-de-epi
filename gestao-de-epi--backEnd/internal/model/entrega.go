@@ -64,6 +64,18 @@ type EntregaDoFuncionarioDto struct {
 	Assinatura_Digital string            `json:"assinatura_digital"`
 	Itens              []ItemEntregueDto `json:"itens,omitempty"` // <-- AQUI ELA!
 }
+// FaltaKitDto é um EPI do kit da função que o funcionário tem em posse em quantidade menor que a exigida
+type FaltaKitDto struct {
+	FuncionarioId   int32  `json:"funcionario_id"`
+	FuncionarioNome string `json:"funcionario_nome"`
+	Matricula       int32  `json:"matricula"`
+	FuncaoNome      string `json:"funcao_nome"`
+	EpiId           int32  `json:"epi_id"`
+	EpiNome         string `json:"epi_nome"`
+	Exigido         int32  `json:"exigido"`
+	EmPosse         int32  `json:"em_posse"`
+}
+
 // TrocaPendenteDto é um EPI em posse do funcionário cuja vida útil vence até a data consultada
 type TrocaPendenteDto struct {
 	FuncionarioId   int32          `json:"funcionario_id"`

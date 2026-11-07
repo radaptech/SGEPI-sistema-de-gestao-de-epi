@@ -35,6 +35,7 @@ type EntregaRepository interface {
 	BuscaEntregaItensDashbord(ctx context.Context, tenant int32) ([]repository.EntregaItensDashbordRow, error)
 	BuscaTodasEntregasDoTenant(ctx context.Context, tenantId int32) ([]repository.BuscaTodasEntregasDoTenantRow, error)
 	ListarTrocasPendentes(ctx context.Context, args repository.ListarTrocasPendentesParams) ([]repository.ListarTrocasPendentesRow, error)
+	ListarFaltasKit(ctx context.Context, tenantId int32) ([]repository.ListarFaltasKitRow, error)
 }
 
 type EntregaService struct {
@@ -403,6 +404,23 @@ func (e *EntregaService) ListarTrocasPendentes(ctx context.Context, tenantId int
 			EpiId: t.EpiID, EpiNome: t.EpiNome, EmPosse: t.EmPosse,
 			UltimaEntrega: configs.DataBr(t.UltimaEntrega.Time),
 			VenceEm:       configs.DataBr(t.VenceEm.Time),
+		})
+	}
+	return dto, nil
+}
+
+// ListarFaltasKit: funcionários com menos EPI em posse do que o kit da função exige
+func (e *EntregaService) ListarFaltasKit(ctx context.Context, tenantId int32) ([]model.FaltaKitDto, error) {
+	faltas, err := e.repo.ListarFaltasKit(ctx, tenantId)
+	if err != nil {
+		return nil, err
+	}
+
+	dto := make([]model.FaltaKitDto, 0, len(faltas))
+	for _, f := range faltas {
+		dto = append(dto, model.FaltaKitDto{
+			FuncionarioId: f.FuncionarioID, FuncionarioNome: f.FuncionarioNome, Matricula: f.Matricula,
+			FuncaoNome: f.FuncaoNome, EpiId: f.EpiID, EpiNome: f.EpiNome, Exigido: f.Exigido, EmPosse: f.EmPosse,
 		})
 	}
 	return dto, nil

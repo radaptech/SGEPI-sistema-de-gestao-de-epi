@@ -172,6 +172,14 @@ func (e *EntregaRepository) ListarTrocasPendentes(ctx context.Context, args List
 	return trocas, nil
 }
 
+func (e *EntregaRepository) ListarFaltasKit(ctx context.Context, tenantId int32) ([]ListarFaltasKitRow, error) {
+	faltas, err := e.q.ListarFaltasKit(ctx, tenantId)
+	if err != nil {
+		return nil, helper.TraduzErroPostgres(err)
+	}
+	return faltas, nil
+}
+
 // ListarEpisCaVencido implements [service.EntregaRepository].
 func (e *EntregaRepository) ListarEpisCaVencido(ctx context.Context, qtx *Queries, args ListarEpisCaVencidoParams) ([]ListarEpisCaVencidoRow, error) {
 	epis, err := qtx.ListarEpisCaVencido(ctx, args)

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { formatarMoeda } from "../utils/dashboardFormatters";
-import { Package, Truck, AlertTriangle, CircleDollarSign, ShieldAlert, RefreshCw } from "lucide-react"; 
+import { Package, Truck, AlertTriangle, CircleDollarSign, ShieldAlert, RefreshCw, UserX } from "lucide-react"; 
 import { DIAS_ALERTA_CA, DIAS_ALERTA_TROCA } from "./useDashboardResumo";
 
 export function useDashboardCards(
@@ -84,6 +84,21 @@ export function useDashboardCards(
         ring:
           "hover:border-amber-200 dark:hover:border-amber-700 hover:bg-amber-50/40 dark:hover:bg-slate-800/80",
         badge: "Troca periódica",
+      },
+      {
+        id: "faltasKit",
+        titulo: "Sem EPI do Kit",
+        valor: carregandoResumo
+          ? "--"
+          : resumo.faltasKit,
+        descricao:
+          "Funcionários sem o EPI que a função exige",
+        icone: <UserX className="w-6 h-6" strokeWidth={2} />,
+        iconeBox:
+          "bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400",
+        ring:
+          "hover:border-rose-200 dark:hover:border-rose-700 hover:bg-rose-50/40 dark:hover:bg-slate-800/80",
+        badge: "Kit da função",
       },
       {
         id: "valor",

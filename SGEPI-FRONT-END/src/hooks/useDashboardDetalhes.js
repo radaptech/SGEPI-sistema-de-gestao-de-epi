@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Package, Truck, AlertTriangle, CircleDollarSign, ShieldAlert, RefreshCw } from "lucide-react";
+import { Package, Truck, AlertTriangle, CircleDollarSign, ShieldAlert, RefreshCw, UserX } from "lucide-react";
 import { DIAS_ALERTA_CA, DIAS_ALERTA_TROCA } from "./useDashboardResumo";
 import { formatarMoeda } from "../utils/dashboardFormatters";
 
@@ -19,6 +19,7 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
     alertasDetalhados,
     caVencendoDetalhado,
     trocasDetalhadas,
+    faltasKitDetalhadas,
     valorEstoqueDetalhado,
   } = resumoDetalhado;
 
@@ -303,6 +304,44 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
       };
     }
 
+    if (cardAberto === "faltasKit") {
+      return {
+        titulo: "Funcionários sem EPI do kit",
+        subtitulo: "EPIs que o kit da função exige e o funcionário não tem em posse (entregue menos devolvido).",
+        icon: <UserX className="w-6 h-6" strokeWidth={2.5} />,
+        dados: faltasKitDetalhadas,
+        subColunas: null,
+        colunas: [
+          {
+            key: "funcionario",
+            label: "Funcionário",
+            render: (item) => (
+              <div>
+                <div className="font-semibold text-gray-900 dark:text-gray-100">{item.funcionario}</div>
+                <div className="text-xs text-gray-400 dark:text-gray-500">Matrícula {item.matricula} · {item.funcao}</div>
+              </div>
+            ),
+          },
+          {
+            key: "item",
+            label: "EPI",
+            render: (item) => (
+              <div className="font-semibold text-gray-800 dark:text-gray-200">{item.item}</div>
+            ),
+          },
+          {
+            key: "emPosse",
+            label: "Em posse / exigido",
+            render: (item) => (
+              <span className="font-bold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 px-3 py-0.5 rounded-lg border border-rose-200 dark:border-rose-800 text-xs">
+                {item.emPosse} de {item.exigido}
+              </span>
+            ),
+          },
+        ],
+      };
+    }
+
     if (cardAberto === "valor") {
       return {
         titulo: "Valor em estoque",
@@ -355,6 +394,7 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
     alertasDetalhados,
     caVencendoDetalhado,
     trocasDetalhadas,
+    faltasKitDetalhadas,
     valorEstoqueDetalhado,
   ]);
 }

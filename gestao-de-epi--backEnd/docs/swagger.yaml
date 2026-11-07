@@ -598,6 +598,25 @@ definitions:
       nome:
         type: string
     type: object
+  model.FaltaKitDto:
+    properties:
+      em_posse:
+        type: integer
+      epi_id:
+        type: integer
+      epi_nome:
+        type: string
+      exigido:
+        type: integer
+      funcao_nome:
+        type: string
+      funcionario_id:
+        type: integer
+      funcionario_nome:
+        type: string
+      matricula:
+        type: integer
+    type: object
   model.FornecedorSimples:
     properties:
       id:
@@ -1912,6 +1931,28 @@ paths:
       summary: EPIs por funcionário
       tags:
       - EPIs
+  /faltas-kit:
+    get:
+      description: Funcionários ativos com menos EPI em posse (entregue − devolvido)
+        do que o kit da função exige
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.FaltaKitDto'
+            type: array
+        "500":
+          description: Erro interno
+          schema:
+            $ref: '#/definitions/helper.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Funcionários sem o EPI do kit
+      tags:
+      - Entregas
   /funcao/{id}:
     delete:
       description: Remove (ou inativa) uma funcao pelo ID
