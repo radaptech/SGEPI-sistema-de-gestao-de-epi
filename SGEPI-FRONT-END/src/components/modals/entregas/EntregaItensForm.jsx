@@ -14,7 +14,9 @@ function EntregaItensForm({
   adicionarItem,
   itensParaEntregar,
   removerItem,
-  tamanhoSelecionadoObj
+  tamanhoSelecionadoObj,
+  kitPendente = [],
+  usarItemKit,
 }) {
   console.log("DEBUG: Lista 'tamanhos' recebida no Form:", tamanhos);
 
@@ -32,6 +34,28 @@ function EntregaItensForm({
             Adicionar itens à entrega
           </h3>
         </div>
+
+        {kitPendente.length > 0 && (
+          <div className="mb-5">
+            <p className={labelClass}>Kit da função (clique e escolha o tamanho)</p>
+            <div className="flex flex-wrap gap-2">
+              {kitPendente.map((item) => (
+                <button
+                  key={item.id_epi}
+                  type="button"
+                  onClick={() => usarItemKit(item)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+                    Number(idEpiTemp) === Number(item.id_epi)
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-blue-500"
+                  }`}
+                >
+                  {item.nome} × {item.quantidade}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_100px_auto] gap-4 items-end">
           <div>
@@ -67,7 +91,6 @@ function EntregaItensForm({
                 value={idTamanhoTemp}
                 onChange={(e) => {
                   setIdTamanhoTemp(e.target.value);
-                  setQtdTemp(1);
                 }}
                 disabled={!idEpiTemp || carregandoTamanhos}
               >

@@ -40,6 +40,8 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
   const [idTamanhoTemp, setIdTamanhoTemp] = useState("");
   const [qtdTemp, setQtdTemp] = useState(1);
 
+  const [kitFuncao, setKitFuncao] = useState([]);
+
   const [carregando, setCarregando] = useState(false);
   const [carregandoDados, setCarregandoDados] = useState(true);
 
@@ -123,6 +125,34 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
   const tamanhoSelecionadoObj = useMemo(() => {
     return tamanhosFiltrados.find((item) => Number(item.id) === Number(idTamanhoTemp)) || null;
   }, [tamanhosFiltrados, idTamanhoTemp]);
+
+  // Kit de EPI da função do funcionário selecionado
+  const funcaoId = funcionarioSelecionado?.funcaoId;
+  useEffect(() => {
+    let ativo = true;
+    setKitFuncao([]);
+    if (!funcaoId) return;
+    api.get(`/funcao/${funcaoId}/kit`)
+      .then((resp) => {
+        const lista = resp?.data ?? resp;
+        if (ativo) setKitFuncao(Array.isArray(lista) ? lista : []);
+      })
+      .catch((erro) => console.error("Erro ao buscar kit da função:", erro));
+    return () => { ativo = false; };
+  }, [funcaoId]);
+
+  // Itens do kit que ainda não foram adicionados à entrega
+  const kitPendente = useMemo(() => {
+    const adicionados = new Set(itensParaEntregar.map((item) => Number(item.idEpi)));
+    return kitFuncao.filter((item) => !adicionados.has(Number(item.id_epi)));
+  }, [kitFuncao, itensParaEntregar]);
+
+  // Um clique no item do kit preenche EPI e quantidade; falta só o tamanho
+  function usarItemKit(item) {
+    setIdEpiTemp(String(item.id_epi));
+    setIdTamanhoTemp("");
+    setQtdTemp(Number(item.quantidade) || 1);
+  }
 
   // 4. Ações do Formulário
   function adicionarItem() {
@@ -225,6 +255,8 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
     funcionarioSelecionado,
     funcionariosFiltrados,
     tamanhoSelecionadoObj, // 🌟 EXPORTADO AQUI PARA A TELA USAR
+    kitPendente,
+    usarItemKit,
     adicionarItem,
     removerItem,
     salvarEntrega,

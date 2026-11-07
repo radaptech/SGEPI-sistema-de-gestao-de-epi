@@ -20,6 +20,8 @@ type FuncaoRepository interface {
 	CancelarFuncao(ctx context.Context, arg repository.DeletarFuncaoParams) (int64, error)
 	AtualizarFuncao(ctx context.Context, arg repository.UpdateFuncaoParams) (int64, error)
 	MapDepartamentosParaFuncao(ctx context.Context, tenantId int32) ([]repository.BuscaDepartamentosMapRow, error)
+	ListarKit(ctx context.Context, arg repository.ListarKitFuncaoParams) ([]repository.ListarKitFuncaoRow, error)
+	SalvarKit(ctx context.Context, arg repository.SalvarKitFuncaoParams) error
 }
 
 type FuncaoService struct {
@@ -195,4 +197,55 @@ func (f *FuncaoService) BuscaDepartamentosParaFuncao(ctx context.Context, tenant
 
 	return mapsDeps, nil 
 
+}
+
+func (f *FuncaoService) ListarKit(ctx context.Context, idFuncao int, tenantId int32) ([]model.KitItem, error) {
+
+	if idFuncao <= 0 {
+		return nil, helper.ErrId
+	}
+
+	rows, err := f.repo.ListarKit(ctx, repository.ListarKitFuncaoParams{TenantID: tenantId, IDFuncao: int32(idFuncao)})
+	if err != nil {
+		return nil, fmt.Errorf("erro ao listar kit da funcao, %w", err)
+	}
+
+	kit := make([]model.KitItem, 0, len(rows))
+	for _, r := range rows {
+		kit = append(kit, model.KitItem{IdEpi: r.IDEpi, Quantidade: r.Quantidade, Nome: r.Nome, CA: r.Ca})
+	}
+
+	return kit, nil
+}
+
+// SalvarKit troca o kit inteiro da função. EPI repetido na lista é rejeitado,
+// porque o upsert do Postgres não aceita a mesma chave duas vezes na mesma instrução.
+func (f *FuncaoService) SalvarKit(ctx context.Context, idFuncao int, itens []model.KitItem, tenantId int32) error {
+
+	if idFuncao <= 0 {
+		return helper.ErrId
+	}
+
+	arg := repository.SalvarKitFuncaoParams{
+		TenantID:    tenantId,
+		IDFuncao:    int32(idFuncao),
+		IdsEpi:      make([]int32, 0, len(itens)),
+		Quantidades: make([]int32, 0, len(itens)),
+	}
+
+	vistos := make(map[int32]bool, len(itens))
+	for _, it := range itens {
+		if vistos[it.IdEpi] {
+			return helper.ErrDadoDuplicado
+		}
+		vistos[it.IdEpi] = true
+		arg.IdsEpi = append(arg.IdsEpi, it.IdEpi)
+		arg.Quantidades = append(arg.Quantidades, it.Quantidade)
+	}
+
+	if err := f.repo.SalvarKit(ctx, arg); err != nil {
+		return fmt.Errorf("erro ao salvar kit da funcao, %w", err)
+	}
+
+	return nil
 }

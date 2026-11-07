@@ -191,6 +191,87 @@ func (q *Queries) DeletarFuncao(ctx context.Context, arg DeletarFuncaoParams) (i
 	return result.RowsAffected(), nil
 }
 
+const listarKitFuncao = `-- name: ListarKitFuncao :many
+SELECT e.id AS id_epi, e.nome, e.CA, fe.quantidade
+FROM funcao_epi fe
+INNER JOIN epi e ON e.id = fe.id_epi AND e.tenant_id = fe.tenant_id
+WHERE fe.tenant_id = $1 -- SEGURANÇA
+  AND fe.id_funcao = $2
+  AND e.ativo = TRUE
+ORDER BY e.nome
+`
+
+type ListarKitFuncaoParams struct {
+	TenantID int32
+	IDFuncao int32
+}
+
+type ListarKitFuncaoRow struct {
+	IDEpi      int32
+	Nome       string
+	Ca         string
+	Quantidade int32
+}
+
+func (q *Queries) ListarKitFuncao(ctx context.Context, arg ListarKitFuncaoParams) ([]ListarKitFuncaoRow, error) {
+	rows, err := q.db.Query(ctx, listarKitFuncao, arg.TenantID, arg.IDFuncao)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListarKitFuncaoRow
+	for rows.Next() {
+		var i ListarKitFuncaoRow
+		if err := rows.Scan(
+			&i.IDEpi,
+			&i.Nome,
+			&i.Ca,
+			&i.Quantidade,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const salvarKitFuncao = `-- name: SalvarKitFuncao :exec
+WITH removidos AS (
+    DELETE FROM funcao_epi
+    WHERE tenant_id = $3 -- SEGURANÇA
+      AND id_funcao = $4
+      AND NOT (id_epi = ANY($2::int[]))
+)
+INSERT INTO funcao_epi (tenant_id, id_funcao, id_epi, quantidade)
+SELECT f.tenant_id, f.id, e.id, ($1::int[])[i.n]
+FROM unnest($2::int[]) WITH ORDINALITY AS i(id_epi, n)
+INNER JOIN epi e ON e.id = i.id_epi AND e.tenant_id = $3 AND e.ativo = TRUE
+INNER JOIN funcao f ON f.id = $4 AND f.tenant_id = $3 AND f.ativo = TRUE
+ON CONFLICT (tenant_id, id_funcao, id_epi) DO UPDATE SET quantidade = EXCLUDED.quantidade
+`
+
+type SalvarKitFuncaoParams struct {
+	Quantidades []int32
+	IdsEpi      []int32
+	TenantID    int32
+	IDFuncao    int32
+}
+
+// Troca o kit inteiro numa instrução só (atômica): apaga os EPIs que saíram e faz upsert dos que ficaram.
+// Os JOINs com epi/funcao filtrados por tenant impedem gravar id de outra empresa.
+func (q *Queries) SalvarKitFuncao(ctx context.Context, arg SalvarKitFuncaoParams) error {
+	_, err := q.db.Exec(ctx, salvarKitFuncao,
+		arg.Quantidades,
+		arg.IdsEpi,
+		arg.TenantID,
+		arg.IDFuncao,
+	)
+	return err
+}
+
 const updateFuncao = `-- name: UpdateFuncao :execrows
 UPDATE funcao
 SET nome = $2

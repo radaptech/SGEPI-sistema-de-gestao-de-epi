@@ -1710,6 +1710,120 @@ const docTemplate = `{
                 }
             }
         },
+        "/funcao/{id}/kit": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lista os EPIs (e quantidades) que a função recebe na entrega",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "funcao"
+                ],
+                "summary": "Kit de EPI da função",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da funcao",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.KitItem"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ID inválido",
+                        "schema": {
+                            "$ref": "#/definitions/helper.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno",
+                        "schema": {
+                            "$ref": "#/definitions/helper.HTTPError"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Substitui o kit inteiro da função. Lista vazia limpa o kit.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "funcao"
+                ],
+                "summary": "Salvar kit de EPI da função",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da funcao",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Itens do kit",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.KitFuncaoInserir"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Dados inválidos",
+                        "schema": {
+                            "$ref": "#/definitions/helper.HTTPError"
+                        }
+                    },
+                    "422": {
+                        "description": "EPI repetido no kit",
+                        "schema": {
+                            "$ref": "#/definitions/helper.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno",
+                        "schema": {
+                            "$ref": "#/definitions/helper.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/funcionario/{id}": {
             "delete": {
                 "security": [
@@ -3146,6 +3260,40 @@ const docTemplate = `{
                 },
                 "quantidade": {
                     "type": "integer"
+                }
+            }
+        },
+        "model.KitFuncaoInserir": {
+            "type": "object",
+            "properties": {
+                "itens": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.KitItem"
+                    }
+                }
+            }
+        },
+        "model.KitItem": {
+            "type": "object",
+            "required": [
+                "id_epi",
+                "quantidade"
+            ],
+            "properties": {
+                "ca": {
+                    "type": "string"
+                },
+                "id_epi": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "nome": {
+                    "type": "string"
+                },
+                "quantidade": {
+                    "type": "integer",
+                    "minimum": 1
                 }
             }
         },
