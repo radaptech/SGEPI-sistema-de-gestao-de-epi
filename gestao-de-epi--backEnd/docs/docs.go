@@ -1604,6 +1604,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/faltas-kit": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Funcionários ativos com menos EPI em posse (entregue − devolvido) do que o kit da função exige",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Entregas"
+                ],
+                "summary": "Funcionários sem o EPI do kit",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.FaltaKitDto"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno",
+                        "schema": {
+                            "$ref": "#/definitions/helper.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/funcao/{id}": {
             "put": {
                 "description": "Atualiza o nome de uma funcao e seu departamento existente",
@@ -3126,6 +3160,35 @@ const docTemplate = `{
                 },
                 "nome": {
                     "type": "string"
+                }
+            }
+        },
+        "model.FaltaKitDto": {
+            "type": "object",
+            "properties": {
+                "em_posse": {
+                    "type": "integer"
+                },
+                "epi_id": {
+                    "type": "integer"
+                },
+                "epi_nome": {
+                    "type": "string"
+                },
+                "exigido": {
+                    "type": "integer"
+                },
+                "funcao_nome": {
+                    "type": "string"
+                },
+                "funcionario_id": {
+                    "type": "integer"
+                },
+                "funcionario_nome": {
+                    "type": "string"
+                },
+                "matricula": {
+                    "type": "integer"
                 }
             }
         },

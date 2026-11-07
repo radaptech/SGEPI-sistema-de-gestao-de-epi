@@ -157,3 +157,35 @@ LEFT JOIN devolvido dv ON dv.idfuncionario = en.idfuncionario AND dv.idepi = en.
 WHERE en.quantidade - COALESCE(dv.quantidade, 0) > 0
   AND en.ultima_entrega + e.vida_util_dias <= sqlc.arg('ate')::date
 ORDER BY vence_em, f.nome;
+
+-- name: ListarFaltasKit :many
+-- Funcionários ativos com menos EPI em posse (entregue − devolvido) do que o kit da função pede.
+-- Quem nunca recebeu o EPI aparece com em_posse = 0.
+WITH entregue AS (
+    SELECT ee.idfuncionario, ie.id_epi, SUM(ie.quantidade)::int AS quantidade
+    FROM entrega_epi ee
+    JOIN epis_entregues ie ON ie.id_entrega_cabecalho = ee.id AND ie.tenant_id = ee.tenant_id AND ie.ativo = TRUE
+    WHERE ee.tenant_id = sqlc.arg('tenant_id') AND ee.ativo = TRUE
+    GROUP BY ee.idfuncionario, ie.id_epi
+), devolvido AS (
+    SELECT d.idfuncionario, d.idepi, SUM(d.quantidadeadevolver)::int AS quantidade
+    FROM devolucao d
+    WHERE d.tenant_id = sqlc.arg('tenant_id') AND d.ativo = TRUE
+    GROUP BY d.idfuncionario, d.idepi
+)
+SELECT
+    f.id AS funcionario_id, f.nome AS funcionario_nome, f.matricula,
+    fn.nome AS funcao_nome,
+    e.id AS epi_id, e.nome AS epi_nome,
+    fe.quantidade AS exigido,
+    (COALESCE(en.quantidade, 0) - COALESCE(dv.quantidade, 0))::int AS em_posse
+FROM funcionario f
+JOIN funcao fn ON fn.id = f.idfuncao AND fn.tenant_id = sqlc.arg('tenant_id')
+JOIN funcao_epi fe ON fe.id_funcao = f.idfuncao AND fe.tenant_id = sqlc.arg('tenant_id')
+JOIN epi e ON e.id = fe.id_epi AND e.tenant_id = sqlc.arg('tenant_id') AND e.ativo = TRUE
+LEFT JOIN entregue en ON en.idfuncionario = f.id AND en.id_epi = fe.id_epi
+LEFT JOIN devolvido dv ON dv.idfuncionario = f.id AND dv.idepi = fe.id_epi
+WHERE f.tenant_id = sqlc.arg('tenant_id') -- SEGURANÇA
+  AND f.ativo = TRUE
+  AND COALESCE(en.quantidade, 0) - COALESCE(dv.quantidade, 0) < fe.quantidade
+ORDER BY f.nome, e.nome;

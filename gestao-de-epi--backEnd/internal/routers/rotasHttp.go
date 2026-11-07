@@ -212,6 +212,7 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 		api.GET("/entregas-dashbord", c.Entrega.BuscarEntregaDashbord())
 		api.GET("/entrega-itens-dashbord", c.Entrega.BuscarEntregaItenDashbord())
 		api.GET("/trocas-pendentes", c.Entrega.ListarTrocasPendentes())
+		api.GET("/faltas-kit", c.Entrega.ListarFaltasKit())
 
 		//devolucao
 		api.POST("/cadastro-devolucao", c.Devolucao.Adicionar())

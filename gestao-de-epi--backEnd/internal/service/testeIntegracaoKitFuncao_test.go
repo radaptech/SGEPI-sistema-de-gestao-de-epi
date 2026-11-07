@@ -58,3 +58,71 @@ func TestKitFuncao(t *testing.T) {
 	require.NoError(t, svc.SalvarKit(ctx, int(funcao), nil, int32(tenant)))
 	require.Empty(t, kit(tenant))
 }
+
+// Cobre o ListarFaltasKit: posse (entregue − devolvido) comparada com o kit da função.
+func TestFaltasKit(t *testing.T) {
+	ctx := context.Background()
+	db := SetupTestDB(t)
+	defer db.Close()
+
+	kitSvc := NewFuncaoService(repository.NewFuncaoRepository(db))
+	entregaSvc := NewEntregaService(repository.NewEntregaRepository(db), db)
+
+	idPlano := CreatePlanos(t, db)
+	tenant := CreateEmpresa(t, db, idPlano)
+	user := CreateUser(t, db, tenant)
+	dep := CreateDepartamento(t, db, tenant)
+	funcao := CreateFuncao(t, db, dep, tenant)
+	luva, botina := CreateEpi(t, db, CreateProtecao(t, db), tenant), CreateEpi(t, db, CreateProtecao(t, db), tenant)
+	tamanho := CreateTamanho(t, db, tenant)
+	nf := CreateEntradaNfEpi(t, db, tenant, user, CreateFornecedor(t, db, tenant))
+	lote := map[int64]int64{
+		luva:   CreateEntradaEpi(t, db, tenant, luva, tamanho, user, nf),
+		botina: CreateEntradaEpi(t, db, tenant, botina, tamanho, user, nf),
+	}
+
+	// kit: 2 luvas e 1 botina
+	require.NoError(t, kitSvc.SalvarKit(ctx, int(funcao), []model.KitItem{
+		{IdEpi: int32(luva), Quantidade: 2}, {IdEpi: int32(botina), Quantidade: 1},
+	}, int32(tenant)))
+
+	// CreateEpiEntregues entrega 10 unidades
+	entregar := func(funcionario int64, epis ...int64) {
+		entrega := CreateEntregaEpi(t, db, funcionario, user, tenant)
+		for _, epi := range epis {
+			CreateEpiEntregues(t, db, entrega, lote[epi], epi, tamanho, tenant)
+		}
+	}
+
+	semNada := CreateFuncionario(t, db, dep, funcao, tenant)
+	soLuva := CreateFuncionario(t, db, dep, funcao, tenant)
+	completo := CreateFuncionario(t, db, dep, funcao, tenant)
+	devolveu := CreateFuncionario(t, db, dep, funcao, tenant)
+
+	entregar(soLuva, luva)
+	entregar(completo, luva, botina)
+	entregar(devolveu, luva, botina)
+	motivo := CreateMotivoDevolucao(t, db, "Desgaste", false, tenant)
+	_, err := db.Exec(ctx, `INSERT INTO devolucao (tenant_id, idepi, idfuncionario, idmotivo, data_devolucao, idtamanho, quantidadeadevolver, assinatura_digital)
+		VALUES ($1, $2, $3, $4, CURRENT_DATE, $5, 10, 'x')`, tenant, botina, devolveu, motivo, tamanho)
+	require.NoError(t, err)
+
+	faltas, err := entregaSvc.ListarFaltasKit(ctx, int32(tenant))
+	require.NoError(t, err)
+
+	got := map[[2]int32]int32{} // {funcionario, epi} → em posse
+	for _, f := range faltas {
+		got[[2]int32{f.FuncionarioId, f.EpiId}] = f.EmPosse
+	}
+	require.Equal(t, map[[2]int32]int32{
+		{int32(semNada), int32(luva)}:    0,
+		{int32(semNada), int32(botina)}:  0,
+		{int32(soLuva), int32(botina)}:   0,
+		{int32(devolveu), int32(botina)}: 0,
+	}, got)
+
+	// outro tenant não vê as faltas deste
+	outro, err := entregaSvc.ListarFaltasKit(ctx, int32(CreateEmpresa(t, db, idPlano)))
+	require.NoError(t, err)
+	require.Empty(t, outro)
+}

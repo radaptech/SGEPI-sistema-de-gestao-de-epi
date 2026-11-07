@@ -43,6 +43,7 @@ export function useDashboardResumo() {
   const [itensEntregues, setItensEntregues] = useState([]);
   const [devolucoes, setDevolucoes] = useState([]); // <-- Descomentado
   const [trocas, setTrocas] = useState([]);
+  const [faltasKit, setFaltasKit] = useState([]);
   const [carregandoResumo, setCarregandoResumo] = useState(true);
 
   const carregarResumo = async () => {
@@ -58,6 +59,7 @@ export function useDashboardResumo() {
         listaItensEntregues,
         listaDevolucoes,
         listaTrocas,
+        listaFaltasKit,
       ] = await Promise.all([
         api.get("/epis-dashbord").catch(() => []),
         api.get("/tamanhos").catch(() => []),
@@ -70,6 +72,7 @@ export function useDashboardResumo() {
           return []; // Retorna lista vazia e o código continua rodando
         }),
         api.get(`/trocas-pendentes?dias=${DIAS_ALERTA_TROCA}`).catch(() => []),
+        api.get("/faltas-kit").catch(() => []),
       ]);
       
       setEpis((listaEpis || []).map(normalizarEpi));
@@ -80,6 +83,7 @@ export function useDashboardResumo() {
       setItensEntregues((listaItensEntregues || []).map(normalizarItemEntregue));
       setDevolucoes((listaDevolucoes || []).map(normalizarDevolucao)); // <-- Descomentado
       setTrocas(Array.isArray(listaTrocas) ? listaTrocas : []);
+      setFaltasKit(Array.isArray(listaFaltasKit) ? listaFaltasKit : []);
 
     } finally {
       setCarregandoResumo(false);
@@ -313,6 +317,19 @@ export function useDashboardResumo() {
     }));
   }, [trocas]);
 
+  // funcionários com menos EPI em posse do que o kit da função pede (/faltas-kit)
+  const faltasKitDetalhadas = useMemo(() => {
+    return faltasKit.map((f) => ({
+      id: `${f.funcionario_id}-${f.epi_id}`,
+      funcionario: f.funcionario_nome,
+      matricula: f.matricula,
+      funcao: f.funcao_nome,
+      item: f.epi_nome,
+      exigido: f.exigido,
+      emPosse: f.em_posse,
+    }));
+  }, [faltasKit]);
+
   const valorEstoqueDetalhado = useMemo(() => {
     const mapa = {};
 
@@ -390,9 +407,10 @@ export function useDashboardResumo() {
       alertas,
       caVencendo: caVencendoDetalhado.length,
       trocas: trocasDetalhadas.length,
+      faltasKit: new Set(faltasKitDetalhadas.map((f) => f.funcionario)).size,
       valorTotal,
     };
-  }, [entradas, entregas, devolucoes, alertasDetalhados, caVencendoDetalhado, trocasDetalhadas]);
+  }, [entradas, entregas, devolucoes, alertasDetalhados, caVencendoDetalhado, trocasDetalhadas, faltasKitDetalhadas]);
 
   return {
     epis,
@@ -406,6 +424,7 @@ export function useDashboardResumo() {
     alertasDetalhados,
     caVencendoDetalhado,
     trocasDetalhadas,
+    faltasKitDetalhadas,
     valorEstoqueDetalhado,
     carregarResumo,
   };

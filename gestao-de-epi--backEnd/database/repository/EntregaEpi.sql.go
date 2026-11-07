@@ -453,6 +453,79 @@ func (q *Queries) ListarEntregas(ctx context.Context, arg ListarEntregasParams) 
 	return items, nil
 }
 
+const listarFaltasKit = `-- name: ListarFaltasKit :many
+WITH entregue AS (
+    SELECT ee.idfuncionario, ie.id_epi, SUM(ie.quantidade)::int AS quantidade
+    FROM entrega_epi ee
+    JOIN epis_entregues ie ON ie.id_entrega_cabecalho = ee.id AND ie.tenant_id = ee.tenant_id AND ie.ativo = TRUE
+    WHERE ee.tenant_id = $1 AND ee.ativo = TRUE
+    GROUP BY ee.idfuncionario, ie.id_epi
+), devolvido AS (
+    SELECT d.idfuncionario, d.idepi, SUM(d.quantidadeadevolver)::int AS quantidade
+    FROM devolucao d
+    WHERE d.tenant_id = $1 AND d.ativo = TRUE
+    GROUP BY d.idfuncionario, d.idepi
+)
+SELECT
+    f.id AS funcionario_id, f.nome AS funcionario_nome, f.matricula,
+    fn.nome AS funcao_nome,
+    e.id AS epi_id, e.nome AS epi_nome,
+    fe.quantidade AS exigido,
+    (COALESCE(en.quantidade, 0) - COALESCE(dv.quantidade, 0))::int AS em_posse
+FROM funcionario f
+JOIN funcao fn ON fn.id = f.idfuncao AND fn.tenant_id = $1
+JOIN funcao_epi fe ON fe.id_funcao = f.idfuncao AND fe.tenant_id = $1
+JOIN epi e ON e.id = fe.id_epi AND e.tenant_id = $1 AND e.ativo = TRUE
+LEFT JOIN entregue en ON en.idfuncionario = f.id AND en.id_epi = fe.id_epi
+LEFT JOIN devolvido dv ON dv.idfuncionario = f.id AND dv.idepi = fe.id_epi
+WHERE f.tenant_id = $1 -- SEGURANÇA
+  AND f.ativo = TRUE
+  AND COALESCE(en.quantidade, 0) - COALESCE(dv.quantidade, 0) < fe.quantidade
+ORDER BY f.nome, e.nome
+`
+
+type ListarFaltasKitRow struct {
+	FuncionarioID   int32
+	FuncionarioNome string
+	Matricula       int32
+	FuncaoNome      string
+	EpiID           int32
+	EpiNome         string
+	Exigido         int32
+	EmPosse         int32
+}
+
+// Funcionários ativos com menos EPI em posse (entregue − devolvido) do que o kit da função pede.
+// Quem nunca recebeu o EPI aparece com em_posse = 0.
+func (q *Queries) ListarFaltasKit(ctx context.Context, tenantID int32) ([]ListarFaltasKitRow, error) {
+	rows, err := q.db.Query(ctx, listarFaltasKit, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListarFaltasKitRow
+	for rows.Next() {
+		var i ListarFaltasKitRow
+		if err := rows.Scan(
+			&i.FuncionarioID,
+			&i.FuncionarioNome,
+			&i.Matricula,
+			&i.FuncaoNome,
+			&i.EpiID,
+			&i.EpiNome,
+			&i.Exigido,
+			&i.EmPosse,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listarHistoricoEntregasPorMatricula = `-- name: ListarHistoricoEntregasPorMatricula :many
 SELECT 
     emp.razao_social as razao_social,
