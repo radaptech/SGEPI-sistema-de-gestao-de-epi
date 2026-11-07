@@ -110,10 +110,10 @@ type EpiFiltro struct {
 }
 
 type EpiPaginado struct {
-	Epis        []model.EpiDto
-	Total       int64
-	Pagina      int32
-	PaginaFinal int32
+	Epis        []model.EpiDto `json:"epis"`
+	Total       int64          `json:"total"`
+	Pagina      int32          `json:"pagina"`
+	PaginaFinal int32          `json:"pagina_final"`
 }
 
 func (e *EpiService) ListarEpis(ctx context.Context, f EpiFiltro, tenantId int32) (EpiPaginado, error) {

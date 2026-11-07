@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { listar } from "../services/listas";
 
-// /devolucao já vem com os nomes resolvidos (funcionarioNome, epiNome, motivoNome...), sem normalizar.
+// /devolucao já vem com os nomes resolvidos (funcionario_nome, epi_nome, motivo_nome...), sem normalizar.
 export function useDevolucoes() {
   const [devolucoes, setDevolucoes] = useState([]);
   const [carregando, setCarregando] = useState(true);

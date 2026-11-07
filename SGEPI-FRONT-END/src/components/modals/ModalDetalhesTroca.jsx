@@ -8,7 +8,7 @@ function ModalDetalhesTroca({ aberto, devolucao, onClose }) {
       <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/60 dark:border-slate-800 overflow-hidden flex flex-col transition-colors duration-300">
         <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800/60 flex justify-between items-center bg-white dark:bg-slate-900 shrink-0 transition-colors duration-300">
           <h3 className="font-extrabold text-slate-900 dark:text-white flex items-center gap-2.5 text-lg transition-colors">
-            {devolucao.houveTroca ? (
+            {devolucao.houve_troca ? (
               <><RefreshCcw className="w-5 h-5 text-emerald-500" /> Detalhes da Troca</>
             ) : (
               <><Info className="w-5 h-5 text-slate-400" /> Informação</>
@@ -24,7 +24,7 @@ function ModalDetalhesTroca({ aberto, devolucao, onClose }) {
         </div>
         
         <div className="p-6 text-sm text-slate-600 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/50 transition-colors">
-          {devolucao.houveTroca ? (
+          {devolucao.houve_troca ? (
             <div className="space-y-4">
               <p className="leading-relaxed">
                 O funcionário devolveu um item antigo e recebeu um novo EPI no mesmo momento:
@@ -35,7 +35,7 @@ function ModalDetalhesTroca({ aberto, devolucao, onClose }) {
                   EPI Entregue
                 </span>
                 <div className="font-extrabold text-emerald-900 dark:text-emerald-400 text-base transition-colors">
-                  {devolucao.epiNovoNome}
+                  {devolucao.epi_novo_nome}
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-emerald-200/60 dark:border-emerald-800/50 transition-colors">
@@ -44,7 +44,7 @@ function ModalDetalhesTroca({ aberto, devolucao, onClose }) {
                       Tamanho
                     </span>
                     <span className="font-bold text-emerald-800 dark:text-emerald-300 transition-colors">
-                      {devolucao.tamanhoNovoNome}
+                      {devolucao.tamanho_novo_nome}
                     </span>
                   </div>
                   <div>
@@ -52,7 +52,7 @@ function ModalDetalhesTroca({ aberto, devolucao, onClose }) {
                       Quantidade
                     </span>
                     <span className="font-bold text-emerald-800 dark:text-emerald-300 transition-colors">
-                      {devolucao.quantidadeNova || 0} un.
+                      {devolucao.quantidade_nova || 0} un.
                     </span>
                   </div>
                 </div>

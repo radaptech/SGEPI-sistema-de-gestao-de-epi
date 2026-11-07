@@ -2353,11 +2353,11 @@ const docTemplate = `{
             "required": [
                 "assinatura_digital",
                 "data_devolucao",
-                "idEpi",
-                "idFuncionario",
-                "idMotivo",
-                "idTamanho",
-                "quantidadeADevolver"
+                "id_epi",
+                "id_funcionario",
+                "id_motivo",
+                "id_tamanho",
+                "quantidade_a_devolver"
             ],
             "properties": {
                 "assinatura_digital": {
@@ -2370,33 +2370,33 @@ const docTemplate = `{
                 "houve_troca": {
                     "type": "boolean"
                 },
-                "idEpi": {
+                "id_epi": {
                     "type": "integer"
                 },
-                "idEpiNovo": {
+                "id_epi_novo": {
                     "description": "Campos de Troca (Podem ser nulos no JS)",
                     "type": "integer"
                 },
-                "idFuncionario": {
+                "id_funcionario": {
                     "description": "Campos Obrigatórios (binding:\"required\")",
                     "type": "integer"
                 },
-                "idMotivo": {
+                "id_motivo": {
                     "type": "integer"
                 },
-                "idTamanho": {
+                "id_tamanho": {
                     "type": "integer"
                 },
-                "idTamanhoNovo": {
+                "id_tamanho_novo": {
                     "type": "integer"
                 },
                 "observacao": {
                     "type": "string"
                 },
-                "quantidadeADevolver": {
+                "quantidade_a_devolver": {
                     "type": "integer"
                 },
-                "quantidadeNova": {
+                "quantidade_nova": {
                     "type": "integer"
                 }
             }
@@ -2412,46 +2412,46 @@ const docTemplate = `{
                     "description": "Formato ISO ou DD/MM/YYYY",
                     "type": "string"
                 },
-                "epiNome": {
+                "epi_nome": {
                     "type": "string"
                 },
-                "epiNovoNome": {
+                "epi_novo_nome": {
                     "description": "Ponteiro pois pode ser null se não houver troca",
                     "type": "string"
                 },
-                "funcionarioMatricula": {
+                "funcionario_matricula": {
                     "type": "integer"
                 },
-                "funcionarioNome": {
+                "funcionario_nome": {
                     "type": "string"
                 },
-                "houveTroca": {
+                "houve_troca": {
                     "type": "boolean"
                 },
                 "id": {
                     "type": "integer"
                 },
-                "idFuncionario": {
+                "id_funcionario": {
                     "type": "integer"
                 },
-                "motivoNome": {
+                "motivo_nome": {
                     "type": "string"
                 },
                 "observacao": {
                     "description": "Ponteiro pois é opcional",
                     "type": "string"
                 },
-                "quantidadeADevolver": {
+                "quantidade_a_devolver": {
                     "type": "integer"
                 },
-                "quantidadeNova": {
+                "quantidade_nova": {
                     "description": "Ponteiro pois pode ser null",
                     "type": "integer"
                 },
-                "tamanhoNome": {
+                "tamanho_nome": {
                     "type": "string"
                 },
-                "tamanhoNovoNome": {
+                "tamanho_novo_nome": {
                     "description": "Ponteiro pois pode ser null",
                     "type": "string"
                 },
@@ -2466,7 +2466,7 @@ const docTemplate = `{
             "required": [
                 "email",
                 "nome",
-                "planoId",
+                "plano_id",
                 "responsavel",
                 "status"
             ],
@@ -2483,7 +2483,7 @@ const docTemplate = `{
                 "observacoes": {
                     "type": "string"
                 },
-                "planoId": {
+                "plano_id": {
                     "type": "integer"
                 },
                 "responsavel": {
@@ -3021,7 +3021,7 @@ const docTemplate = `{
                 "protecao": {
                     "$ref": "#/definitions/model.TipoProtecaoDto"
                 },
-                "saldoAtual": {
+                "saldo_atual": {
                     "type": "integer"
                 },
                 "tamanhos": {
@@ -3039,7 +3039,7 @@ const docTemplate = `{
         "model.EpiDtoEstoque": {
             "type": "object",
             "properties": {
-                "alertaMinimo": {
+                "alerta_minimo": {
                     "type": "integer"
                 },
                 "ca": {
@@ -3060,7 +3060,7 @@ const docTemplate = `{
                 "protecao": {
                     "$ref": "#/definitions/model.TipoProtecaoDto"
                 },
-                "validadeCa": {
+                "validade_ca": {
                     "type": "string"
                 }
             }
@@ -3255,7 +3255,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "matricula": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "nome": {
                     "type": "string"
@@ -3269,7 +3269,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "matricula": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "nome": {
                     "type": "string"
@@ -3316,7 +3316,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "matricula": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "nome": {
                     "type": "string"
@@ -3400,28 +3400,28 @@ const docTemplate = `{
         "model.ResumoDashboard": {
             "type": "object",
             "properties": {
-                "empresasAtivas": {
+                "empresas_ativas": {
                     "type": "integer"
                 },
-                "empresasBloqueadas": {
+                "empresas_bloqueadas": {
                     "type": "integer"
                 },
-                "empresasEmTeste": {
+                "empresas_em_teste": {
                     "type": "integer"
                 },
-                "receitaMensal": {
+                "receita_mensal": {
                     "type": "number"
                 },
-                "totalEmpresas": {
+                "total_empresas": {
                     "type": "integer"
                 },
-                "totalEntregas": {
+                "total_entregas": {
                     "type": "integer"
                 },
-                "totalEpis": {
+                "total_epis": {
                     "type": "integer"
                 },
-                "totalFuncionarios": {
+                "total_funcionarios": {
                     "type": "integer"
                 }
             }
@@ -3555,7 +3555,7 @@ const docTemplate = `{
                 "pagina": {
                     "type": "integer"
                 },
-                "paginaFinal": {
+                "pagina_final": {
                     "type": "integer"
                 },
                 "total": {
@@ -3613,23 +3613,20 @@ const docTemplate = `{
                     }
                 },
                 "pagina": {
-                    "type": "integer",
-                    "format": "int32"
+                    "type": "integer"
                 },
-                "paginaFinal": {
-                    "type": "integer",
-                    "format": "int32"
+                "pagina_final": {
+                    "type": "integer"
                 },
                 "total": {
-                    "type": "integer",
-                    "format": "int64"
+                    "type": "integer"
                 }
             }
         },
         "service.FuncionarioPaginado": {
             "type": "object",
             "properties": {
-                "funcionario": {
+                "funcionarios": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.Funcionario_Dto"
@@ -3638,7 +3635,7 @@ const docTemplate = `{
                 "pagina": {
                     "type": "integer"
                 },
-                "paginaFinal": {
+                "pagina_final": {
                     "type": "integer"
                 },
                 "total": {

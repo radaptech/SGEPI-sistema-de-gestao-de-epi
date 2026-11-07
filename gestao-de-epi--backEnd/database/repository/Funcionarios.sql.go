@@ -234,11 +234,7 @@ SELECT
     fn.id, 
     fn.nome, 
     fn.cpf,
-    -- Formatação para exibição
-    CASE 
-        WHEN fn.matricula < 10000 THEN LPAD(fn.matricula::text, 4, '0') 
-        ELSE fn.matricula::text 
-    END AS matricula,
+    fn.matricula,
     fn.IdDepartamento, 
     d.nome as departamento_nome,
     fn.IdFuncao, 
@@ -282,7 +278,7 @@ type BuscarTodosFuncionariosRow struct {
 	ID               int32
 	Nome             string
 	Cpf              pgtype.Text
-	Matricula        string
+	Matricula        int32
 	Iddepartamento   int32
 	DepartamentoNome string
 	Idfuncao         int32

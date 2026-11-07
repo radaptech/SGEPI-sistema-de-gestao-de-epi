@@ -49,34 +49,34 @@ definitions:
         type: string
       houve_troca:
         type: boolean
-      idEpi:
+      id_epi:
         type: integer
-      idEpiNovo:
+      id_epi_novo:
         description: Campos de Troca (Podem ser nulos no JS)
         type: integer
-      idFuncionario:
+      id_funcionario:
         description: Campos Obrigatórios (binding:"required")
         type: integer
-      idMotivo:
+      id_motivo:
         type: integer
-      idTamanho:
+      id_tamanho:
         type: integer
-      idTamanhoNovo:
+      id_tamanho_novo:
         type: integer
       observacao:
         type: string
-      quantidadeADevolver:
+      quantidade_a_devolver:
         type: integer
-      quantidadeNova:
+      quantidade_nova:
         type: integer
     required:
     - assinatura_digital
     - data_devolucao
-    - idEpi
-    - idFuncionario
-    - idMotivo
-    - idTamanho
-    - quantidadeADevolver
+    - id_epi
+    - id_funcionario
+    - id_motivo
+    - id_tamanho
+    - quantidade_a_devolver
     type: object
   model.DevolucaoResponse:
     properties:
@@ -86,34 +86,34 @@ definitions:
       data_devolucao:
         description: Formato ISO ou DD/MM/YYYY
         type: string
-      epiNome:
+      epi_nome:
         type: string
-      epiNovoNome:
+      epi_novo_nome:
         description: Ponteiro pois pode ser null se não houver troca
         type: string
-      funcionarioMatricula:
+      funcionario_matricula:
         type: integer
-      funcionarioNome:
+      funcionario_nome:
         type: string
-      houveTroca:
+      houve_troca:
         type: boolean
       id:
         type: integer
-      idFuncionario:
+      id_funcionario:
         type: integer
-      motivoNome:
+      motivo_nome:
         type: string
       observacao:
         description: Ponteiro pois é opcional
         type: string
-      quantidadeADevolver:
+      quantidade_a_devolver:
         type: integer
-      quantidadeNova:
+      quantidade_nova:
         description: Ponteiro pois pode ser null
         type: integer
-      tamanhoNome:
+      tamanho_nome:
         type: string
-      tamanhoNovoNome:
+      tamanho_novo_nome:
         description: Ponteiro pois pode ser null
         type: string
       token_validacao:
@@ -130,7 +130,7 @@ definitions:
         type: string
       observacoes:
         type: string
-      planoId:
+      plano_id:
         type: integer
       responsavel:
         type: string
@@ -143,7 +143,7 @@ definitions:
     required:
     - email
     - nome
-    - planoId
+    - plano_id
     - responsavel
     - status
     type: object
@@ -500,7 +500,7 @@ definitions:
         type: string
       protecao:
         $ref: '#/definitions/model.TipoProtecaoDto'
-      saldoAtual:
+      saldo_atual:
         type: integer
       tamanhos:
         description: Slive de objetos Tamanho (id e nome)
@@ -512,7 +512,7 @@ definitions:
     type: object
   model.EpiDtoEstoque:
     properties:
-      alertaMinimo:
+      alerta_minimo:
         type: integer
       ca:
         type: string
@@ -526,7 +526,7 @@ definitions:
         type: string
       protecao:
         $ref: '#/definitions/model.TipoProtecaoDto'
-      validadeCa:
+      validade_ca:
         type: string
     type: object
   model.EpiInserir:
@@ -655,7 +655,7 @@ definitions:
       id:
         type: integer
       matricula:
-        type: string
+        type: integer
       nome:
         type: string
     type: object
@@ -672,7 +672,7 @@ definitions:
       id:
         type: integer
       matricula:
-        type: string
+        type: integer
       nome:
         type: string
     type: object
@@ -681,7 +681,7 @@ definitions:
       id:
         type: integer
       matricula:
-        type: string
+        type: integer
       nome:
         type: string
     type: object
@@ -757,21 +757,21 @@ definitions:
     type: object
   model.ResumoDashboard:
     properties:
-      empresasAtivas:
+      empresas_ativas:
         type: integer
-      empresasBloqueadas:
+      empresas_bloqueadas:
         type: integer
-      empresasEmTeste:
+      empresas_em_teste:
         type: integer
-      receitaMensal:
+      receita_mensal:
         type: number
-      totalEmpresas:
+      total_empresas:
         type: integer
-      totalEntregas:
+      total_entregas:
         type: integer
-      totalEpis:
+      total_epis:
         type: integer
-      totalFuncionarios:
+      total_funcionarios:
         type: integer
     type: object
   model.TamanhoDto:
@@ -859,7 +859,7 @@ definitions:
         type: array
       pagina:
         type: integer
-      paginaFinal:
+      pagina_final:
         type: integer
       total:
         type: integer
@@ -897,24 +897,21 @@ definitions:
           $ref: '#/definitions/model.EpiDto'
         type: array
       pagina:
-        format: int32
         type: integer
-      paginaFinal:
-        format: int32
+      pagina_final:
         type: integer
       total:
-        format: int64
         type: integer
     type: object
   service.FuncionarioPaginado:
     properties:
-      funcionario:
+      funcionarios:
         items:
           $ref: '#/definitions/model.Funcionario_Dto'
         type: array
       pagina:
         type: integer
-      paginaFinal:
+      pagina_final:
         type: integer
       total:
         type: integer

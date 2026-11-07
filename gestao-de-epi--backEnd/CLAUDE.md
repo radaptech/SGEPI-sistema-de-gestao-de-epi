@@ -316,6 +316,13 @@ Cada controller declara **sua própria interface de service** no topo do arquivo
 do consumidor) e recebe a implementação por construtor. Os handlers são *closures*:
 `func (c *XController) Acao() gin.HandlerFunc`.
 
+### Contrato JSON
+
+Toda chave de JSON (entrada e saída) é **snake_case**, inclusive em struct sem tag (sem tag o Go
+sai em PascalCase — sempre ponha `json:"..."`). Listagens paginadas respondem
+`{"<plural>": [...], "total", "pagina", "pagina_final"}`. `matricula` é número (a coluna é INT).
+O front lê a lista de cada rota pela chave em `SGEPI-FRONT-END/src/services/listas.js`.
+
 ### Datas
 
 `configs.DataBr` é um `time.Time` com `UnmarshalJSON`/`MarshalJSON` no formato **`DD/MM/YYYY`**.

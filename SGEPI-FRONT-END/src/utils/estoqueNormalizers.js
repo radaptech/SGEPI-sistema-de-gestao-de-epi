@@ -1,4 +1,4 @@
-// Lote de /entradas-estoque. O EPI aninhado vem em camelCase (validadeCa, alertaMinimo).
+// Lote de /entradas-estoque.
 export function normalizarEntradaCompleta(item) {
   const preco = Number(item.valor_unitario); // decimal vem como string
   return {
@@ -13,7 +13,7 @@ export function normalizarEntradaCompleta(item) {
     fabricante: item.epi.fabricante,
     ca: item.epi.ca,
     descricao: item.epi.descricao,
-    alertaMinimo: item.epi.alertaMinimo,
+    alertaMinimo: item.epi.alerta_minimo,
     tipoProtecao: item.epi.protecao.nome,
     data_entrada: item.data_entrada,
     valorTotal: item.quantidade_atual * preco,

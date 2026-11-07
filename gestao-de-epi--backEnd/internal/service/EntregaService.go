@@ -269,7 +269,7 @@ func (e *EntregaService) ListaEntregas(ctx context.Context, f FiltroEntregas, te
 		dto = append(dto, model.EntregaDto{
 			Id: ent.EntregaID,
 			Funcionario: model.Funcionario_Dto{
-				ID: int32(ent.FuncID), Nome: ent.FuncNome, Matricula: strconv.Itoa(int(ent.Matricula)),
+				ID: int32(ent.FuncID), Nome: ent.FuncNome, Matricula: ent.Matricula,
 				Funcao: model.FuncaoDto{
 					ID: int(ent.FuncaoID), Funcao: ent.FuncaoNome,
 					Departamento: model.DepartamentoDto{ID: int(ent.DepID), Departamento: ent.DepNome},

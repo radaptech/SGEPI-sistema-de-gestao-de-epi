@@ -18,14 +18,14 @@ type EmpresaInserir struct {
 }
 
 type ResumoDashboard struct {
-	EmpresasAtivas     int     `json:"empresasAtivas"`
-	EmpresasBloqueadas int     `json:"empresasBloqueadas"`
-	EmpresasEmTeste    int     `json:"empresasEmTeste"`
-	TotalEmpresas      int     `json:"totalEmpresas"`
-	TotalFuncionarios  int     `json:"totalFuncionarios"`
-	TotalEpis          int     `json:"totalEpis"`
-	TotalEntregas      int     `json:"totalEntregas"`
-	ReceitaMensal      float64 `json:"receitaMensal"`
+	EmpresasAtivas     int     `json:"empresas_ativas"`
+	EmpresasBloqueadas int     `json:"empresas_bloqueadas"`
+	EmpresasEmTeste    int     `json:"empresas_em_teste"`
+	TotalEmpresas      int     `json:"total_empresas"`
+	TotalFuncionarios  int     `json:"total_funcionarios"`
+	TotalEpis          int     `json:"total_epis"`
+	TotalEntregas      int     `json:"total_entregas"`
+	ReceitaMensal      float64 `json:"receita_mensal"`
 }
 
 type EmpresaRecente struct {
@@ -62,7 +62,7 @@ type EditarEmpresaRequest struct {
 	Responsavel string         `json:"responsavel" binding:"required"`
 	Email       string         `github:"email" json:"email" binding:"required,email"`
 	Telefone    string         `json:"telefone"`
-	PlanoID     int64          `json:"planoId" binding:"required"`
+	PlanoID     int64          `json:"plano_id" binding:"required"`
 	Vencimento  configs.DataBr `json:"vencimento"`
 	Status      string         `json:"status" binding:"required"`
 	Observacoes string         `json:"observacoes"`

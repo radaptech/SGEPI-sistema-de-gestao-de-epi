@@ -18,12 +18,9 @@ function ModalEditarEmpresa({ aberto, empresa, planos = [], onFechar, onSalvar, 
 
   useEffect(() => {
     if (empresa && aberto) {
-      let planoInicial = "";
-      if (empresa.planoId) {
-        planoInicial = String(empresa.planoId);
-      } else if (planos && planos.length > 0) {
-        planoInicial = String(planos[0].id);
-      }
+      // /dados-empresas manda o nome do plano, não o id
+      const planoAtual = planos.find((p) => p.nome === empresa.plano);
+      const planoInicial = planoAtual ? String(planoAtual.id) : "";
 
       setForm({
         nome: empresa.nome || "",
@@ -82,7 +79,7 @@ function ModalEditarEmpresa({ aberto, empresa, planos = [], onFechar, onSalvar, 
       responsavel: form.responsavel.trim(),
       email: form.email.trim(),
       telefone: form.telefone.trim(),
-      planoId: Number(form.planoId),
+      plano_id: Number(form.planoId),
       vencimento: formatarData(form.vencimento),
       status: form.status,
       observacoes: form.observacoes.trim(), // 👈 Adicionado ao payload enviado ao Go

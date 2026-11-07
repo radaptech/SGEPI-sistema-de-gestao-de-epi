@@ -63,7 +63,7 @@ function ModalNovoUsuario({ aberto, onFechar, onSalvar, empresas = [] }) {
     };
 
     if (form.empresa) {
-      payloadApi.empresaId = Number(form.empresa);
+      payloadApi.empresa_id = Number(form.empresa);
     }
 
     const novoUsuarioParaTela = {
@@ -73,7 +73,7 @@ function ModalNovoUsuario({ aberto, onFechar, onSalvar, empresas = [] }) {
       empresa: empresas.find(emp => Number(emp.id) === Number(form.empresa))?.nome || "Sem empresa",
       tipo: form.tipo,
       status: form.status === "Ativo",
-      ultimoAcesso: "Nunca acessou", 
+      ultimo_acesso: "Nunca acessou", 
     };
 
     onSalvar?.(payloadApi, novoUsuarioParaTela);

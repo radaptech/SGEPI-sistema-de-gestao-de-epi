@@ -216,7 +216,7 @@ export default function AbaFornecedores() {
     try {
       const resposta = await api.get("/fornecedores");
 
-      setFornecedores(resposta.Fornecedores ?? []);
+      setFornecedores(resposta.fornecedores ?? []);
     } catch {
       // o api.js já mostrou o erro
     }

@@ -4,19 +4,19 @@ import "github.com/davi-fernandesx/sistema-de-gestao-de-epi/configs"
 
 type DevolucaoInserir struct {
 	// Campos Obrigatórios (binding:"required")
-	IdFuncionario       int            `json:"idFuncionario" binding:"required"`
-	IdEpi               int            `json:"idEpi" binding:"required"`
-	IdMotivo            int            `json:"idMotivo" binding:"required"`
-	IdTamanho           int            `json:"idTamanho" binding:"required"`
+	IdFuncionario       int            `json:"id_funcionario" binding:"required"`
+	IdEpi               int            `json:"id_epi" binding:"required"`
+	IdMotivo            int            `json:"id_motivo" binding:"required"`
+	IdTamanho           int            `json:"id_tamanho" binding:"required"`
 	DataDevolucao       configs.DataBr `json:"data_devolucao" binding:"required"`
-	QuantidadeADevolver int            `json:"quantidadeADevolver" binding:"required,numeric,gt=0"`
+	QuantidadeADevolver int            `json:"quantidade_a_devolver" binding:"required,numeric,gt=0"`
 	Iduser              int            `json:"-"`
 
 	Troca bool `json:"houve_troca"`
 	// Campos de Troca (Podem ser nulos no JS)
-	IdEpiNovo      *int `json:"idEpiNovo"`
-	IdTamanhoNovo  *int `json:"idTamanhoNovo"`
-	NovaQuantidade *int `json:"quantidadeNova"`
+	IdEpiNovo      *int `json:"id_epi_novo"`
+	IdTamanhoNovo  *int `json:"id_tamanho_novo"`
+	NovaQuantidade *int `json:"quantidade_nova"`
 
 	// Outros campos do Payload
 	AssinaturaDigital string  `json:"assinatura_digital" binding:"required"`
@@ -47,20 +47,20 @@ type DevolucaoDto struct {
 type DevolucaoResponse struct {
 	ID                   int32          `json:"id"`
 	DataDevolucao        configs.DataBr `json:"data_devolucao"` // Formato ISO ou DD/MM/YYYY
-	IDFuncionario        int32          `json:"idFuncionario"`
-	FuncionarioNome      string         `json:"funcionarioNome"`
-	FuncionarioMatricula int32          `json:"funcionarioMatricula"`
+	IDFuncionario        int32          `json:"id_funcionario"`
+	FuncionarioNome      string         `json:"funcionario_nome"`
+	FuncionarioMatricula int32          `json:"funcionario_matricula"`
 
-	EpiNome             string `json:"epiNome"`
-	TamanhoNome         string `json:"tamanhoNome"`
-	QuantidadeADevolver int32  `json:"quantidadeADevolver"`
+	EpiNome             string `json:"epi_nome"`
+	TamanhoNome         string `json:"tamanho_nome"`
+	QuantidadeADevolver int32  `json:"quantidade_a_devolver"`
 
-	MotivoNome string `json:"motivoNome"`
+	MotivoNome string `json:"motivo_nome"`
 
-	HouveTroca      bool    `json:"houveTroca"`
-	EpiNovoNome     *string `json:"epiNovoNome"`     // Ponteiro pois pode ser null se não houver troca
-	TamanhoNovoNome *string `json:"tamanhoNovoNome"` // Ponteiro pois pode ser null
-	QuantidadeNova  *int32  `json:"quantidadeNova"`  // Ponteiro pois pode ser null
+	HouveTroca      bool    `json:"houve_troca"`
+	EpiNovoNome     *string `json:"epi_novo_nome"`     // Ponteiro pois pode ser null se não houver troca
+	TamanhoNovoNome *string `json:"tamanho_novo_nome"` // Ponteiro pois pode ser null
+	QuantidadeNova  *int32  `json:"quantidade_nova"`   // Ponteiro pois pode ser null
 
 	Observacao        *string `json:"observacao"`         // Ponteiro pois é opcional
 	AssinaturaDigital *string `json:"assinatura_digital"` // Ponteiro pois pode estar pendente

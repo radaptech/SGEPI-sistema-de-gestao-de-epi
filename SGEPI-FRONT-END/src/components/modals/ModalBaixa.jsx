@@ -148,16 +148,16 @@ function ModalBaixa({ onClose, onSalvar }) {
 
     setCarregando(true);
     const payload = {
-      idFuncionario: Number(idFuncionario),
-      idEpi: Number(idEpi),
-      idMotivo: Number(idMotivo),
+      id_funcionario: Number(idFuncionario),
+      id_epi: Number(idEpi),
+      id_motivo: Number(idMotivo),
       houve_troca: houveTroca,
       data_devolucao: formatarDataParaGo(dataDevolucao),
-      idTamanho: Number(idTamanho),
-      quantidadeADevolver: Number(quantidadeADevolver),
-      idEpiNovo: houveTroca ? Number(idEpiNovo) : null,
-      idTamanhoNovo: houveTroca ? Number(idTamanhoNovo) : null,
-      quantidadeNova: houveTroca ? Number(quantidadeNova) : null,
+      id_tamanho: Number(idTamanho),
+      quantidade_a_devolver: Number(quantidadeADevolver),
+      id_epi_novo: houveTroca ? Number(idEpiNovo) : null,
+      id_tamanho_novo: houveTroca ? Number(idTamanhoNovo) : null,
+      quantidade_nova: houveTroca ? Number(quantidadeNova) : null,
       assinatura_digital: sig.assinaturaPreview,
       observacao: observacao?.trim() || null,
     };
@@ -179,7 +179,7 @@ function ModalBaixa({ onClose, onSalvar }) {
   const funcionariosFiltrados = useMemo(() => {
     const termo = buscaFuncionario.toLowerCase().trim();
     return termo
-      ? funcionarios.filter(f => f.nome.toLowerCase().includes(termo) || f.matricula.includes(termo))
+      ? funcionarios.filter(f => f.nome.toLowerCase().includes(termo) || String(f.matricula).includes(termo))
       : funcionarios;
   }, [funcionarios, buscaFuncionario]);
 

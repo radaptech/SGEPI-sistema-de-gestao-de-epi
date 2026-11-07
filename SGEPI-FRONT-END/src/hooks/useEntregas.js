@@ -55,7 +55,7 @@ export function useEntregas({ usuarioLogado }) {
     const filtradas = entregas.filter((ent) => {
       const matchTexto = !termo || 
         (ent.funcionario?.nome || "").toLowerCase().includes(termo) ||
-        (ent.funcionario?.matricula || "").includes(termo) ||
+        String(ent.funcionario.matricula).includes(termo) ||
         (ent.tokenValidacao || "").toLowerCase().includes(termo) ||
         ent.itens.some(i => i.epiNome.toLowerCase().includes(termo));
 

@@ -127,12 +127,10 @@ func (f *FuncionarioService) ListarFuncionario(ctx context.Context, matricula st
 		return model.Funcionario_Dto{}, err
 	}
 
-	funcMatricula := strconv.Itoa(int(funcionario.Matricula))
-
 	funcDto := model.Funcionario_Dto{
 		ID:        funcionario.ID,
 		Nome:      funcionario.Nome,
-		Matricula: funcMatricula,
+		Matricula: funcionario.Matricula,
 		Funcao: model.FuncaoDto{
 			ID:     int(funcionario.Idfuncao),
 			Funcao: funcionario.FuncaoNome,
@@ -156,10 +154,10 @@ type FiltroFuncionario struct {
 }
 
 type FuncionarioPaginado struct {
-	Funcionarios []model.Funcionario_Dto `json:"funcionario"`
+	Funcionarios []model.Funcionario_Dto `json:"funcionarios"`
 	Total        int64                   `json:"total"`
 	Pagina       int32                   `json:"pagina"`
-	PaginaFinal  int32                   `json:"paginaFinal"`
+	PaginaFinal  int32                   `json:"pagina_final"`
 }
 
 func (funcio *FuncionarioService) ListaTodosFuncionarios(ctx context.Context, f FiltroFuncionario, tenantId int32) (FuncionarioPaginado, error) {
@@ -412,12 +410,11 @@ func (f *FuncionarioService) FuncionariosDashbord(ctx context.Context, tenantId 
 
 	for _, ff := range funcionarios {
 
-		matricula := strconv.Itoa(int(ff.Matricula))
 		fun := model.FuncionarioDashbord{
 
 			Id:        ff.ID,
 			Nome:      ff.Nome,
-			Matricula: matricula,
+			Matricula: ff.Matricula,
 		}
 
 		dto = append(dto, fun)
@@ -507,7 +504,6 @@ func (f *FuncionarioService) FuncionarioCompleto(ctx context.Context, tenantId i
 
 	for _, funcionario := range funcionarios {
 		funcID := int(funcionario.ID)
-		matricula := strconv.Itoa(int(funcionario.Matricula))
 
 		// Pega as entregas (se não tiver, garante array vazio)
 		entregasDoFunc := mapEntregas[funcID]
@@ -518,7 +514,7 @@ func (f *FuncionarioService) FuncionarioCompleto(ctx context.Context, tenantId i
 		ff := model.FuncionarioCompletoDto{
 			ID:        int32(funcID),
 			Nome:      funcionario.Nome,
-			Matricula: matricula,
+			Matricula: funcionario.Matricula,
 			Cpf:       funcionario.Cpf.String,
 			Funcao: model.FuncaoDto{
 				ID:     int(funcionario.Idfuncao),

@@ -2,15 +2,13 @@ import { api } from "./api";
 
 // Contrato das rotas de listagem: as paginadas devolvem um objeto e a lista fica nesta chave.
 // As outras (/tamanhos, /motivos, /devolucao, os *-dashbord...) devolvem o array direto.
-// ponytail: as chaves seguem o back como ele está hoje (Epis/Fornecedores com maiúscula, funcionario no singular);
-// padronizar no back e trocar aqui.
 const CHAVE_DA_LISTA = {
   "/departamentos": "departamentos",
   "/entradas": "entradas",
   "/entregas": "entregas",
-  "/epis": "Epis",
-  "/fornecedores": "Fornecedores",
-  "/funcionarios": "funcionario",
+  "/epis": "epis",
+  "/fornecedores": "fornecedores",
+  "/funcionarios": "funcionarios",
   "/funcoes": "funcoes",
 };
 
