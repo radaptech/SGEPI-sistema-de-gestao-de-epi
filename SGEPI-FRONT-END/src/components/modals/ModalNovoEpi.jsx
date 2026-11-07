@@ -5,17 +5,6 @@ import {
   AlertCircle, Loader2, Plus, PenLine, RefreshCw
 } from "lucide-react";
 
-const PROTECOES_PADRAO = [
-  "Cabeça",
-  "Olhos e Rosto",
-  "Auditiva",
-  "Respiratória",
-  "Mãos e Braços",
-  "Pés e Pernas",
-  "Corpo Inteiro",
-  "Quedas",
-];
-
 const TAMANHOS_SUGERIDOS = [
   "Único", "PP", "P", "M", "G", "GG", "EXG",
   "34", "35", "36", "37", "38", "39", "40",
@@ -28,10 +17,6 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
 
   const [tiposProtecao, setTiposProtecao] = useState([]);
   const [tamanhosDisponiveis, setTamanhosDisponiveis] = useState([]);
-
-  const [mostrandoAddProtecao, setMostrandoAddProtecao] = useState(false);
-  const [novoTipoNome, setNovoTipoNome] = useState("");
-  const [salvandoNovoTipo, setSalvandoNovoTipo] = useState(false);
 
   const [mostrandoAddTamanho, setMostrandoAddTamanho] = useState(false);
   const [novoTamanhoNome, setNovoTamanhoNome] = useState("");
@@ -142,8 +127,10 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
         nome: dados.equipamento,
         fabricante: dados.fabricante.slice(0, 100), // limite do back; há razão social maior na base
         data_validade_ca: `${a}-${m}-${d}`,
+        // grupo da NR-6 deduzido do nome do equipamento; sem sugestão, mantém o que já estava
+        id_protecao: dados.id_protecao_sugerida ?? prev.id_protecao,
       }));
-      ["nome", "fabricante", "data_validade_ca"].forEach(limparErroCampo);
+      ["nome", "fabricante", "data_validade_ca", "id_protecao"].forEach(limparErroCampo);
       setInfoCa(dados);
     } catch {
       setInfoCa(null); // o api já mostrou o erro
@@ -187,37 +174,6 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
     setErros(novosErros);
     return Object.keys(novosErros).length === 0;
   };
-
-  async function handleAddNovoTipo() {
-    if (!novoTipoNome) {
-      mostrarToast("Selecione uma categoria para adicionar.", "erro");
-      return;
-    }
-    try {
-      setSalvandoNovoTipo(true);
-      const res = await api.post("/gerencial/cadastro-protecao", {
-        nome: novoTipoNome,
-      });
-      const nova = res?.protecao || res;
-
-      if (nova && (nova.id || nova.Id)) {
-        const novoItem = {
-          id: nova.id || nova.Id,
-          nome: nova.nome || nova.Nome,
-        };
-        setTiposProtecao((prev) => [...prev, novoItem]);
-        atualizarCampo("id_protecao", novoItem.id);
-        setNovoTipoNome("");
-        setMostrandoAddProtecao(false);
-        mostrarToast("Tipo de proteção adicionado com sucesso!", "sucesso");
-      }
-    } catch (erro) {
-      console.error("Erro ao salvar proteção:", erro);
-      mostrarToast("Erro ao salvar tipo de proteção.", "erro");
-    } finally {
-      setSalvandoNovoTipo(false);
-    }
-  }
 
   async function handleAddNovoTamanho() {
     if (!novoTamanhoNome) {
@@ -394,55 +350,20 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
                   </div>
 
                   <div>
-                    <label className="flex justify-between items-end mb-1.5 transition-colors">
-                      <span className={labelClass.replace("mb-1.5", "")}>
-                        Tipo de Proteção <span className="text-red-500">*</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setMostrandoAddProtecao(!mostrandoAddProtecao)}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-[10px] uppercase tracking-widest font-bold flex items-center gap-1 transition-colors"
-                      >
-                        {mostrandoAddProtecao ? <><X className="w-3 h-3" /> Voltar</> : <><Plus className="w-3 h-3" /> Nova Categoria</>}
-                      </button>
+                    <label className={labelClass}>
+                      Tipo de Proteção <span className="text-red-500">*</span>
                     </label>
-
-                    {!mostrandoAddProtecao ? (
-                      <>
-                        <select
-                          value={form.id_protecao}
-                          onChange={(e) => atualizarCampo("id_protecao", e.target.value)}
-                          className={`${baseInputClass} ${campoComErro("id_protecao")}`}
-                        >
-                          <option value="">Selecione...</option>
-                          {tiposProtecao.map((t) => (
-                            <option key={t.id} value={t.id}>{t.nome}</option>
-                          ))}
-                        </select>
-                        {erros.id_protecao && <p className="text-xs font-medium text-red-500 mt-1.5">{erros.id_protecao}</p>}
-                      </>
-                    ) : (
-                      <div className="flex gap-2 animate-fade-in">
-                        <select
-                          autoFocus
-                          value={novoTipoNome}
-                          onChange={(e) => setNovoTipoNome(e.target.value)}
-                          className={`${baseInputClass} !border-blue-300 dark:!border-blue-700/50 !bg-blue-50/50 dark:!bg-blue-900/10 focus:!ring-blue-500/20`}
-                        >
-                          <option value="">Escolha...</option>
-                          {PROTECOES_PADRAO.map((p) => (
-                            <option key={p} value={p}>{p}</option>
-                          ))}
-                        </select>
-                        <button
-                          onClick={handleAddNovoTipo}
-                          disabled={salvandoNovoTipo}
-                          className="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-all shadow-sm shadow-blue-600/20 disabled:opacity-50"
-                        >
-                          {salvandoNovoTipo ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add"}
-                        </button>
-                      </div>
-                    )}
+                    <select
+                      value={form.id_protecao}
+                      onChange={(e) => atualizarCampo("id_protecao", e.target.value)}
+                      className={`${baseInputClass} ${campoComErro("id_protecao")}`}
+                    >
+                      <option value="">Selecione...</option>
+                      {tiposProtecao.map((t) => (
+                        <option key={t.id} value={t.id}>{t.nome}</option>
+                      ))}
+                    </select>
+                    {erros.id_protecao && <p className="text-xs font-medium text-red-500 mt-1.5">{erros.id_protecao}</p>}
                   </div>
 
                   <div>

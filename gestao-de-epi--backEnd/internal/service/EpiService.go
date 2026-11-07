@@ -26,7 +26,7 @@ type EpiRepository interface {
 	BuscaEpiDashbord(ctx context.Context, tenant int32) ([]repository.BuscaEpiDashbordRow, error)
 	BuscaEpiTenant(ctx context.Context, tenant int32) ([]repository.BuscaTodosItensEntreguesDoTenantRow, error)
 	BuscaEpiFuncionario(ctx context.Context, idfuncionario, tenantId int32)([]repository.BuscaItensEntreguesPorFuncionarioRow, error)
-	BuscarCaepi(ctx context.Context, ca string) (repository.Caepi, error)
+	BuscarCaepi(ctx context.Context, ca string) (repository.BuscarCaepiRow, error)
 }
 
 type EpiService struct {
@@ -504,5 +504,11 @@ func (e *EpiService) BuscarCaepi(ctx context.Context, ca string) (model.CaepiDto
 		Situacao:    c.Situacao,
 		Fabricante:  c.Fabricante,
 		Equipamento: c.Equipamento,
+		IdProtecaoSugerida: func() *int32 {
+			if !c.IDProtecaoSugerida.Valid {
+				return nil
+			}
+			return &c.IDProtecaoSugerida.Int32
+		}(),
 	}, nil
 }

@@ -42,7 +42,7 @@ func setupBaseDevolucao(t *testing.T, quantidadeEntregue int32) baseDevolucao {
 	iddep := CreateDepartamento(t, db, empresa)
 	idfuncao := CreateFuncao(t, db, iddep, empresa)
 	idfuncionario := CreateFuncionario(t, db, iddep, idfuncao, empresa)
-	idprotec := CreateProtecao(t, db, empresa)
+	idprotec := CreateProtecao(t, db)
 	idtam := CreateTamanho(t, db, empresa)
 	idepi := CreateEpi(t, db, idprotec, empresa)
 	idfornecedor := CreateFornecedor(t, db, empresa)
@@ -218,7 +218,7 @@ func TestDevolucao(t *testing.T) {
 		defer base.db.Close()
 
 		// EPI novo, com seu proprio lote de 100 unidades, para receber a troca
-		idprotecNovo := CreateProtecao(t, base.db, base.empresa)
+		idprotecNovo := CreateProtecao(t, base.db)
 		idEpiNovo := CreateEpi(t, base.db, idprotecNovo, base.empresa)
 		idfornecedorNovo := CreateFornecedor(t, base.db, base.empresa)
 		identradaNfNovo := CreateEntradaNfEpi(t, base.db, base.empresa, base.iduser, idfornecedorNovo)
@@ -282,7 +282,7 @@ func TestDevolucao(t *testing.T) {
 		base := setupBaseDevolucao(t, 10) // lote epi velho: 100 -> 90
 		defer base.db.Close()
 
-		idprotecNovo := CreateProtecao(t, base.db, base.empresa)
+		idprotecNovo := CreateProtecao(t, base.db)
 		idEpiNovo := CreateEpi(t, base.db, idprotecNovo, base.empresa)
 		idfornecedorNovo := CreateFornecedor(t, base.db, base.empresa)
 		identradaNfNovo := CreateEntradaNfEpi(t, base.db, base.empresa, base.iduser, idfornecedorNovo)

@@ -76,7 +76,6 @@ test.beforeAll(async ({ browser }) => {
   await entrar(page, admin.email, admin.senha);
   await expect(page.getByRole("button", { name: "Estoque" }).first()).toBeVisible();
 
-  await chamarApi(page, "POST", "/gerencial/cadastro-protecao", { nome: "Mãos e Braços" });
   await chamarApi(page, "POST", "/gerencial/cadastro-tamanho", { tamanho: "M" });
   await chamarApi(page, "POST", "/gerencial/cadastro-fornecedores", {
     razao_social: "Fornecedor E2E LTDA",
@@ -109,7 +108,7 @@ test("cadastra EPI", async () => {
 
   const { cabecalho: titulo, modal } = modalPorTitulo("Cadastrar Novo EPI");
   await modal.getByPlaceholder("Ex: Capacete de segurança").fill(nomeEpi);
-  await modal.locator("select").first().selectOption({ label: "Mãos e Braços" });
+  await modal.locator("select").first().selectOption({ label: "Proteção dos membros superiores" });
   await modal.getByPlaceholder("Ex: 3M").fill("3M");
   // CA fora da base do MTE (lá têm no máximo 5 dígitos): a consulta no blur não sobrescreve a validade
   await modal.getByPlaceholder("Apenas números").fill("999999");

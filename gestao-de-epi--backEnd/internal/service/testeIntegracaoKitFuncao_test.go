@@ -21,11 +21,11 @@ func TestKitFuncao(t *testing.T) {
 	idPlano := CreatePlanos(t, db)
 	tenant := CreateEmpresa(t, db, idPlano)
 	funcao := CreateFuncao(t, db, CreateDepartamento(t, db, tenant), tenant)
-	protecao := CreateProtecao(t, db, tenant)
+	protecao := CreateProtecao(t, db)
 	luva, botina, oculos := CreateEpi(t, db, protecao, tenant), CreateEpi(t, db, protecao, tenant), CreateEpi(t, db, protecao, tenant)
 
 	outroTenant := CreateEmpresa(t, db, idPlano)
-	epiDeOutro := CreateEpi(t, db, CreateProtecao(t, db, outroTenant), outroTenant)
+	epiDeOutro := CreateEpi(t, db, CreateProtecao(t, db), outroTenant)
 
 	item := func(id int64, qtd int32) model.KitItem { return model.KitItem{IdEpi: int32(id), Quantidade: qtd} }
 	kit := func(tenantID int64) map[int32]int32 {

@@ -13,22 +13,34 @@ import (
 
 const buscarCaepi = `-- name: BuscarCaepi :one
 
-SELECT ca, validade, situacao, fabricante, equipamento
-FROM caepi
-WHERE ca = ltrim(regexp_replace($1::text, '\D', '', 'g'), '0')
+SELECT c.ca, c.validade, c.situacao, c.fabricante, c.equipamento, tp.id AS id_protecao_sugerida
+FROM caepi c
+LEFT JOIN tipo_protecao tp ON tp.codigo = protecao_por_equipamento(c.equipamento)
+WHERE c.ca = ltrim(regexp_replace($1::text, '\D', '', 'g'), '0')
 `
+
+type BuscarCaepiRow struct {
+	Ca                 string
+	Validade           pgtype.Date
+	Situacao           string
+	Fabricante         string
+	Equipamento        string
+	IDProtecaoSugerida pgtype.Int4
+}
 
 // A tabela caepi é global (dado público do MTE): estas queries não filtram tenant_id de propósito.
 // O CA do EPI é comparado só pelos dígitos, sem zero à esquerda, que é como a base do MTE grava.
-func (q *Queries) BuscarCaepi(ctx context.Context, ca string) (Caepi, error) {
+// id_protecao_sugerida: grupo da NR-6 deduzido do nome do equipamento (NULL se nenhuma regra bater).
+func (q *Queries) BuscarCaepi(ctx context.Context, ca string) (BuscarCaepiRow, error) {
 	row := q.db.QueryRow(ctx, buscarCaepi, ca)
-	var i Caepi
+	var i BuscarCaepiRow
 	err := row.Scan(
 		&i.Ca,
 		&i.Validade,
 		&i.Situacao,
 		&i.Fabricante,
 		&i.Equipamento,
+		&i.IDProtecaoSugerida,
 	)
 	return i, err
 }
