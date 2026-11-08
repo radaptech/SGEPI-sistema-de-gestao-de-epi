@@ -60,6 +60,7 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
         setEpis(listaEpis.map(normalizarEpiEntrega));
       } catch (erro) {
         console.error("Erro ao carregar dados iniciais:", erro);
+        toast.error("Não foi possível carregar funcionários e EPIs. Feche e abra a entrega de novo.");
       } finally {
         if (ativo) setCarregandoDados(false);
       }
@@ -86,6 +87,7 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
         setTamanhosFiltrados((response ?? []).map(normalizarTamanhoEntrega));
       } catch (erro) {
         console.error("Erro ao buscar tamanhos por EPI:", erro);
+        toast.error("Não foi possível carregar os tamanhos deste EPI.");
         setTamanhosFiltrados([]);
       } finally {
         if (ativo) setCarregandoTamanhos(false);
@@ -126,7 +128,10 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
     if (!funcaoId) return;
     api.get(`/funcao/${funcaoId}/kit`)
       .then((kit) => ativo && setKitFuncao(kit ?? []))
-      .catch((erro) => console.error("Erro ao buscar kit da função:", erro));
+      .catch((erro) => {
+        console.error("Erro ao buscar kit da função:", erro);
+        toast.error("Não foi possível carregar o kit da função.");
+      });
     return () => { ativo = false; };
   }, [funcaoId]);
 
@@ -191,7 +196,7 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
   async function salvarEntrega() {
     if (!funcionario) return toast.warning("Selecione o funcionário.");
     if (itensParaEntregar.length === 0) return toast.warning("Adicione pelo menos um item.");
-    if (!assinaturaPreview) return toast.warning("Peça a assinatura do colaborador.");
+    if (!assinaturaPreview) return toast.warning("Peça a assinatura do funcionário.");
 
     setCarregando(true);
 
@@ -208,6 +213,7 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
 
     try {
       await criarEntrega(payloadEntregaBase);
+      toast.success("Entrega registrada.");
       if (onSalvar) await onSalvar();
       onClose();
     } catch {

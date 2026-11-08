@@ -107,27 +107,27 @@ function Empresas() {
   const getStatusClass = (status) => {
     switch (status) {
       case "Ativa":
-        return "text-emerald-700 bg-emerald-50 border-emerald-200/60";
+        return "text-ok bg-ok-soft border-ok-line";
       case "Atrasada":
-        return "text-amber-700 bg-amber-50 border-amber-200/60";
+        return "text-atencao bg-atencao-soft border-atencao-line";
       case "Bloqueada":
-        return "text-red-700 bg-red-50 border-red-200/60";
+        return "text-erro bg-erro-soft border-erro-line";
       case "Em teste":
-        return "text-blue-700 bg-blue-50 border-blue-200/60";
+        return "text-ink bg-sunken border-line";
       default:
-        return "text-slate-600 bg-slate-50 border-slate-200";
+        return "text-ink-2 bg-sunken border-line";
     }
   };
 
   return (
-    <div className="animate-fade-in min-h-screen bg-slate-50 font-sans pb-12">
+    <div className=" min-h-screen bg-sunken font-sans pb-12">
       <div className="w-full max-w-[1600px] mx-auto p-6 lg:p-10">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
           <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-3xl font-bold text-ink tracking-tight">
               Empresas
             </h1>
-            <p className="text-sm text-slate-500 mt-2 font-medium max-w-xl leading-relaxed">
+            <p className="text-sm text-ink-2 mt-2 font-medium max-w-xl leading-relaxed">
               Gerencie todas as empresas clientes cadastradas na plataforma.
             </p>
           </div>
@@ -135,7 +135,7 @@ function Empresas() {
           <button
             type="button"
             onClick={() => setModalNovaEmpresaAberto(true)}
-            className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 hover:shadow-md hover:shadow-blue-600/20 active:scale-[0.98] transition-all shrink-0"
+            className="flex items-center justify-center gap-2 px-5 py-3 rounded-md bg-action text-on-action text-sm font-semibold hover:bg-action-hover transition-all shrink-0"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
@@ -144,11 +144,11 @@ function Empresas() {
           </button>
         </header>
 
-        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden flex flex-col">
-          <div className="p-4 md:p-5 border-b border-slate-100 bg-white flex flex-col md:flex-row gap-4">
+        <div className="bg-surface rounded-md border border-line overflow-hidden flex flex-col">
+          <div className="p-4 md:p-5 border-b border-line bg-surface flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-4 w-4 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
@@ -157,7 +157,7 @@ function Empresas() {
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
                 placeholder="Buscar por empresa, CNPJ, responsável ou e-mail..."
-                className="w-full pl-11 pr-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-sm text-slate-900 placeholder:text-slate-400"
+                className="w-full pl-11 pr-4 py-2.5 bg-sunken border border-line rounded-md focus:bg-surface focus:ring-1 focus:ring-ink focus:border-ink outline-none transition-all text-sm text-ink placeholder:text-ink-3"
               />
             </div>
 
@@ -165,7 +165,7 @@ function Empresas() {
               <select
                 value={statusFiltro}
                 onChange={(e) => setStatusFiltro(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-sm text-slate-900 font-medium appearance-none cursor-pointer"
+                className="w-full px-4 py-2.5 bg-sunken border border-line rounded-md focus:bg-surface focus:ring-1 focus:ring-ink focus:border-ink outline-none transition-all text-sm text-ink font-medium appearance-none cursor-pointer"
                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748B'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: `right 1rem center`, backgroundRepeat: `no-repeat`, backgroundSize: `1.2em 1.2em` }}
               >
                 <option value="Todos">Todos os status</option>
@@ -179,7 +179,7 @@ function Empresas() {
 
           <div className="overflow-x-auto">
             <table className="w-full text-left whitespace-nowrap">
-              <thead className="bg-slate-50/80 border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+              <thead className="bg-sunken border-b border-line text-xs font-bold text-ink-2 uppercase tracking-wide">
                 <tr>
                   <th className="px-6 py-4">Empresa</th>
                   <th className="px-6 py-4">Responsável</th>
@@ -192,55 +192,55 @@ function Empresas() {
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-slate-100/80">
+              <tbody className="divide-y divide-line">
                 {empresasFiltradas.map((empresa) => (
-                  <tr key={empresa.id} className="hover:bg-slate-50/50 transition-colors group">
+                  <tr key={empresa.id} className="hover:bg-sunken transition-colors group">
                     <td className="px-6 py-4">
-                      <p className="text-sm font-bold text-slate-900">{empresa.nome}</p>
+                      <p className="text-sm font-bold text-ink">{empresa.nome}</p>
                       <div className="flex flex-col gap-0.5 mt-1">
-                        <p className="text-[12px] text-slate-500 font-medium">
+                        <p className="text-[12px] text-ink-2 font-medium">
                           {empresa.cnpj || "CNPJ não informado"}
                         </p>
-                        <p className="text-[12px] text-slate-400">
+                        <p className="text-[12px] text-ink-3">
                           {empresa.email || "E-mail não informado"}
                         </p>
                       </div>
                     </td>
 
                     <td className="px-6 py-4">
-                      <p className="text-[13px] font-semibold text-slate-700">
+                      <p className="text-sm font-semibold text-ink">
                         {empresa.responsavel || "-"}
                       </p>
-                      <p className="text-[12px] text-slate-400 mt-1">
+                      <p className="text-[12px] text-ink-3 mt-1">
                         {empresa.telefone || "Telefone não informado"}
                       </p>
                     </td>
 
                     <td className="px-6 py-4 text-center">
-                      <span className="inline-flex px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200/60 text-slate-600 text-[11px] font-bold tracking-wide">
+                      <span className="inline-flex px-2.5 py-1 rounded-md bg-sunken border border-line text-ink-2 text-xs font-bold tracking-wide">
                         {empresa.planoNome || empresa.plano || "-"}
                       </span>
                     </td>
 
-                    <td className="px-6 py-4 text-center text-[13px] font-bold text-slate-700">
+                    <td className="px-6 py-4 text-center text-sm font-bold text-ink">
                       {empresa.funcionarios ?? 0}
                     </td>
 
-                    <td className="px-6 py-4 text-center text-[13px] font-bold text-slate-700">
+                    <td className="px-6 py-4 text-center text-sm font-bold text-ink">
                       {empresa.epis ?? 0}
                     </td>
 
                     <td className="px-6 py-4 text-right">
-                      <p className="text-[13px] font-bold text-slate-900">
+                      <p className="text-sm font-bold text-ink">
                         {formatarMoeda(empresa.mensalidade)}
                       </p>
-                      <p className="text-[11px] text-slate-400 mt-1 font-medium">
+                      <p className="text-xs text-ink-3 mt-1 font-medium">
                         vence {formatarData(empresa.vencimento)}
                       </p>
                     </td>
 
                     <td className="px-6 py-4 text-center">
-                      <span className={`inline-flex px-2.5 py-1 rounded-md border text-[11px] font-bold tracking-wide ${getStatusClass(empresa.status)}`}>
+                      <span className={`inline-flex px-2.5 py-1 rounded-md border text-xs font-bold tracking-wide ${getStatusClass(empresa.status)}`}>
                         {empresa.status || "Indefinido"}
                       </span>
                     </td>
@@ -250,7 +250,7 @@ function Empresas() {
                         <button
                           type="button"
                           onClick={() => abrirModalVer(empresa)}
-                          className="px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-xs font-semibold transition-colors"
+                          className="px-3 py-1.5 rounded-md text-ink-2 hover:text-ink hover:bg-sunken text-xs font-semibold transition-colors"
                         >
                           Ver
                         </button>
@@ -258,7 +258,7 @@ function Empresas() {
                         <button
                           type="button"
                           onClick={() => abrirModalEditar(empresa)}
-                          className="px-3 py-1.5 rounded-lg text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-xs font-semibold transition-colors"
+                          className="px-3 py-1.5 rounded-md text-ink hover:text-ink hover:bg-sunken text-xs font-semibold transition-colors"
                         >
                           Editar
                         </button>
@@ -271,10 +271,10 @@ function Empresas() {
                   <tr>
                     <td colSpan="8" className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center justify-center gap-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
-                        <p className="text-sm text-slate-500 font-medium">Nenhuma empresa encontrada.</p>
+                        <p className="text-sm text-ink-2 font-medium">Nenhuma empresa encontrada.</p>
                       </div>
                     </td>
                   </tr>

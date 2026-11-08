@@ -20,11 +20,7 @@ import {
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-import {
-  PackagePlus, AlertTriangle, Plus, Search,
-  X, ChevronLeft, ChevronRight, FileDown,
-  Layers, Hash, DollarSign, ChevronDown
-} from "lucide-react";
+import { AlertTriangle, Plus, Search, X, ChevronLeft, ChevronRight, FileDown, Layers, Hash, DollarSign, ChevronDown } from "lucide-react";
 
 function Entradas({ usuarioLogado }) {
   const [entradas, setEntradas] = useState([]);
@@ -222,8 +218,8 @@ function Entradas({ usuarioLogado }) {
 
   if (!podeVisualizar) {
     return (
-      <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-800 flex items-center justify-center transition-colors duration-300">
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 rounded-2xl p-6 text-amber-700 dark:text-amber-400 flex items-center gap-3 font-medium">
+      <div className="bg-surface p-8 rounded-md border border-line flex items-center justify-center transition-colors duration-300">
+        <div className="bg-atencao-soft border border-atencao-line rounded-md p-6 text-atencao flex items-center gap-3 font-medium">
           <AlertTriangle className="w-5 h-5" />
           Você não tem permissão para visualizar a tela de entradas.
         </div>
@@ -233,18 +229,15 @@ function Entradas({ usuarioLogado }) {
 
   return (
     <>
-      <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-800 animate-fade-in max-w-full transition-colors duration-300">
+      <div className="max-w-full">
         
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 transition-colors duration-300">
-              <PackagePlus className="w-5 h-5" strokeWidth={2.5} />
-            </div>
             <div>
-              <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight transition-colors">
+              <h2 className="text-2xl font-bold text-ink tracking-tight transition-colors">
                 Registro de Entradas
               </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 transition-colors">
+              <p className="text-sm text-ink-2 mt-1 transition-colors">
                 Histórico de abastecimento e entradas de estoque.
               </p>
             </div>
@@ -253,7 +246,7 @@ function Entradas({ usuarioLogado }) {
           {podeCadastrar && (
             <button
               onClick={() => setModalAberto(true)}
-              className="w-full lg:w-auto bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white px-5 py-3 rounded-xl font-bold text-sm transition-all active:scale-[0.98] shadow-sm shadow-emerald-600/20 flex items-center justify-center gap-2"
+              className="w-full lg:w-auto bg-action hover:bg-action-hover text-on-action px-5 py-3 rounded-md font-bold text-sm transition-all flex items-center justify-center gap-2"
             >
               <Plus className="w-4 h-4" strokeWidth={3} />
               Nova Entrada
@@ -262,45 +255,45 @@ function Entradas({ usuarioLogado }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-8">
-          <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-5 transition-colors flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+          <div className="bg-sunken border border-line rounded-md p-5 transition-colors flex flex-col gap-2">
+            <div className="flex items-center gap-2 text-ink-2 ">
               <Layers className="w-4 h-4" />
-              <p className="text-[11px] uppercase font-bold tracking-widest">
+              <p className="text-xs uppercase font-bold tracking-wide">
                 Registros
               </p>
             </div>
-            <p className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white mt-auto tracking-tight transition-colors">
+            <p className="text-2xl sm:text-3xl font-bold text-ink mt-auto tracking-tight transition-colors">
               {carregandoTela ? "--" : resumoTela.totalRegistros}
             </p>
           </div>
 
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 rounded-2xl p-5 transition-colors flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+          <div className="bg-sunken border border-line rounded-md p-5 transition-colors flex flex-col gap-2">
+            <div className="flex items-center gap-2 text-ink ">
               <Hash className="w-4 h-4" />
-              <p className="text-[11px] uppercase font-bold tracking-widest">
+              <p className="text-xs uppercase font-bold tracking-wide">
                 Quantidade Total
               </p>
             </div>
-            <p className="text-2xl sm:text-3xl font-black text-blue-800 dark:text-blue-300 mt-auto tracking-tight transition-colors">
+            <p className="text-2xl sm:text-3xl font-bold text-ink mt-auto tracking-tight transition-colors">
               {carregandoTela ? "--" : resumoTela.totalItens}
             </p>
           </div>
 
-          <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 rounded-2xl p-5 transition-colors flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-500">
+          <div className="bg-ok-soft border border-ok-line rounded-md p-5 transition-colors flex flex-col gap-2">
+            <div className="flex items-center gap-2 text-ok ">
               <DollarSign className="w-4 h-4" />
-              <p className="text-[11px] uppercase font-bold tracking-widest">
+              <p className="text-xs uppercase font-bold tracking-wide">
                 Valor Total
               </p>
             </div>
-            <p className="text-2xl sm:text-3xl font-black text-emerald-800 dark:text-emerald-400 mt-auto tracking-tight transition-colors">
+            <p className="text-2xl sm:text-3xl font-bold text-ok mt-auto tracking-tight transition-colors">
               {carregandoTela ? "--" : formatarMoedaEntrada(resumoTela.valorTotal)}
             </p>
           </div>
         </div>
 
-        <div className="relative mb-8 flex flex-col md:flex-row items-stretch md:items-center bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 transition-colors p-1.5 gap-1.5 md:gap-0">
-          <div className="relative w-full md:w-auto bg-white dark:bg-slate-800 rounded-xl md:rounded-l-xl md:rounded-r-none border border-slate-200/60 dark:border-slate-700 md:border-r-0 flex items-center px-4 py-1 h-[46px]">
+        <div className="relative mb-8 flex flex-col md:flex-row items-stretch md:items-center bg-sunken rounded-md border border-line transition-colors p-1.5 gap-1.5 md:gap-0">
+          <div className="relative w-full md:w-auto bg-surface rounded-md md:rounded-l-md md:rounded-r-none border border-line md:border-r-0 flex items-center px-4 py-1 h-[46px]">
             <select
               value={filtroAtivo}
               onChange={(e) => {
@@ -308,7 +301,7 @@ function Entradas({ usuarioLogado }) {
                 setBusca("");
                 setPaginaAtual(1);
               }}
-              className="bg-transparent text-slate-600 dark:text-slate-300 font-bold text-[11px] uppercase tracking-widest outline-none pr-6 appearance-none w-full md:w-40 cursor-pointer h-full"
+              className="bg-transparent text-ink-2 font-bold text-xs uppercase tracking-wide outline-none pr-6 appearance-none w-full md:w-40 cursor-pointer h-full"
             >
               <option value="epiNome">EPI / Item</option>
               <option value="data_entrada">Data</option>
@@ -316,11 +309,11 @@ function Entradas({ usuarioLogado }) {
               <option value="lote">Lote</option>
               <option value="nota_fiscal_numero">Nota Fiscal</option>
             </select>
-            <ChevronDown className="absolute right-3 w-4 h-4 text-slate-400 pointer-events-none" />
+            <ChevronDown className="absolute right-3 w-4 h-4 text-ink-3 pointer-events-none" />
           </div>
 
-          <div className="relative flex items-center bg-white dark:bg-slate-800 rounded-xl md:rounded-r-xl md:rounded-l-none border border-slate-200/60 dark:border-slate-700 flex-1 w-full transition-colors h-[46px]">
-            <div className="pl-4 text-slate-400 dark:text-slate-500">
+          <div className="relative flex items-center bg-surface rounded-md md:rounded-r-md md:rounded-l-none border border-line flex-1 w-full transition-colors h-[46px]">
+            <div className="pl-4 text-ink-3 ">
               <Search className="w-4 h-4" />
             </div>
             <input
@@ -331,7 +324,7 @@ function Entradas({ usuarioLogado }) {
                 setBusca(e.target.value);
                 setPaginaAtual(1);
               }}
-              className="w-full bg-transparent border-none py-3 pl-3 pr-10 focus:ring-0 text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none placeholder-slate-400 h-full"
+              className="w-full bg-transparent border-none py-3 pl-3 pr-10 focus:ring-0 text-sm font-semibold text-ink outline-none placeholder-ink-3 h-full"
             />
             {busca && (
               <button
@@ -339,7 +332,7 @@ function Entradas({ usuarioLogado }) {
                   setBusca("");
                   setPaginaAtual(1);
                 }}
-                className="absolute right-3 p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+                className="absolute right-3 p-1 rounded-md text-ink-3 hover:text-ink-2 hover:bg-sunken transition"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -348,29 +341,29 @@ function Entradas({ usuarioLogado }) {
         </div>
 
         {carregandoTela ? (
-          <div className="border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-12 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 gap-3">
-            <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+          <div className="border border-dashed border-line-strong rounded-md p-12 flex flex-col items-center justify-center text-ink-2 gap-3">
+            <div className="w-8 h-8 border-4 border-ink border-t-transparent rounded-full animate-spin"></div>
             <span className="text-sm font-bold tracking-wide">Carregando entradas...</span>
           </div>
         ) : (
           <>
-            <div className="hidden lg:block overflow-x-auto rounded-2xl border border-slate-200/60 dark:border-slate-700/60 transition-colors">
+            <div className="hidden lg:block overflow-x-auto rounded-md border border-line transition-colors">
               <table className="w-full text-left border-collapse">
-                <thead className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-200/60 dark:border-slate-700/60 transition-colors">
+                <thead className="bg-sunken border-b border-line transition-colors">
                   <tr>
-                    <th className="p-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Data</th>
-                    <th className="p-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">EPI / Item</th>
-                    <th className="p-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">Tam.</th>
-                    <th className="p-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">Qtd.</th>
-                    <th className="p-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Fornecedor / Lote</th>
-                    <th className="p-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-right">Total</th>
-                    <th className="p-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">Ações</th>
+                    <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide">Data</th>
+                    <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide">EPI / Item</th>
+                    <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide text-center">Tam.</th>
+                    <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide text-center">Qtd.</th>
+                    <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide">Fornecedor / Lote</th>
+                    <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide text-right">Total</th>
+                    <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide text-center">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 transition-colors">
+                <tbody className="divide-y divide-line transition-colors">
                   {entradasVisiveis.length === 0 ? (
                     <tr>
-                      <td colSpan="7" className="p-8 text-center text-slate-500 dark:text-slate-400 font-medium">
+                      <td colSpan="7" className="p-8 text-center text-ink-2 font-medium">
                         Nenhuma entrada encontrada.
                       </td>
                     </tr>
@@ -381,43 +374,43 @@ function Entradas({ usuarioLogado }) {
                         Number(entrada.valor_unitario || 0);
 
                       return (
-                        <tr key={entrada.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition duration-150 group">
+                        <tr key={entrada.id} className="hover:bg-sunken transition duration-150 group">
                           <td className="p-4">
-                            <span className="text-xs font-bold font-mono text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/50 px-2 py-1 rounded block w-fit">
+                            <span className="text-xs font-bold font-mono text-ink bg-sunken px-2 py-1 rounded block w-fit">
                               {entrada.data_entrada}
                             </span>
                           </td>
                           <td className="p-4">
-                            <div className="font-extrabold text-sm text-slate-800 dark:text-slate-200 transition-colors">
+                            <div className="font-bold text-sm text-ink transition-colors">
                               {entrada.epiNome}
                             </div>
-                            <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 uppercase tracking-widest transition-colors">
+                            <div className="text-xs text-ink-3 font-mono mt-0.5 uppercase tracking-wide transition-colors">
                               CA: {entrada.epiCA}
                             </div>
                           </td>
-                          <td className="p-4 text-center font-semibold text-sm text-slate-600 dark:text-slate-300 transition-colors">
+                          <td className="p-4 text-center font-semibold text-sm text-ink-2 transition-colors">
                             {entrada.tamanhoNome}
                           </td>
                           <td className="p-4 text-center">
-                            <span className="bg-emerald-100/50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 text-xs font-black px-2.5 py-1 rounded-md transition-colors shadow-sm">
+                            <span className="bg-ok-soft text-ok border border-ok-line text-xs font-bold px-2.5 py-1 rounded-md transition-colors ">
                               +{entrada.quantidade}
                             </span>
                           </td>
                           <td className="p-4">
-                            <div className="font-bold text-sm text-slate-700 dark:text-slate-200 truncate max-w-[150px] transition-colors">
+                            <div className="font-bold text-sm text-ink truncate max-w-[150px] transition-colors">
                               {entrada.fornecedorNome}
                             </div>
-                            <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 uppercase tracking-widest transition-colors">
+                            <div className="text-xs text-ink-3 font-mono mt-0.5 uppercase tracking-wide transition-colors">
                               LOTE: {entrada.lote}
                             </div>
                           </td>
-                          <td className="p-4 text-right text-emerald-700 dark:text-emerald-400 font-black font-mono text-sm transition-colors">
+                          <td className="p-4 text-right text-ok font-bold font-mono text-sm transition-colors">
                             {formatarMoedaEntrada(total)}
                           </td>
                           <td className="p-4 text-center">
                             <button
                               onClick={() => gerarPDFEntrada(entrada)}
-                              className="p-2 mx-auto rounded-xl bg-slate-100 text-slate-600 border border-transparent hover:border-emerald-200 hover:text-emerald-700 hover:bg-emerald-50 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-emerald-900/40 dark:hover:text-emerald-400 dark:hover:border-emerald-800/50 transition-all flex items-center justify-center"
+                              className="p-2 mx-auto rounded-md bg-sunken text-ink-2 border border-transparent hover:border-ok-line hover:text-ok hover:bg-ok-soft transition-all flex items-center justify-center"
                               title="Baixar Comprovante PDF"
                             >
                               <FileDown className="w-4 h-4" />
@@ -433,49 +426,49 @@ function Entradas({ usuarioLogado }) {
 
             <div className="lg:hidden space-y-4">
               {entradasVisiveis.length === 0 ? (
-                 <div className="text-center py-8 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 transition-colors text-sm font-medium">
+                 <div className="text-center py-8 text-ink-2 bg-sunken rounded-md border border-dashed border-line-strong transition-colors text-sm font-medium">
                   Nenhuma entrada encontrada.
                 </div>
               ) : (
                 entradasVisiveis.map((entrada) => (
                   <div
                     key={entrada.id}
-                    className="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 rounded-2xl p-5 shadow-sm transition-colors"
+                    className="bg-surface border border-line rounded-md p-5 transition-colors"
                   >
                     <div className="flex justify-between items-start mb-3">
-                      <span className="text-[10px] font-bold font-mono text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/50 px-2 py-1 rounded">
+                      <span className="text-xs font-bold font-mono text-ink bg-sunken px-2 py-1 rounded">
                         {entrada.data_entrada}
                       </span>
                       <button
                         onClick={() => gerarPDFEntrada(entrada)}
-                        className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 p-1.5 rounded-lg border border-emerald-100 dark:border-emerald-800/50 transition-colors"
+                        className="text-ok bg-ok-soft p-1.5 rounded-md border border-ok-line transition-colors"
                         title="Baixar PDF"
                       >
                         <FileDown className="w-4 h-4" />
                       </button>
                     </div>
                     
-                    <h3 className="font-extrabold text-slate-900 dark:text-white transition-colors text-lg leading-tight">
+                    <h3 className="font-bold text-ink transition-colors text-lg leading-tight">
                       {entrada.epiNome}
                     </h3>
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-1 uppercase tracking-widest transition-colors mb-4">
+                    <p className="text-xs text-ink-3 font-mono mt-1 uppercase tracking-wide transition-colors mb-4">
                       CA: {entrada.epiCA} • LOTE: {entrada.lote}
                     </p>
 
-                    <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700 text-sm transition-colors">
+                    <div className="grid grid-cols-2 gap-3 bg-sunken p-4 rounded-md border border-line text-sm transition-colors">
                       <div>
-                        <span className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-0.5">Fornecedor</span>
-                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate block">{entrada.fornecedorNome}</span>
+                        <span className="block text-xs font-bold uppercase tracking-wide text-ink-3 mb-0.5">Fornecedor</span>
+                        <span className="text-xs font-semibold text-ink truncate block">{entrada.fornecedorNome}</span>
                       </div>
                       <div>
-                        <span className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-0.5">Total</span>
-                        <span className="text-xs font-black font-mono text-emerald-700 dark:text-emerald-400 block">
+                        <span className="block text-xs font-bold uppercase tracking-wide text-ink-3 mb-0.5">Total</span>
+                        <span className="text-xs font-bold font-mono text-ok block">
                           {formatarMoedaEntrada(Number(entrada.quantidade || 0) * Number(entrada.valor_unitario || 0))}
                         </span>
                       </div>
-                      <div className="col-span-2 pt-2 border-t border-slate-200 dark:border-slate-700/80 mt-1 flex justify-between items-center">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Quantidade</span>
-                        <span className="bg-emerald-100/50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 text-xs font-black px-2 py-0.5 rounded-md shadow-sm">
+                      <div className="col-span-2 pt-2 border-t border-line mt-1 flex justify-between items-center">
+                        <span className="text-xs font-bold uppercase tracking-wide text-ink-3 ">Quantidade</span>
+                        <span className="bg-ok-soft text-ok border border-ok-line text-xs font-bold px-2 py-0.5 rounded-md ">
                           +{entrada.quantidade} un
                         </span>
                       </div>
@@ -490,26 +483,26 @@ function Entradas({ usuarioLogado }) {
                 <button
                   onClick={() => setPaginaAtual((p) => Math.max(p - 1, 1))}
                   disabled={paginaAtual === 1}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-1 ${
+                  className={`px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-1 ${
                     paginaAtual === 1
-                      ? "bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-600 cursor-not-allowed"
-                      : "bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 border border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-slate-700 shadow-sm hover:border-emerald-200 dark:hover:border-slate-600"
+                      ? "bg-sunken text-ink-3 cursor-not-allowed"
+                      : "bg-surface text-ok border border-line hover:bg-ok-soft hover:border-ok-line "
                   }`}
                 >
                   <ChevronLeft className="w-4 h-4" /> Anterior
                 </button>
 
-                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-700 transition-colors">
-                  Página <span className="text-slate-800 dark:text-white">{paginaAtual}</span> de {totalPaginas}
+                <span className="text-xs font-bold text-ink-2 uppercase tracking-wide bg-sunken px-4 py-2 rounded-md border border-line transition-colors">
+                  Página <span className="text-ink ">{paginaAtual}</span> de {totalPaginas}
                 </span>
 
                 <button
                   onClick={() => setPaginaAtual((p) => Math.min(p + 1, totalPaginas))}
                   disabled={paginaAtual === totalPaginas}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-1 ${
+                  className={`px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-1 ${
                     paginaAtual === totalPaginas
-                      ? "bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-600 cursor-not-allowed"
-                      : "bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 border border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-slate-700 shadow-sm hover:border-emerald-200 dark:hover:border-slate-600"
+                      ? "bg-sunken text-ink-3 cursor-not-allowed"
+                      : "bg-surface text-ok border border-line hover:bg-ok-soft hover:border-ok-line "
                   }`}
                 >
                   Próxima <ChevronRight className="w-4 h-4" />

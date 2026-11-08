@@ -4,6 +4,7 @@ import {
   X, ShieldPlus, ShieldAlert, CheckCircle2,
   AlertCircle, Loader2, Plus, PenLine, RefreshCw
 } from "lucide-react";
+import Dialogo from "../Dialogo";
 
 const TAMANHOS_SUGERIDOS = [
   "Único", "PP", "P", "M", "G", "GG", "EXG",
@@ -93,8 +94,8 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
 
   const campoComErro = (campo) => {
     return erros[campo]
-      ? "border-red-400 dark:border-red-500/50 focus:ring-red-500/20 focus:border-red-500"
-      : "border-slate-200/60 dark:border-slate-700/60 focus:ring-blue-500/20 focus:border-blue-500";
+      ? "border-erro focus:ring-erro focus:border-erro"
+      : "border-line focus:ring-ink focus:border-ink";
   };
 
   const limparErroCampo = (campo) => {
@@ -264,15 +265,15 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
     }
   }
 
-  const baseInputClass = "w-full px-4 py-3 rounded-xl text-sm font-medium outline-none transition-all disabled:opacity-50 bg-white dark:bg-slate-900 border focus:ring-2 dark:text-white placeholder-slate-400";
-  const labelClass = "block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 transition-colors";
+  const baseInputClass = "w-full px-4 py-3 rounded-md text-sm font-medium outline-none transition-all disabled:opacity-50 bg-surface border focus:ring-1 placeholder-ink-3";
+  const labelClass = "block text-xs font-bold text-ink-2 uppercase tracking-wide mb-1.5 transition-colors";
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 text-slate-700 dark:text-slate-300 animate-fade-in">
+    <Dialogo onClose={onClose} className="fixed inset-0 z-50 bg-overlay flex items-center justify-center p-4 sm:p-6 text-ink ">
       {toast && (
-        <div className={`fixed top-5 left-1/2 z-[9999] w-[90%] max-w-sm -translate-x-1/2 rounded-2xl border px-5 py-4 shadow-xl flex items-start gap-3 transition-colors sm:left-auto sm:right-5 sm:translate-x-0 animate-fade-in ${toast.tipo === "sucesso"
-            ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300"
-            : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/50 text-red-800 dark:text-red-300"
+        <div className={`fixed top-5 left-1/2 z-[9999] w-[90%] max-w-sm -translate-x-1/2 rounded-md border px-5 py-4 shadow-modal flex items-start gap-3 transition-colors sm:left-auto sm:right-5 sm:translate-x-0  ${toast.tipo === "sucesso"
+            ? "bg-ok-soft border-ok-line text-ok "
+            : "bg-erro-soft border-erro-line text-erro "
           }`}>
           {toast.tipo === "sucesso" ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
           <div className="flex-1">
@@ -285,63 +286,63 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
         </div>
       )}
 
-      <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-3xl shadow-2xl border border-slate-200/60 dark:border-slate-800 overflow-hidden flex flex-col max-h-[95vh] transition-colors duration-300">
-        <div className="px-6 sm:px-8 py-6 border-b border-slate-100 dark:border-slate-800/60 flex items-start justify-between shrink-0 transition-colors duration-300">
+      <div className="bg-surface w-full max-w-4xl rounded-md shadow-modal border border-line overflow-hidden flex flex-col max-h-[95vh] transition-colors duration-300">
+        <div className="px-6 sm:px-8 py-6 border-b border-line flex items-start justify-between shrink-0 transition-colors duration-300">
           <div className="flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors ${epiParaEditar ? "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" : "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+            <div className={`w-12 h-12 rounded-md flex items-center justify-center shrink-0 transition-colors ${epiParaEditar ? "bg-atencao-soft text-atencao " : "bg-sunken text-ink "
               }`}>
               {epiParaEditar ? <PenLine className="w-6 h-6" strokeWidth={2.5} /> : <ShieldPlus className="w-6 h-6" strokeWidth={2.5} />}
             </div>
             <div>
-              <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight transition-colors">
+              <h3 className="text-2xl font-bold text-ink tracking-tight transition-colors">
                 {epiParaEditar ? `Editar: ${epiParaEditar.nome}` : "Cadastrar Novo EPI"}
               </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 transition-colors">
+              <p className="text-sm text-ink-2 mt-1 transition-colors">
                 Gestão de Equipamentos de Proteção.
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
+          <button onClick={onClose} className="p-2.5 text-ink-3 hover:text-ink-2 hover:bg-sunken rounded-md transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 sm:px-8 bg-slate-50/50 dark:bg-slate-900/50 custom-scrollbar transition-colors">
+        <div className="flex-1 overflow-y-auto p-6 sm:px-8 bg-sunken custom-scrollbar transition-colors">
           {carregandoDados ? (
-            <div className="h-full flex flex-col items-center justify-center py-12 animate-fade-in">
-              <Loader2 className="w-8 h-8 animate-spin text-slate-400 dark:text-slate-500 mb-4" />
-              <p className="text-slate-500 dark:text-slate-400 font-medium">Carregando dados do formulário...</p>
+            <div className="h-full flex flex-col items-center justify-center py-12 ">
+              <Loader2 className="w-8 h-8 animate-spin text-ink-3 mb-4" />
+              <p className="text-ink-2 font-medium">Carregando dados do formulário...</p>
             </div>
           ) : (
-            <div className="space-y-8 animate-fade-in">
-              <section className="bg-white dark:bg-slate-800/80 p-6 sm:p-7 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm transition-colors">
+            <div className="space-y-8 ">
+              <section className="bg-surface p-6 sm:p-7 rounded-md border border-line transition-colors">
                 <div className="flex items-center gap-2 mb-6">
-                  <ShieldAlert className="w-4 h-4 text-slate-400" />
-                  <h4 className="text-sm font-extrabold tracking-widest text-slate-500 dark:text-slate-400 uppercase">
+                  <ShieldAlert className="w-4 h-4 text-ink-3" />
+                  <h4 className="text-sm font-bold tracking-wide text-ink-2 uppercase">
                     Identificação
                   </h4>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
                   <div className="md:col-span-2">
-                    <label className={labelClass}>
-                      Nome do EPI <span className="text-red-500">*</span>
+                    <label htmlFor="novoepi-1" className={labelClass}>
+                      Nome do EPI <span className="text-erro">*</span>
                     </label>
-                    <input
+                    <input id="novoepi-1"
                       type="text"
                       value={form.nome}
                       onChange={(e) => atualizarCampo("nome", e.target.value)}
                       className={`${baseInputClass} ${campoComErro("nome")}`}
                       placeholder="Ex: Capacete de segurança"
                     />
-                    {erros.nome && <p className="text-xs font-medium text-red-500 mt-1.5">{erros.nome}</p>}
+                    {erros.nome && <p className="text-xs font-medium text-erro mt-1.5">{erros.nome}</p>}
                   </div>
 
                   <div>
-                    <label className={labelClass}>
-                      Tipo de Proteção <span className="text-red-500">*</span>
+                    <label htmlFor="novoepi-2" className={labelClass}>
+                      Tipo de Proteção <span className="text-erro">*</span>
                     </label>
-                    <select
+                    <select id="novoepi-2"
                       value={form.id_protecao}
                       onChange={(e) => atualizarCampo("id_protecao", e.target.value)}
                       className={`${baseInputClass} ${campoComErro("id_protecao")}`}
@@ -351,33 +352,33 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
                         <option key={t.id} value={t.id}>{t.nome}</option>
                       ))}
                     </select>
-                    {erros.id_protecao && <p className="text-xs font-medium text-red-500 mt-1.5">{erros.id_protecao}</p>}
+                    {erros.id_protecao && <p className="text-xs font-medium text-erro mt-1.5">{erros.id_protecao}</p>}
                   </div>
 
                   <div>
-                    <label className={labelClass}>
-                      Fabricante <span className="text-red-500">*</span>
+                    <label htmlFor="novoepi-3" className={labelClass}>
+                      Fabricante <span className="text-erro">*</span>
                     </label>
-                    <input
+                    <input id="novoepi-3"
                       type="text"
                       value={form.fabricante}
                       onChange={(e) => atualizarCampo("fabricante", e.target.value)}
                       className={`${baseInputClass} ${campoComErro("fabricante")}`}
                       placeholder="Ex: 3M"
                     />
-                    {erros.fabricante && <p className="text-xs font-medium text-red-500 mt-1.5">{erros.fabricante}</p>}
+                    {erros.fabricante && <p className="text-xs font-medium text-erro mt-1.5">{erros.fabricante}</p>}
                   </div>
                 </div>
               </section>
 
-              <section className="bg-white dark:bg-slate-800/80 p-6 sm:p-7 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm transition-colors">
+              <section className="bg-surface p-6 sm:p-7 rounded-md border border-line transition-colors">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
                   <div>
-                    <label className={labelClass}>
-                      Número do CA <span className="text-red-500">*</span>
+                    <label htmlFor="novoepi-4" className={labelClass}>
+                      Número do CA <span className="text-erro">*</span>
                     </label>
                     <div className="flex gap-2">
-                      <input
+                      <input id="novoepi-4"
                         type="text"
                         value={form.ca}
                         onChange={(e) => {
@@ -398,21 +399,21 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
                         onClick={consultarCa}
                         disabled={!form.ca || infoCa === "carregando"}
                         title="Buscar dados do CA na base do MTE"
-                        className="shrink-0 inline-flex items-center gap-1.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition-all shadow-sm shadow-blue-600/20 disabled:opacity-50"
+                        className="shrink-0 inline-flex items-center gap-1.5 px-4 rounded-md bg-action hover:bg-action-hover text-on-action text-sm font-bold transition-all disabled:opacity-50"
                       >
                         <RefreshCw className={`w-4 h-4 ${infoCa === "carregando" ? "animate-spin" : ""}`} />
                         Buscar
                       </button>
                     </div>
-                    {erros.ca && <p className="text-xs font-medium text-red-500 mt-1.5">{erros.ca}</p>}
+                    {erros.ca && <p className="text-xs font-medium text-erro mt-1.5">{erros.ca}</p>}
                     {!erros.ca && infoCa === "carregando" && (
-                      <p className="text-xs text-slate-400 mt-1.5">Consultando a base do MTE...</p>
+                      <p className="text-xs text-ink-3 mt-1.5">Consultando a base do MTE...</p>
                     )}
                     {!erros.ca && infoCa === "nao-encontrado" && (
-                      <p className="text-xs text-slate-400 mt-1.5">CA não encontrado na base do MTE. Preencha à mão.</p>
+                      <p className="text-xs text-ink-3 mt-1.5">CA não encontrado na base do MTE. Preencha à mão.</p>
                     )}
                     {!erros.ca && infoCa?.situacao && (
-                      <p className={`text-xs font-semibold mt-1.5 ${infoCa.situacao === "VÁLIDO" ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"}`}>
+                      <p className={`text-xs font-semibold mt-1.5 ${infoCa.situacao === "VÁLIDO" ? "text-ok " : "text-erro"}`}>
                         MTE: {infoCa.situacao}
                         {infoCa.situacao !== "VÁLIDO" && infoCa.situacao !== "VENCIDO" && " (não pode ser entregue)"}
                       </p>
@@ -420,23 +421,23 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
                   </div>
 
                   <div>
-                    <label className={labelClass}>
-                      Validade do CA <span className="text-red-500">*</span>
+                    <label htmlFor="novoepi-5" className={labelClass}>
+                      Validade do CA <span className="text-erro">*</span>
                     </label>
-                    <input
+                    <input id="novoepi-5"
                       type="date"
                       value={form.data_validade_ca}
                       onChange={(e) => atualizarCampo("data_validade_ca", e.target.value)}
                       className={`${baseInputClass} ${campoComErro("data_validade_ca")}`}
                     />
-                    {erros.data_validade_ca && <p className="text-xs font-medium text-red-500 mt-1.5">{erros.data_validade_ca}</p>}
+                    {erros.data_validade_ca && <p className="text-xs font-medium text-erro mt-1.5">{erros.data_validade_ca}</p>}
                   </div>
 
                   <div>
-                    <label className={labelClass}>
+                    <label htmlFor="novoepi-6" className={labelClass}>
                       Alerta Estoque Mín.
                     </label>
-                    <input
+                    <input id="novoepi-6"
                       type="number"
                       min="0"
                       value={form.alerta_minimo}
@@ -444,14 +445,14 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
                       className={`${baseInputClass} ${campoComErro("alerta_minimo")}`}
                       placeholder="Ex: 10"
                     />
-                    {erros.alerta_minimo && <p className="text-xs font-medium text-red-500 mt-1.5">{erros.alerta_minimo}</p>}
+                    {erros.alerta_minimo && <p className="text-xs font-medium text-erro mt-1.5">{erros.alerta_minimo}</p>}
                   </div>
 
                   <div>
-                    <label className={labelClass}>
+                    <label htmlFor="novoepi-7" className={labelClass}>
                       Vida Útil (dias)
                     </label>
-                    <input
+                    <input id="novoepi-7"
                       type="number"
                       min="0"
                       step="1"
@@ -460,17 +461,17 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
                       className={`${baseInputClass} ${campoComErro("vida_util_dias")}`}
                       placeholder="Ex: 180 (vazio = sem troca)"
                     />
-                    {erros.vida_util_dias && <p className="text-xs font-medium text-red-500 mt-1.5">{erros.vida_util_dias}</p>}
+                    {erros.vida_util_dias && <p className="text-xs font-medium text-erro mt-1.5">{erros.vida_util_dias}</p>}
                   </div>
 
                   <div className="md:col-span-3">
-                    <label className={labelClass}>
+                    <label htmlFor="novoepi-8" className={labelClass}>
                       Descrição do Equipamento
                     </label>
-                    <textarea
+                    <textarea id="novoepi-8"
                       value={form.descricao}
                       onChange={(e) => atualizarCampo("descricao", e.target.value)}
-                      className={`${baseInputClass} min-h-[100px] resize-none border-slate-200/60 dark:border-slate-700/60 focus:ring-blue-500/20 focus:border-blue-500`}
+                      className={`${baseInputClass} min-h-[100px] resize-none border-line  focus:ring-ink focus:border-ink`}
                       maxLength={250}
                       placeholder="Observações ou detalhes adicionais do equipamento..."
                     />
@@ -478,31 +479,31 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
                 </div>
               </section>
 
-              <section className="bg-white dark:bg-slate-800/80 p-6 sm:p-7 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm transition-colors">
+              <section className="bg-surface p-6 sm:p-7 rounded-md border border-line transition-colors">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-5 gap-3">
                   <div>
-                    <h4 className="text-sm font-extrabold tracking-widest text-slate-500 dark:text-slate-400 uppercase">
-                      Grade de Tamanhos <span className="text-red-500">*</span>
+                    <h4 className="text-sm font-bold tracking-wide text-ink-2 uppercase">
+                      Grade de Tamanhos <span className="text-erro">*</span>
                     </h4>
-                    <p className="text-xs font-medium text-slate-400 dark:text-slate-500 mt-1">
-                      Selecionados: <span className="text-slate-700 dark:text-slate-300 font-bold">{nomesTamanhosSelecionados}</span>
+                    <p className="text-xs font-medium text-ink-3 mt-1">
+                      Selecionados: <span className="text-ink font-bold">{nomesTamanhosSelecionados}</span>
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setMostrandoAddTamanho(!mostrandoAddTamanho)}
-                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-[10px] uppercase tracking-widest font-bold flex items-center gap-1 transition-colors w-fit"
+                    className="text-ink hover:text-ink text-xs uppercase tracking-wide font-bold flex items-center gap-1 transition-colors w-fit"
                   >
                     {mostrandoAddTamanho ? <><X className="w-3 h-3" /> Cancelar</> : <><Plus className="w-3 h-3" /> Novo Tamanho</>}
                   </button>
                 </div>
 
                 {mostrandoAddTamanho && (
-                  <div className="mb-6 p-4 sm:p-5 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 rounded-2xl flex flex-col sm:flex-row gap-3 animate-fade-in transition-colors">
+                  <div className="mb-6 p-4 sm:p-5 bg-sunken border border-line rounded-md flex flex-col sm:flex-row gap-3 transition-colors">
                     <select
                       value={novoTamanhoNome}
                       onChange={(e) => setNovoTamanhoNome(e.target.value)}
-                      className={`${baseInputClass} !border-blue-300 dark:!border-blue-700/50 !bg-white dark:!bg-slate-900 focus:!ring-blue-500/20`}
+                      className={`${baseInputClass} !border-line !bg-surface focus:!ring-ink`}
                     >
                       <option value="">Selecione da lista...</option>
                       {TAMANHOS_SUGERIDOS.map((t) => (
@@ -512,16 +513,16 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
                     <button
                       onClick={handleAddNovoTamanho}
                       disabled={salvandoNovoTamanho}
-                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-all shadow-sm shadow-blue-600/20 disabled:opacity-50"
+                      className="px-6 py-3 bg-action hover:bg-action-hover text-on-action rounded-md font-bold text-sm transition-all disabled:opacity-50"
                     >
                       {salvandoNovoTamanho ? <Loader2 className="w-4 h-4 animate-spin" /> : "Adicionar"}
                     </button>
                   </div>
                 )}
 
-                <div className={`rounded-2xl p-5 border ${erros.id_tamanho ? "border-red-300 dark:border-red-500/50 bg-red-50/30 dark:bg-red-900/10" : "border-slate-200/60 dark:border-slate-700/60 bg-slate-50/50 dark:bg-slate-900/30"} transition-colors`}>
+                <div className={`rounded-md p-5 border ${erros.id_tamanho ? "border-erro-line bg-erro-soft " : "border-line bg-sunken "} transition-colors`}>
                   {tamanhosDisponiveis.length === 0 ? (
-                    <p className="text-sm font-medium text-slate-400 dark:text-slate-500 italic text-center py-2">
+                    <p className="text-sm font-medium text-ink-3 italic text-center py-2">
                       Nenhum tamanho disponível.
                     </p>
                   ) : (
@@ -533,9 +534,9 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
                             key={tam.id}
                             type="button"
                             onClick={() => alternarTamanho(tam.id)}
-                            className={`min-w-[56px] h-[42px] px-4 rounded-xl border text-sm font-bold transition-all duration-200 ${isSelected
-                                ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/20"
-                                : "bg-white dark:bg-slate-800 border-slate-200/60 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-blue-300 dark:hover:border-blue-700"
+                            className={`min-w-[56px] h-[42px] px-4 rounded-md border text-sm font-bold transition-all duration-200 ${isSelected
+                                ? "bg-action border-ink text-on-action "
+                                : "bg-surface border-line text-ink-2 hover:border-line "
                               }`}
                           >
                             {tam.tamanho || tam.nome}
@@ -545,18 +546,18 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
                     </div>
                   )}
                 </div>
-                {erros.id_tamanho && <p className="text-xs font-medium text-red-500 mt-2">{erros.id_tamanho}</p>}
+                {erros.id_tamanho && <p className="text-xs font-medium text-erro mt-2">{erros.id_tamanho}</p>}
               </section>
 
             </div>
           )}
         </div>
 
-        <div className="px-6 sm:px-8 py-5 border-t border-slate-100 dark:border-slate-800/60 flex flex-col sm:flex-row sm:justify-end gap-3 bg-white dark:bg-slate-900 shrink-0 rounded-b-3xl transition-colors duration-300">
+        <div className="px-6 sm:px-8 py-5 border-t border-line flex flex-col sm:flex-row sm:justify-end gap-3 bg-surface shrink-0 rounded-b-md transition-colors duration-300">
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors w-full sm:w-auto order-2 sm:order-1"
+            className="px-6 py-2.5 bg-sunken text-ink text-sm font-bold rounded-md hover:bg-line transition-colors w-full sm:w-auto order-2 sm:order-1"
           >
             Cancelar
           </button>
@@ -564,9 +565,9 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
             type="button"
             onClick={salvarEpi}
             disabled={salvando || carregandoDados}
-            className={`px-8 py-2.5 flex items-center justify-center gap-2 text-white font-bold rounded-xl text-sm transition-all shadow-sm w-full sm:w-auto order-1 sm:order-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] ${epiParaEditar
-                ? "bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-500 shadow-amber-500/20"
-                : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 shadow-blue-600/20"
+            className={`px-8 py-2.5 flex items-center justify-center gap-2 text-on-action font-bold rounded-md text-sm transition-all  w-full sm:w-auto order-1 sm:order-2 disabled:opacity-50 disabled:cursor-not-allowed ${epiParaEditar
+                ? "bg-action hover:bg-action-hover "
+                : "bg-action hover:bg-action-hover "
               }`}
           >
             {salvando ? (
@@ -580,7 +581,7 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
         </div>
 
       </div>
-    </div>
+    </Dialogo>
   );
 }
 

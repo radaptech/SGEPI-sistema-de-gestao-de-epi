@@ -2,7 +2,8 @@ import { useEffect } from "react";
 import { formatarPreco, formatarValidade } from "../../utils/estoqueHelpers";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { X, Download, PackageSearch } from "lucide-react";
+import { X, Download } from "lucide-react";
+import Dialogo from "../Dialogo";
 
 function ModalDetalhesEstoque({ aberto, item, onClose }) {
   useEffect(() => {
@@ -70,29 +71,26 @@ function ModalDetalhesEstoque({ aberto, item, onClose }) {
   };
 
   const InfoCard = ({ label, value }) => (
-    <div className="bg-white dark:bg-slate-800/80 p-4 sm:p-5 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm transition-colors">
-      <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 transition-colors">
+    <div className="bg-surface p-4 sm:p-5 rounded-md border border-line transition-colors">
+      <span className="block text-xs font-bold text-ink-2 uppercase tracking-wide mb-1.5 transition-colors">
         {label}
       </span>
-      <strong className="text-sm font-bold text-slate-800 dark:text-slate-200 block truncate transition-colors">
+      <strong className="text-sm font-bold text-ink block truncate transition-colors">
         {value}
       </strong>
     </div>
   );
 
   return (
-    <div className="fixed inset-0 z-[120] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-fade-in text-slate-700 dark:text-slate-300">
-      <div className="w-full max-w-3xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/60 dark:border-slate-800 overflow-hidden flex flex-col max-h-[95vh] transition-colors duration-300">
-        <div className="px-6 sm:px-8 py-6 border-b border-slate-100 dark:border-slate-800/60 flex justify-between items-start shrink-0 transition-colors duration-300">
+    <Dialogo onClose={onClose} className="fixed inset-0 z-[120] bg-overlay flex items-center justify-center p-4 sm:p-6 text-ink ">
+      <div className="w-full max-w-3xl bg-surface rounded-md shadow-modal border border-line overflow-hidden flex flex-col max-h-[95vh] transition-colors duration-300">
+        <div className="px-6 sm:px-8 py-6 border-b border-line flex justify-between items-start shrink-0 transition-colors duration-300">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 transition-colors">
-              <PackageSearch className="w-6 h-6" strokeWidth={2.5} />
-            </div>
             <div>
-              <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight transition-colors">
+              <h2 className="text-2xl font-bold text-ink tracking-tight transition-colors">
                 Detalhes do Item
               </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 transition-colors">
+              <p className="text-sm text-ink-2 mt-1 transition-colors">
                 Informações completas do lote em estoque.
               </p>
             </div>
@@ -101,22 +99,22 @@ function ModalDetalhesEstoque({ aberto, item, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="p-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+            className="p-2.5 text-ink-3 hover:text-ink-2 hover:bg-sunken rounded-md transition-colors"
             title="Fechar"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 sm:px-8 bg-slate-50/50 dark:bg-slate-900/50 space-y-5 custom-scrollbar transition-colors duration-300">
-          <div className="bg-white dark:bg-slate-800/80 p-5 sm:p-6 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm transition-colors">
-            <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 transition-colors">
+        <div className="flex-1 overflow-y-auto p-6 sm:px-8 bg-sunken space-y-5 custom-scrollbar transition-colors duration-300">
+          <div className="max-w-full">
+            <span className="block text-xs font-bold text-ink-2 uppercase tracking-wide mb-1.5 transition-colors">
               EPI
             </span>
-            <strong className="text-lg font-extrabold text-slate-800 dark:text-white block transition-colors">
+            <strong className="text-lg font-bold text-ink block transition-colors">
               {item.nome}
             </strong>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed transition-colors">
+            <p className="text-sm text-ink-2 mt-1.5 leading-relaxed transition-colors">
               {item.descricao || "Nenhuma descrição adicional cadastrada para este item."}
             </p>
           </div>
@@ -138,11 +136,11 @@ function ModalDetalhesEstoque({ aberto, item, onClose }) {
           </div>
         </div>
 
-        <div className="px-6 sm:px-8 py-5 border-t border-slate-100 dark:border-slate-800/60 flex flex-col sm:flex-row gap-3 sm:justify-end sm:items-center bg-white dark:bg-slate-900 shrink-0 rounded-b-3xl transition-colors duration-300">
+        <div className="px-6 sm:px-8 py-5 border-t border-line flex flex-col sm:flex-row gap-3 sm:justify-end sm:items-center bg-surface shrink-0 rounded-b-md transition-colors duration-300">
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2.5 text-sm font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors w-full sm:w-auto order-2 sm:order-1"
+            className="px-6 py-2.5 text-sm font-bold text-ink-2 hover:bg-sunken rounded-md transition-colors w-full sm:w-auto order-2 sm:order-1"
           >
             Fechar
           </button>
@@ -150,14 +148,14 @@ function ModalDetalhesEstoque({ aberto, item, onClose }) {
           <button
             type="button"
             onClick={gerarPDF}
-            className="px-6 py-2.5 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-bold rounded-xl text-sm transition-all active:scale-[0.98] shadow-sm shadow-blue-600/20 w-full sm:w-auto order-1 sm:order-2"
+            className="px-6 py-2.5 flex items-center justify-center gap-2 bg-action hover:bg-action-hover text-on-action font-bold rounded-md text-sm transition-all w-full sm:w-auto order-1 sm:order-2"
           >
             <Download className="w-4 h-4" /> Baixar PDF
           </button>
         </div>
 
       </div>
-    </div>
+    </Dialogo>
   );
 }
 

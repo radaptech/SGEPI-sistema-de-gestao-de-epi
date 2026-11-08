@@ -108,26 +108,26 @@ function Mensalidades() {
   const getStatusClass = (status) => {
     switch (status) {
       case "Pago":
-        return "text-emerald-700 bg-emerald-50 border-emerald-200/60";
+        return "text-ok bg-ok-soft border-ok-line";
       case "Pendente":
-        return "text-sky-700 bg-sky-50 border-sky-200/60";
+        return "text-ink bg-sunken border-line";
       case "Atrasado":
-        return "text-red-700 bg-red-50 border-red-200/60";
+        return "text-erro bg-erro-soft border-erro-line";
       default:
-        return "text-slate-600 bg-slate-50 border-slate-200";
+        return "text-ink-2 bg-sunken border-line";
     }
   };
 
   return (
-    <div className="animate-fade-in min-h-screen bg-slate-50 font-sans pb-12">
+    <div className=" min-h-screen bg-sunken font-sans pb-12">
       <div className="w-full max-w-[1600px] mx-auto p-6 lg:p-10">
         
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
           <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-3xl font-bold text-ink tracking-tight">
               Mensalidades
             </h1>
-            <p className="text-sm text-slate-500 mt-2 font-medium max-w-xl leading-relaxed">
+            <p className="text-sm text-ink-2 mt-2 font-medium max-w-xl leading-relaxed">
               Controle cobranças, pagamentos e pendências financeiras das empresas.
             </p>
           </div>
@@ -135,7 +135,7 @@ function Mensalidades() {
           <button
             type="button"
             onClick={() => setModalNovaAberto(true)}
-            className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 hover:shadow-md hover:shadow-blue-600/20 active:scale-[0.98] transition-all shrink-0"
+            className="flex items-center justify-center gap-2 px-5 py-3 rounded-md bg-action text-on-action text-sm font-semibold hover:bg-action-hover transition-all shrink-0"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
@@ -151,13 +151,13 @@ function Mensalidades() {
           <CardFinanceiro titulo="Atrasadas" valor={totais.atrasadas} />
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden flex flex-col">
-          <div className="p-4 md:p-5 border-b border-slate-100 bg-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="bg-surface rounded-md border border-line overflow-hidden flex flex-col">
+          <div className="p-4 md:p-5 border-b border-line bg-surface flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h2 className="text-base font-bold text-slate-900 tracking-tight">
+              <h2 className="text-base font-bold text-ink tracking-tight">
                 Controle de pagamentos
               </h2>
-              <p className="text-[13px] text-slate-500 mt-0.5 font-medium">
+              <p className="text-sm text-ink-2 mt-0.5 font-medium">
                 Lista de mensalidades cadastradas e seus respectivos status.
               </p>
             </div>
@@ -166,7 +166,7 @@ function Mensalidades() {
               <select
                 value={statusFiltro}
                 onChange={(e) => setStatusFiltro(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-sm text-slate-900 font-medium appearance-none cursor-pointer"
+                className="w-full px-4 py-2.5 bg-sunken border border-line rounded-md focus:bg-surface focus:ring-1 focus:ring-ink focus:border-ink outline-none transition-all text-sm text-ink font-medium appearance-none cursor-pointer"
                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748B'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: `right 1rem center`, backgroundRepeat: `no-repeat`, backgroundSize: `1.2em 1.2em` }}
               >
                 <option value="Todos">Todos os status</option>
@@ -179,7 +179,7 @@ function Mensalidades() {
 
           <div className="overflow-x-auto">
             <table className="w-full text-left whitespace-nowrap">
-              <thead className="bg-slate-50/80 border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+              <thead className="bg-sunken border-b border-line text-xs font-bold text-ink-2 uppercase tracking-wide">
                 <tr>
                   <th className="px-6 py-4">Empresa</th>
                   <th className="px-6 py-4 text-center">Plano</th>
@@ -191,44 +191,44 @@ function Mensalidades() {
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-slate-100/80">
+              <tbody className="divide-y divide-line">
                 {mensalidadesFiltradas.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
+                  <tr key={item.id} className="hover:bg-sunken transition-colors group">
                     <td className="px-6 py-4">
-                      <p className="text-sm font-bold text-slate-900">{item.empresa}</p>
+                      <p className="text-sm font-bold text-ink">{item.empresa}</p>
                     </td>
 
                     <td className="px-6 py-4 text-center">
-                      <span className="inline-flex px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200/60 text-slate-600 text-[11px] font-bold tracking-wide">
+                      <span className="inline-flex px-2.5 py-1 rounded-md bg-sunken border border-line text-ink-2 text-xs font-bold tracking-wide">
                         {item.plano || "-"}
                       </span>
                     </td>
 
                     <td className="px-6 py-4 text-right">
-                      <p className="text-[13px] font-bold text-slate-900">
+                      <p className="text-sm font-bold text-ink">
                         {formatarMoeda(item.valor)}
                       </p>
                     </td>
 
                     <td className="px-6 py-4 text-center">
-                      <p className="text-[13px] font-semibold text-slate-700">
+                      <p className="text-sm font-semibold text-ink">
                         {formatarData(item.vencimento)}
                       </p>
                     </td>
 
                     <td className="px-6 py-4 text-center">
-                      <p className="text-[13px] font-semibold text-slate-700">
+                      <p className="text-sm font-semibold text-ink">
                         {formatarData(item.pagamento)}
                       </p>
                       {item.formaPagamento && (
-                        <p className="text-[11px] text-slate-400 mt-1 font-medium">
+                        <p className="text-xs text-ink-3 mt-1 font-medium">
                           {item.formaPagamento}
                         </p>
                       )}
                     </td>
 
                     <td className="px-6 py-4 text-center">
-                      <span className={`inline-flex px-2.5 py-1 rounded-md border text-[11px] font-bold tracking-wide ${getStatusClass(item.status)}`}>
+                      <span className={`inline-flex px-2.5 py-1 rounded-md border text-xs font-bold tracking-wide ${getStatusClass(item.status)}`}>
                         {item.status || "Indefinido"}
                       </span>
                     </td>
@@ -239,7 +239,7 @@ function Mensalidades() {
                           <button
                             type="button"
                             onClick={() => abrirPagamento(item)}
-                            className="px-3 py-1.5 rounded-lg text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 text-xs font-semibold transition-colors"
+                            className="px-3 py-1.5 rounded-md text-ok hover:text-ok hover:bg-ok-soft text-xs font-semibold transition-colors"
                           >
                             Marcar Pago
                           </button>
@@ -248,7 +248,7 @@ function Mensalidades() {
                         <button
                           type="button"
                           onClick={() => abrirEditar(item)}
-                          className="px-3 py-1.5 rounded-lg text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-xs font-semibold transition-colors"
+                          className="px-3 py-1.5 rounded-md text-ink hover:text-ink hover:bg-sunken text-xs font-semibold transition-colors"
                         >
                           Editar
                         </button>
@@ -261,10 +261,10 @@ function Mensalidades() {
                   <tr>
                     <td colSpan="7" className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center justify-center gap-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 10v-1m0 0c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <p className="text-sm text-slate-500 font-medium">Nenhuma mensalidade encontrada.</p>
+                        <p className="text-sm text-ink-2 font-medium">Nenhuma mensalidade encontrada.</p>
                       </div>
                     </td>
                   </tr>
@@ -300,11 +300,11 @@ function Mensalidades() {
 
 function CardFinanceiro({ titulo, valor }) {
   return (
-    <div className="bg-white rounded-3xl border border-slate-200/60 p-6 shadow-sm hover:shadow-md hover:shadow-slate-100/50 transition-all">
-      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+    <div className="bg-surface rounded-md border border-line p-6 transition-all">
+      <p className="text-xs font-bold text-ink-2 uppercase tracking-wide">
         {titulo}
       </p>
-      <h3 className="text-3xl font-semibold text-slate-900 mt-3">{valor}</h3>
+      <h3 className="text-3xl font-semibold text-ink mt-3">{valor}</h3>
     </div>
   );
 }

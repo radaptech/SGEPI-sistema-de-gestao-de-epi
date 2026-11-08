@@ -45,14 +45,14 @@ export function calcularStatusValidade(dataString) {
 
 export function getStatusColor(quantidadeAtual, alertaMinimo) {
   if (quantidadeAtual <= 0) {
-    return "bg-red-100 text-red-700 border-red-200";
+    return "bg-erro-soft text-erro border-erro-line";
   }
 
   if (quantidadeAtual <= Number(alertaMinimo || 0)) {
-    return "bg-yellow-100 text-yellow-700 border-yellow-200";
+    return "bg-atencao-soft text-atencao border-atencao-line";
   }
 
-  return "bg-green-100 text-green-700 border-green-200";
+  return "bg-ok-soft text-ok border-ok-line";
 }
 
 export function getStatusTexto(quantidadeAtual, alertaMinimo) {
@@ -63,14 +63,14 @@ export function getStatusTexto(quantidadeAtual, alertaMinimo) {
 
 export function getValidadeBadge(status) {
   if (status === "vencido") {
-    return "bg-red-100 text-red-700 border-red-200";
+    return "bg-erro-soft text-erro border-erro-line";
   }
 
   if (status === "proximo") {
-    return "bg-orange-100 text-orange-700 border-orange-200";
+    return "bg-atencao-soft text-atencao border-atencao-line";
   }
 
-  return "bg-slate-100 text-slate-700 border-slate-200";
+  return "bg-sunken text-ink border-line";
 }
 
 export function getValidadeTexto(status) {

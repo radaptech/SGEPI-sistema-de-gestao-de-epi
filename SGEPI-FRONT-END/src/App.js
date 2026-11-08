@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ToastContainer } from "react-toastify";
+import { ToastContainer, Slide } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Login from "./pages/Login";
 import Header from "./components/Header";
@@ -25,7 +25,47 @@ import { api } from "./services/api";
 const verificarSeUsuarioMaster = (u) => u?.role === "super_admin";
 const verificarSeAdminEmpresa = (u) => u?.role === "admin";
 const verificarSeFuncionario = (u) => u?.role === "colaborador";
+// toasts deslizam em vez de quicar (padrão do react-toastify), mais sóbrio
+const avisos = <ToastContainer position="top-right" autoClose={4000} hideProgressBar transition={Slide} />;
+
 const definirPaginaInicialPorPerfil = (u) => (verificarSeUsuarioMaster(u) ? "DashboardMaster" : "Dashboard");
+
+// a página atual vive no hash (#/Estoque) para o Voltar e o recarregar funcionarem
+const paginaDoHash = () => decodeURIComponent(window.location.hash.replace(/^#\/?/, ""));
+
+const paginasMaster = [
+  "DashboardMaster",
+  "Empresas",
+  "DetalhesEmpresa",
+  "Mensalidades",
+  "Planos",
+  "UsuariosMaster",
+];
+
+const paginasAdminEmpresa = [
+  "Dashboard",
+  "Estoque",
+  "Entradas",
+  "Entregas",
+  "Devoluções",
+  "Funcionários",
+  "Departamentos",
+  "Fornecedores",
+  "Administracao",
+];
+
+const paginasFuncionario = ["Dashboard", "Entregas", "Devoluções"];
+
+function paginaPermitida(u, pagina) {
+  const permitidas = verificarSeUsuarioMaster(u)
+    ? paginasMaster
+    : verificarSeAdminEmpresa(u)
+      ? paginasAdminEmpresa
+      : verificarSeFuncionario(u)
+        ? paginasFuncionario
+        : [];
+  return permitidas.includes(pagina) ? pagina : definirPaginaInicialPorPerfil(u);
+}
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -45,7 +85,7 @@ function App() {
 
         if (usuarioLogado) {
           setUsuario(usuarioLogado);
-          setPaginaAtual(definirPaginaInicialPorPerfil(usuarioLogado));
+          setPaginaAtual(paginaPermitida(usuarioLogado, paginaDoHash()));
         }
       } catch (error) {
         // 401: o cookie expirou ou não existe
@@ -62,7 +102,7 @@ function App() {
     const usuarioRecebido = dadosLogin?.usuario ?? dadosLogin;
 
     setUsuario(usuarioRecebido);
-    setPaginaAtual(definirPaginaInicialPorPerfil(usuarioRecebido));
+    setPaginaAtual(paginaPermitida(usuarioRecebido, paginaDoHash()));
   };
 
   // 🔑 2. LOGOUT COM EXPIRAÇÃO DE COOKIE NO BACKEND
@@ -78,67 +118,40 @@ function App() {
     }
   };
 
-  const paginasMaster = [
-    "DashboardMaster",
-    "Empresas",
-    "DetalhesEmpresa",
-    "Mensalidades",
-    "Planos",
-    "UsuariosMaster",
-  ];
 
-  const paginasAdminEmpresa = [
-    "Dashboard",
-    "Estoque",
-    "Entradas",
-    "Entregas",
-    "Devoluções",
-    "Funcionários",
-    "Departamentos",
-    "Fornecedores",
-    "Administracao",
-  ];
-
-  const paginasFuncionario = ["Dashboard", "Entregas", "Devoluções"];
-
-  const usuarioPodeAcessarPagina = (pagina) => {
-    if (verificarSeUsuarioMaster(usuario)) {
-      return paginasMaster.includes(pagina);
-    }
-
-    if (verificarSeAdminEmpresa(usuario)) {
-      return paginasAdminEmpresa.includes(pagina);
-    }
-
-    if (verificarSeFuncionario(usuario)) {
-      return paginasFuncionario.includes(pagina);
-    }
-
-    return false;
-  };
 
   const trocarPaginaComPermissao = (pagina) => {
-    if (usuarioPodeAcessarPagina(pagina)) {
-      setPaginaAtual(pagina);
-      return;
-    }
-
-    setPaginaAtual(definirPaginaInicialPorPerfil(usuario));
+    setPaginaAtual(paginaPermitida(usuario, pagina));
   };
+
+  // página -> hash
+  useEffect(() => {
+    if (!usuario) return;
+    const hash = `#/${encodeURIComponent(paginaAtual)}`;
+    if (window.location.hash !== hash) window.location.hash = hash;
+  }, [usuario, paginaAtual]);
+
+  // hash -> página (Voltar/Avançar do navegador)
+  useEffect(() => {
+    if (!usuario) return;
+    const aoMudarHash = () => setPaginaAtual(paginaPermitida(usuario, paginaDoHash()));
+    window.addEventListener("hashchange", aoMudarHash);
+    return () => window.removeEventListener("hashchange", aoMudarHash);
+  }, [usuario]);
 
   const renderizarAcessoNegado = () => {
     return (
-      <div className="bg-white dark:bg-slate-800 border border-red-100 dark:border-red-900/30 rounded-2xl p-8 shadow-sm transition-colors duration-300">
+      <div className="bg-surface border border-erro-line rounded-md p-8 transition-colors duration-300">
         <div className="max-w-2xl">
-          <p className="text-xs font-black text-red-400 dark:text-red-500 uppercase tracking-[0.25em]">
+          <p className="text-xs font-bold text-erro uppercase tracking-wide">
             Acesso restrito
           </p>
 
-          <h1 className="text-2xl font-black text-slate-800 dark:text-white mt-2 transition-colors">
+          <h1 className="text-2xl font-bold text-ink mt-2 transition-colors">
             Você não tem permissão para acessar esta área.
           </h1>
 
-          <p className="text-slate-500 dark:text-slate-400 mt-3 transition-colors">
+          <p className="text-ink-2 mt-3 transition-colors">
             Essa página pertence a outro nível de acesso do sistema. Entre com
             um usuário autorizado ou volte para a página inicial do seu perfil.
           </p>
@@ -146,7 +159,7 @@ function App() {
           <button
             type="button"
             onClick={() => setPaginaAtual(definirPaginaInicialPorPerfil(usuario))}
-            className="mt-6 px-5 py-3 rounded-xl bg-slate-800 dark:bg-slate-700 text-white text-sm font-bold hover:bg-slate-700 dark:hover:bg-slate-600 transition"
+            className="mt-6 px-5 py-3 rounded-md bg-action text-on-action text-sm font-bold hover:bg-action-hover transition"
           >
             Voltar para minha área
           </button>
@@ -156,7 +169,7 @@ function App() {
   };
 
   const renderizarPagina = () => {
-    if (!usuarioPodeAcessarPagina(paginaAtual)) {
+    if (paginaPermitida(usuario, paginaAtual) !== paginaAtual) {
       return renderizarAcessoNegado();
     }
 
@@ -213,7 +226,7 @@ function App() {
 
   if (carregandoSessao) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#0B1120] text-slate-800 dark:text-white transition-colors duration-300">
+      <div className="min-h-screen flex items-center justify-center bg-sunken text-ink  transition-colors duration-300">
         Carregando...
       </div>
     );
@@ -228,7 +241,7 @@ function App() {
             window.history.pushState({}, '', '/'); 
           }} 
         />
-        <ToastContainer position="top-right" autoClose={4000} theme="colored" />
+        {avisos}
       </>
     );
   }
@@ -237,13 +250,13 @@ function App() {
     return (
       <>
         <Login onLogin={handleLogin} />
-        <ToastContainer position="top-right" autoClose={4000} theme="colored" />
+        {avisos}
       </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] font-sans text-slate-800 dark:text-slate-100 transition-colors duration-300">
+    <div className="min-h-screen bg-canvas font-sans text-ink">
       <Header
         paginaAtual={paginaAtual}
         setPagina={trocarPaginaComPermissao}
@@ -255,11 +268,7 @@ function App() {
         {renderizarPagina()}
       </main>
 
-      <ToastContainer 
-        position="top-right" 
-        autoClose={4000} 
-        theme="colored" 
-      />
+      {avisos}
     </div>
   );
 }

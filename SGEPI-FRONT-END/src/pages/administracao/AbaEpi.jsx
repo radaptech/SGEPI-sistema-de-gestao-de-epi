@@ -160,7 +160,7 @@ export default function AbaEpis() {
 
     if (status === "vencido") {
       return (
-        <span className="text-red-600 dark:text-red-400 font-bold flex items-center gap-1.5" title="CA Vencido!">
+        <span className="text-erro font-bold flex items-center gap-1.5" title="CA Vencido!">
           <AlertCircle className="w-4 h-4 shrink-0" /> {data}
         </span>
       );
@@ -168,25 +168,25 @@ export default function AbaEpis() {
 
     if (status === "alerta") {
       return (
-        <span className="text-amber-500 dark:text-amber-400 font-bold flex items-center gap-1.5" title="Vence em 15 dias ou menos!">
+        <span className="text-atencao font-bold flex items-center gap-1.5" title="Vence em 15 dias ou menos!">
           <AlertTriangle className="w-4 h-4 shrink-0" /> {data}
         </span>
       );
     }
 
     return (
-      <span className={mobile ? "font-bold text-slate-700 dark:text-slate-300" : "text-slate-600 dark:text-slate-400 font-medium"}>
+      <span className={mobile ? "font-bold text-ink " : "text-ink-2 font-medium"}>
         {data}
       </span>
     );
   };
 
   return (
-    <div className="animate-fade-in p-2 md:p-0 transition-colors duration-300">
+    <div className=" p-2 md:p-0 transition-colors duration-300">
       {toast && (
-        <div className={`fixed top-5 left-1/2 z-[9999] w-[90%] max-w-sm -translate-x-1/2 rounded-2xl border px-5 py-4 shadow-xl flex items-start gap-3 transition-colors sm:left-auto sm:right-5 sm:translate-x-0 animate-fade-in ${toast.tipo === "sucesso"
-            ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300"
-            : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/50 text-red-800 dark:text-red-300"
+        <div className={`fixed top-5 left-1/2 z-[9999] w-[90%] max-w-sm -translate-x-1/2 rounded-md border px-5 py-4 shadow-modal flex items-start gap-3 transition-colors sm:left-auto sm:right-5 sm:translate-x-0  ${toast.tipo === "sucesso"
+            ? "bg-ok-soft border-ok-line text-ok "
+            : "bg-erro-soft border-erro-line text-erro "
           }`}>
           {toast.tipo === "sucesso" ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
           <div className="flex-1">
@@ -199,18 +199,18 @@ export default function AbaEpis() {
         </div>
       )}
 
-      <div className="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800 mb-6 shadow-sm transition-colors">
+      <div className="max-w-full">
         <div className="flex flex-col lg:flex-row gap-5 lg:items-center lg:justify-between">
           <div className="flex-1 max-w-2xl">
-            <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mb-3 flex items-center gap-2 transition-colors">
-              <Shield className="w-5 h-5 text-blue-600 dark:text-blue-500" />
+            <h2 className="text-xl font-bold text-ink mb-3 flex items-center gap-2 transition-colors">
+              <Shield className="w-5 h-5 text-ink " />
               Inventário de EPIs
             </h2>
 
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-3 pointer-events-none" />
               <input
-                className="w-full h-[46px] pl-11 pr-4 border border-slate-200/60 dark:border-slate-700/60 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm transition-all text-slate-700 dark:text-slate-200 placeholder-slate-400"
+                className="w-full h-[46px] pl-11 pr-4 border border-line bg-sunken rounded-md focus:ring-1 focus:ring-ink focus:border-ink outline-none text-sm transition-all text-ink placeholder-ink-3"
                 value={buscaEpi}
                 onChange={(e) => setBuscaEpi(e.target.value)}
                 placeholder="Pesquisar por nome, CA, fabricante ou proteção..."
@@ -219,11 +219,11 @@ export default function AbaEpis() {
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 shrink-0">
-            <div className="hidden sm:block text-right pr-4 border-r border-slate-200 dark:border-slate-700 transition-colors">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+            <div className="hidden sm:block text-right pr-4 border-r border-line transition-colors">
+              <p className="text-xs font-bold text-ink-3 uppercase tracking-wide mb-1">
                 Total
               </p>
-              <p className="text-2xl font-black text-slate-800 dark:text-slate-200 transition-colors">
+              <p className="text-2xl font-bold text-ink transition-colors">
                 {carregando ? "..." : episFiltrados.length}
               </p>
             </div>
@@ -233,7 +233,7 @@ export default function AbaEpis() {
                 setEpiParaEditar(null);
                 setModalEpiAberto(true);
               }}
-              className="h-[46px] px-6 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-bold rounded-xl transition-all shadow-sm shadow-blue-600/20 flex items-center justify-center gap-2 text-sm active:scale-[0.98]"
+              className="h-[46px] px-6 bg-action hover:bg-action-hover text-on-action font-bold rounded-md transition-all flex items-center justify-center gap-2 text-sm"
             >
               <Plus className="w-5 h-5" strokeWidth={2.5} /> Cadastrar Novo EPI
             </button>
@@ -241,35 +241,35 @@ export default function AbaEpis() {
         </div>
       </div>
 
-      <div className="hidden lg:block bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 overflow-hidden shadow-sm transition-colors">
+      <div className="hidden lg:block bg-surface rounded-md border border-line overflow-hidden transition-colors">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200/60 dark:border-slate-700/60 transition-colors">
+            <thead className="bg-sunken border-b border-line transition-colors">
               <tr>
-                <th className="p-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Equipamento</th>
-                <th className="p-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Proteção</th>
-                <th className="p-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">Tamanhos</th>
-                <th className="p-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Fabricante</th>
-                <th className="p-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">CA</th>
-                <th className="p-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">Alerta Mín.</th>
-                <th className="p-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Validade CA</th>
-                <th className="p-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">Ações</th>
+                <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide">Equipamento</th>
+                <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide">Proteção</th>
+                <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide text-center">Tamanhos</th>
+                <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide">Fabricante</th>
+                <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide text-center">CA</th>
+                <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide text-center">Alerta Mín.</th>
+                <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide">Validade CA</th>
+                <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide text-center">Ações</th>
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+            <tbody className="divide-y divide-line ">
               {carregando ? (
                 <tr>
-                  <td colSpan="8" className="p-16 text-center text-slate-400 dark:text-slate-500">
+                  <td colSpan="8" className="p-16 text-center text-ink-3 ">
                     <div className="flex flex-col items-center justify-center gap-3">
-                      <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                      <Loader2 className="w-8 h-8 animate-spin text-ink" />
                       <span className="font-medium">Sincronizando dados...</span>
                     </div>
                   </td>
                 </tr>
               ) : episPaginados.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="p-16 text-center text-slate-400 dark:text-slate-500 transition-colors">
+                  <td colSpan="8" className="p-16 text-center text-ink-3 transition-colors">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <PackageSearch className="w-10 h-10 opacity-50" strokeWidth={1.5} />
                       <span className="font-medium">Nenhum equipamento encontrado.</span>
@@ -278,16 +278,16 @@ export default function AbaEpis() {
                 </tr>
               ) : (
                 episPaginados.map((epi) => (
-                  <tr key={epi.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors group">
+                  <tr key={epi.id} className="hover:bg-sunken transition-colors group">
                     <td className="p-4">
-                      <div className="font-bold text-slate-800 dark:text-slate-200 transition-colors">{epi.nome}</div>
-                      <div className="text-xs text-slate-400 dark:text-slate-500 truncate max-w-[200px] mt-0.5">
+                      <div className="font-bold text-ink transition-colors">{epi.nome}</div>
+                      <div className="text-xs text-ink-3 truncate max-w-[200px] mt-0.5">
                         {epi.descricao || "Sem observações"}
                       </div>
                     </td>
 
                     <td className="p-4">
-                      <span className="inline-flex items-center justify-center px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-bold uppercase tracking-wide rounded-lg border border-slate-200/60 dark:border-slate-700/60 transition-colors">
+                      <span className="inline-flex items-center justify-center px-2.5 py-1 bg-sunken text-ink-2 text-xs font-bold uppercase tracking-wide rounded-md border border-line transition-colors">
                         {epi.protecao?.nome || "-"}
                       </span>
                     </td>
@@ -297,7 +297,7 @@ export default function AbaEpis() {
                         {epi.tamanhos?.map((tam, idx) => (
                           <span
                             key={idx}
-                            className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-extrabold border border-blue-100/60 dark:border-blue-800/50 transition-colors"
+                            className="px-2 py-0.5 rounded-md bg-sunken text-ink text-xs font-bold border border-line transition-colors"
                           >
                             {tam.tamanho}
                           </span>
@@ -305,7 +305,7 @@ export default function AbaEpis() {
                       </div>
                     </td>
 
-                    <td className="p-4 text-slate-600 dark:text-slate-300 font-medium transition-colors">
+                    <td className="p-4 text-ink-2 font-medium transition-colors">
                       {epi.fabricante}
                     </td>
 
@@ -316,18 +316,18 @@ export default function AbaEpis() {
                           target="_blank"
                           rel="noopener noreferrer"
                           title="Consultar CA"
-                          className="font-mono text-xs font-bold bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors px-2 py-1.5 rounded-lg border border-amber-200/60 dark:border-amber-800/50 inline-flex items-center gap-1.5"
+                          className="font-mono text-xs font-bold bg-atencao-soft text-atencao hover:bg-atencao-soft transition-colors px-2 py-1.5 rounded-md border border-atencao-line inline-flex items-center gap-1.5"
                         >
                           {epi.ca} <ExternalLink className="w-3.5 h-3.5" />
                         </a>
                       ) : (
-                        <span className="font-mono text-xs font-bold bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 px-2 py-1.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60 transition-colors">
+                        <span className="font-mono text-xs font-bold bg-sunken text-ink-3 px-2 py-1.5 rounded-md border border-line transition-colors">
                           N/A
                         </span>
                       )}
                     </td>
 
-                    <td className="p-4 text-center text-slate-800 dark:text-slate-200 font-extrabold transition-colors">
+                    <td className="p-4 text-center text-ink font-bold transition-colors">
                       {epi.alerta_minimo ?? 0}
                     </td>
 
@@ -339,14 +339,14 @@ export default function AbaEpis() {
                       <div className="flex items-center justify-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => handleEditar(epi)}
-                          className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 transition-colors"
+                          className="w-8 h-8 flex items-center justify-center rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition-colors"
                           title="Editar"
                         >
                           <PenLine className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleRemover(epi.id)}
-                          className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-colors"
+                          className="w-8 h-8 flex items-center justify-center rounded-md text-ink-3 hover:text-erro hover:bg-erro-soft transition-colors"
                           title="Excluir"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -363,24 +363,24 @@ export default function AbaEpis() {
 
       <div className="lg:hidden flex flex-col gap-4">
         {carregando ? (
-          <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-400 dark:text-slate-500">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <div className="flex flex-col items-center justify-center gap-3 py-16 text-ink-3 ">
+            <Loader2 className="w-8 h-8 animate-spin text-ink" />
             <span className="font-medium text-sm">Carregando dados...</span>
           </div>
         ) : episPaginados.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-900 border border-dashed border-slate-200/60 dark:border-slate-800 rounded-2xl transition-colors">
+          <div className="flex flex-col items-center justify-center gap-3 py-16 text-ink-3 bg-surface border border-dashed border-line rounded-md transition-colors">
             <PackageSearch className="w-10 h-10 opacity-50" strokeWidth={1.5} />
             <span className="font-medium text-sm">Nenhum equipamento encontrado.</span>
           </div>
         ) : (
           episPaginados.map((epi) => (
-            <div key={epi.id} className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-5 shadow-sm relative transition-colors">
+            <div key={epi.id} className="bg-surface border border-line rounded-md p-5 relative transition-colors">
               <div className="flex justify-between items-start mb-4">
                 <div className="pr-2">
-                  <h3 className="text-base font-extrabold text-slate-800 dark:text-white transition-colors">
+                  <h3 className="text-base font-bold text-ink transition-colors">
                     {epi.nome}
                   </h3>
-                  <span className="inline-block mt-1.5 px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-widest rounded-md border border-blue-100/60 dark:border-blue-800/50 transition-colors">
+                  <span className="inline-block mt-1.5 px-2 py-0.5 bg-sunken text-ink text-xs font-bold uppercase tracking-wide rounded-md border border-line transition-colors">
                     {epi.protecao?.nome || "Geral"}
                   </span>
                 </div>
@@ -388,53 +388,53 @@ export default function AbaEpis() {
                 <div className="flex gap-1.5 shrink-0">
                   <button
                     onClick={() => handleEditar(epi)}
-                    className="w-8 h-8 flex items-center justify-center bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-xl transition-colors"
+                    className="w-8 h-8 flex items-center justify-center bg-sunken hover:bg-sunken text-ink-2 rounded-md transition-colors"
                   >
                     <PenLine className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleRemover(epi.id)}
-                    className="w-8 h-8 flex items-center justify-center bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-500 dark:text-red-400 rounded-xl transition-colors"
+                    className="w-8 h-8 flex items-center justify-center bg-erro-soft hover:bg-erro-soft text-erro rounded-md transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-y-4 gap-x-3 text-sm border-t border-slate-100 dark:border-slate-800/60 pt-4 transition-colors">
+              <div className="grid grid-cols-2 gap-y-4 gap-x-3 text-sm border-t border-line pt-4 transition-colors">
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Fabricante</span>
-                  <span className="font-bold text-slate-700 dark:text-slate-300">
+                  <span className="text-xs font-bold text-ink-3 uppercase tracking-wide block mb-1">Fabricante</span>
+                  <span className="font-bold text-ink ">
                     {epi.fabricante}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">CA</span>
+                  <span className="text-xs font-bold text-ink-3 uppercase tracking-wide block mb-1">CA</span>
                   {epi.ca !== "N/A" ? (
                     <a
                       href={`https://consultaca.com/${epi.ca}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors font-mono flex items-center gap-1.5"
+                      className="font-bold text-ink hover:text-ink transition-colors font-mono flex items-center gap-1.5"
                     >
                       {epi.ca} <ExternalLink className="w-3 h-3" />
                     </a>
                   ) : (
-                    <span className="font-bold text-slate-500 dark:text-slate-500 font-mono">
+                    <span className="font-bold text-ink-2 font-mono">
                       N/A
                     </span>
                   )}
                 </div>
 
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Validade CA</span>
+                  <span className="text-xs font-bold text-ink-3 uppercase tracking-wide block mb-1">Validade CA</span>
                   <BadgeValidade data={epi.data_validadeCa} mobile={true} />
                 </div>
 
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Alerta Min.</span>
-                  <span className="font-extrabold text-red-600 dark:text-red-400">
+                  <span className="text-xs font-bold text-ink-3 uppercase tracking-wide block mb-1">Alerta Min.</span>
+                  <span className="font-bold text-erro ">
                     {epi.alerta_minimo ?? 0} un.
                   </span>
                 </div>
@@ -445,24 +445,24 @@ export default function AbaEpis() {
       </div>
 
       {totalPaginas > 1 && (
-        <div className="flex items-center justify-between mt-6 bg-white dark:bg-slate-900 p-3 sm:px-4 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors">
+        <div className="flex items-center justify-between mt-6 bg-surface p-3 sm:px-4 rounded-md border border-line transition-colors">
           <button
             onClick={() => setPaginaAtual((prev) => Math.max(prev - 1, 1))}
             disabled={paginaAtual === 1}
-            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 disabled:opacity-50 text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2.5 rounded-md text-ink-2 disabled:opacity-50 text-sm font-bold hover:bg-sunken transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
             <span className="hidden sm:inline">Anterior</span>
           </button>
 
-          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg transition-colors">
+          <span className="text-xs font-bold text-ink-2 bg-sunken px-3 py-1.5 rounded-md transition-colors">
             {paginaAtual} de {totalPaginas}
           </span>
 
           <button
             onClick={() => setPaginaAtual((prev) => Math.min(prev + 1, totalPaginas))}
             disabled={paginaAtual === totalPaginas}
-            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 disabled:opacity-50 text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2.5 rounded-md text-ink-2 disabled:opacity-50 text-sm font-bold hover:bg-sunken transition-colors"
           >
             <span className="hidden sm:inline">Próxima</span>
             <ChevronRight className="w-4 h-4" />
