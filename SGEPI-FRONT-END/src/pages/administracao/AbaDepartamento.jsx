@@ -41,8 +41,8 @@ export default function AbaDepartamentos() {
 
   const campoComErro = () => {
     return erros.departamento
-      ? "border-red-400 dark:border-red-500/50 focus:ring-red-500/20 focus:border-red-500 bg-red-50/30 dark:bg-red-900/10"
-      : "border-slate-200/60 dark:border-slate-700/60 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200";
+      ? "border-erro focus:ring-erro focus:border-erro bg-erro-soft "
+      : "border-line focus:ring-ink focus:border-ink bg-surface text-ink ";
   };
 
   const limparErroCampo = () => {
@@ -172,15 +172,15 @@ export default function AbaDepartamentos() {
     }
   };
 
-  const baseInputClass = "w-full px-4 h-[46px] rounded-xl text-sm font-medium outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed placeholder-slate-400 border";
-  const labelClass = "block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 transition-colors";
+  const baseInputClass = "w-full px-4 h-[46px] rounded-md text-sm font-medium outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed placeholder-ink-3 border";
+  const labelClass = "block text-xs font-bold text-ink-2 uppercase tracking-wide mb-1.5 transition-colors";
 
   return (
-    <div className="animate-fade-in transition-colors duration-300">
+    <div className=" transition-colors duration-300">
       {toast && (
-        <div className={`fixed top-5 left-1/2 z-[9999] w-[90%] max-w-sm -translate-x-1/2 rounded-2xl border px-5 py-4 shadow-xl flex items-start gap-3 transition-colors sm:left-auto sm:right-5 sm:translate-x-0 animate-fade-in ${toast.tipo === "sucesso"
-            ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300"
-            : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/50 text-red-800 dark:text-red-300"
+        <div className={`fixed top-5 left-1/2 z-[9999] w-[90%] max-w-sm -translate-x-1/2 rounded-md border px-5 py-4 shadow-modal flex items-start gap-3 transition-colors sm:left-auto sm:right-5 sm:translate-x-0  ${toast.tipo === "sucesso"
+            ? "bg-ok-soft border-ok-line text-ok "
+            : "bg-erro-soft border-erro-line text-erro "
           }`}>
           {toast.tipo === "sucesso" ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
           <div className="flex-1">
@@ -202,23 +202,23 @@ export default function AbaDepartamentos() {
         mostrarToast={mostrarToast}
       />
 
-      <div className="bg-slate-50/50 dark:bg-slate-800/50 p-5 sm:p-6 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 mb-6 transition-colors">
+      <div className="bg-sunken p-5 sm:p-6 rounded-md border border-line mb-6 transition-colors">
         <div className="flex items-center gap-2.5 mb-5">
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${editandoId ? "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" : "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+          <div className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 transition-colors ${editandoId ? "bg-atencao-soft text-atencao " : "bg-sunken text-ink "
             }`}>
             {editandoId ? <PenLine className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
           </div>
-          <h3 className="text-base font-bold text-slate-800 dark:text-slate-200 transition-colors">
+          <h3 className="text-base font-bold text-ink transition-colors">
             {editandoId ? "Editar Departamento" : "Novo Departamento"}
           </h3>
         </div>
 
         <div className="flex flex-col md:flex-row gap-4 md:items-end">
           <div className="flex-1 w-full">
-            <label className={labelClass}>
-              Nome do Departamento <span className="text-red-500">*</span>
+            <label htmlFor="abadepartamento-1" className={labelClass}>
+              Nome do Departamento <span className="text-erro">*</span>
             </label>
-            <input
+            <input id="abadepartamento-1"
               className={`${baseInputClass} ${campoComErro()}`}
               value={novoDepto}
               onChange={(e) => {
@@ -228,7 +228,7 @@ export default function AbaDepartamentos() {
               placeholder="Ex: Produção, Administrativo..."
             />
             {erros.departamento && (
-              <p className="text-xs font-medium text-red-500 mt-1.5">{erros.departamento}</p>
+              <p className="text-xs font-medium text-erro mt-1.5">{erros.departamento}</p>
             )}
           </div>
 
@@ -237,7 +237,7 @@ export default function AbaDepartamentos() {
               <button
                 onClick={cancelarEdicao}
                 disabled={carregando}
-                className="w-full sm:w-auto h-[46px] px-6 text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-700 font-bold rounded-xl transition-colors text-sm disabled:opacity-50"
+                className="w-full sm:w-auto h-[46px] px-6 text-ink-2 hover:bg-line font-bold rounded-md transition-colors text-sm disabled:opacity-50"
               >
                 Cancelar
               </button>
@@ -246,9 +246,9 @@ export default function AbaDepartamentos() {
             <button
               onClick={salvarDepartamento}
               disabled={carregando}
-              className={`w-full sm:w-auto h-[46px] px-6 text-white font-bold rounded-xl transition-all shadow-sm active:scale-[0.98] flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed ${editandoId
-                  ? "bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-500 shadow-amber-500/20"
-                  : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 shadow-blue-600/20"
+              className={`w-full sm:w-auto h-[46px] px-6 text-on-action font-bold rounded-md transition-all  flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed ${editandoId
+                  ? "bg-action hover:bg-action-hover "
+                  : "bg-action hover:bg-action-hover "
                 }`}
             >
               {carregando ? (
@@ -265,7 +265,7 @@ export default function AbaDepartamentos() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {!Array.isArray(departamentos) || departamentos.length === 0 ? (
-          <div className="col-span-full p-8 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800/50 border-2 border-dashed border-slate-200/60 dark:border-slate-700/60 rounded-2xl transition-colors">
+          <div className="col-span-full p-8 flex flex-col items-center justify-center text-ink-3 bg-surface border-2 border-dashed border-line rounded-md transition-colors">
             <Building2 className="w-10 h-10 mb-3 opacity-50" strokeWidth={1.5} />
             <span className="text-sm font-medium">Nenhum departamento cadastrado.</span>
           </div>
@@ -273,16 +273,16 @@ export default function AbaDepartamentos() {
           departamentosPaginados.map((d) => (
             <div
               key={d.id}
-              className="flex justify-between items-center p-4 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl bg-white dark:bg-slate-800/80 shadow-sm hover:shadow-md dark:shadow-none transition-all group"
+              className="flex justify-between items-center p-4 border border-line rounded-md bg-surface transition-all group"
             >
-              <span className="font-extrabold text-slate-700 dark:text-slate-200 truncate pr-3">
+              <span className="font-bold text-ink truncate pr-3">
                 {d.departamento}
               </span>
 
               <div className="flex items-center gap-1 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={() => iniciarEdicao(d)}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:text-amber-400 dark:hover:bg-amber-900/20 transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded-md text-ink-3 hover:text-atencao hover:bg-atencao-soft transition-colors"
                   title="Editar"
                 >
                   <PenLine className="w-4 h-4" />
@@ -290,7 +290,7 @@ export default function AbaDepartamentos() {
 
                 <button
                   onClick={() => removerDepartamento(d.id)}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded-md text-ink-3 hover:text-erro hover:bg-erro-soft transition-colors"
                   title="Excluir"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -302,24 +302,24 @@ export default function AbaDepartamentos() {
       </div>
 
       {totalPaginas > 1 && (
-        <div className="flex items-center justify-between mt-6 bg-white dark:bg-slate-800/80 p-3 sm:px-4 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm transition-colors">
+        <div className="flex items-center justify-between mt-6 bg-surface p-3 sm:px-4 rounded-md border border-line transition-colors">
           <button
             onClick={() => setPaginaAtual((prev) => Math.max(prev - 1, 1))}
             disabled={paginaAtual === 1}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-slate-600 dark:text-slate-300 disabled:opacity-50 text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-md text-ink-2 disabled:opacity-50 text-sm font-bold hover:bg-sunken transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
             <span className="hidden sm:inline">Anterior</span>
           </button>
 
-          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-lg transition-colors">
+          <span className="text-xs font-bold text-ink-2 bg-sunken px-3 py-1.5 rounded-md transition-colors">
             {paginaAtual} de {totalPaginas}
           </span>
 
           <button
             onClick={() => setPaginaAtual((prev) => Math.min(prev + 1, totalPaginas))}
             disabled={paginaAtual === totalPaginas}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-slate-600 dark:text-slate-300 disabled:opacity-50 text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-md text-ink-2 disabled:opacity-50 text-sm font-bold hover:bg-sunken transition-colors"
           >
             <span className="hidden sm:inline">Próxima</span>
             <ChevronRight className="w-4 h-4" />

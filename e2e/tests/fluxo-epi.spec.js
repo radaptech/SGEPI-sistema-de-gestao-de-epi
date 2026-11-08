@@ -103,7 +103,7 @@ test.afterAll(async () => {
 
 test("cadastra EPI", async () => {
   await irPara("Administração");
-  await page.getByRole("button", { name: "EPIs" }).click();
+  await page.getByRole("tab", { name: "EPIs" }).click();
   await page.getByRole("button", { name: "Cadastrar Novo EPI" }).click();
 
   const { cabecalho: titulo, modal } = modalPorTitulo("Cadastrar Novo EPI");
@@ -149,7 +149,7 @@ test("entrega 3 unidades com assinatura", async () => {
   await irPara("Entregas");
   await page.getByRole("button", { name: "Nova Entrega" }).click();
 
-  const { cabecalho, modal } = modalPorTitulo("Nova Entrega");
+  const { cabecalho, modal } = modalPorTitulo("Nova entrega");
   await modal.getByPlaceholder("Buscar nome ou matrícula...").fill(nomeFuncionario);
   await modal.getByRole("button", { name: nomeFuncionario }).click();
 
@@ -173,24 +173,24 @@ test("entrega 3 unidades com assinatura", async () => {
 
 test("devolve 1 unidade com assinatura", async () => {
   await irPara("Devoluções");
-  await page.getByRole("button", { name: "Registrar Devolução" }).click();
+  await page.getByRole("button", { name: "Nova devolução" }).click();
 
-  const { modal } = modalPorTitulo("Baixa e Devolução");
+  const { modal } = modalPorTitulo("Devolução");
   await modal.getByPlaceholder("Buscar nome ou matrícula...").fill(nomeFuncionario);
   await modal.getByRole("button", { name: nomeFuncionario }).click();
 
   const selects = modal.locator("select");
   // a opção traz o saldo em posse: confirma as 3 unidades da entrega anterior
-  await expect(selects.nth(0).locator("option", { hasText: `${nomeEpi} (Com ele: 3)` })).toHaveCount(1);
+  await expect(selects.nth(0).locator("option", { hasText: `${nomeEpi} (com ele: 3)` })).toHaveCount(1);
   await selects.nth(0).selectOption({ index: 1 });
   await selects.nth(1).selectOption({ index: 1 });
   await selects.nth(2).selectOption({ label: "Desgaste" });
 
-  await assinar("Assinar Agora", "Concluir Assinatura");
-  await expect(modal.getByAltText("Assinatura")).toBeVisible();
+  await assinar("Assinar", "Concluir");
+  await expect(modal.getByAltText("Comprovação da entrega")).toBeVisible();
 
-  await modal.getByRole("button", { name: "Confirmar Baixa" }).click();
-  await expect(page.getByText("Baixa realizada com sucesso!")).toBeVisible();
+  await modal.getByRole("button", { name: "Confirmar devolução" }).click();
+  await expect(page.getByText("Devolução registrada.")).toBeVisible();
 
   expect(JSON.stringify(await chamarApi(page, "GET", "/devolucao"))).toContain(nomeFuncionario);
 });

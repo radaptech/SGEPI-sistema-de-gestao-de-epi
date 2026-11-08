@@ -111,6 +111,11 @@ async function tratarResposta(
     const dados = await lerCorpoResposta(resposta);
 
     if (!resposta.ok) {
+        // /me sem sessão é o caso normal de quem ainda não entrou: sem aviso nem redirecionamento
+        if (resposta.status === 401 && rota === "/me") {
+            throw new Error("Sem sessão");
+        }
+
         if (resposta.status === 401) {
             console.warn("Sessão expirada ou token inválido.");
 

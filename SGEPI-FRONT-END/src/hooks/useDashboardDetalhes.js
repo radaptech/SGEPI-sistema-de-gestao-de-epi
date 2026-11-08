@@ -36,14 +36,14 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
             key: "item",
             label: "Item",
             render: (item) => (
-              <div className="font-semibold text-gray-800 dark:text-gray-100">{item.item}</div>
+              <div className="font-semibold text-ink ">{item.item}</div>
             ),
           },
           {
             key: "tamanho",
             label: "Tamanho",
             render: (item) => (
-              <span className="inline-flex px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-bold border border-blue-100 dark:border-blue-800">
+              <span className="inline-flex px-2 py-1 rounded-md bg-sunken text-ink text-xs font-bold border border-line ">
                 {item.tamanho}
               </span>
             ),
@@ -52,7 +52,7 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
             key: "quantidade",
             label: "Total em Estoque",
             render: (item) => (
-              <span className="font-bold text-gray-900 dark:text-white">{item.quantidade}</span>
+              <span className="font-bold text-ink ">{item.quantidade}</span>
             ),
           },
         ],
@@ -89,17 +89,17 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
           {
             key: "data",
             label: "Data",
-            render: (item) => <span className="font-medium dark:text-gray-300">{item.data}</span>,
+            render: (item) => <span className="font-medium ">{item.data}</span>,
           },
           {
             key: "funcionario",
             label: "Para quem foi entregue",
             render: (item) => (
               <div>
-                <div className="font-semibold text-gray-800 dark:text-gray-100">
+                <div className="font-semibold text-ink ">
                   {item.funcionario}
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="text-xs text-ink-2 ">
                   Matrícula: {item.matricula}
                 </div>
               </div>
@@ -109,7 +109,7 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
             key: "totalVolumes",
             label: "Total de Volumes",
             render: (item) => (
-              <span className="font-bold text-gray-800 dark:text-gray-100">{item.totalVolumes}</span>
+              <span className="font-bold text-ink ">{item.totalVolumes}</span>
             ),
           },
         ],
@@ -119,8 +119,8 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
             label: "Item entregue",
             render: (item) => (
               <div>
-                <div className="font-medium dark:text-gray-300">{item.item}</div>
-                <div className="text-xs text-gray-500 dark:text-gray-500">
+                <div className="font-medium ">{item.item}</div>
+                <div className="text-xs text-ink-2 ">
                   Tamanho: {item.tamanho}
                 </div>
               </div>
@@ -130,7 +130,7 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
             key: "quantidade",
             label: "Quantidade",
             render: (item) => (
-              <span className="font-bold dark:text-gray-200">{item.quantidade}</span>
+              <span className="font-bold ">{item.quantidade}</span>
             ),
           },
         ],
@@ -150,14 +150,14 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
             key: "item",
             label: "EPI / Item",
             render: (item) => (
-              <div className="font-semibold text-gray-900 dark:text-gray-100">{item.item}</div>
+              <div className="font-semibold text-ink ">{item.item}</div>
             ),
           },
           {
             key: "lote",
             label: "Lote / CA",
             render: (item) => (
-              <span className="inline-flex px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-mono font-bold border border-slate-200 dark:border-slate-700">
+              <span className="inline-flex px-2.5 py-1 rounded-md bg-sunken text-ink text-xs font-mono font-bold border border-line ">
                 {item.lote}
               </span>
             ),
@@ -166,7 +166,7 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
             key: "tamanho",
             label: "Tam.",
             render: (item) => (
-              <span className="inline-flex px-2 py-0.5 rounded-md bg-gray-50 dark:bg-slate-800/50 text-gray-600 dark:text-gray-400 text-xs font-bold border border-gray-200 dark:border-slate-700">
+              <span className="inline-flex px-2 py-0.5 rounded-md bg-sunken text-ink-2 text-xs font-bold border border-line ">
                 {item.tamanho}
               </span>
             ),
@@ -176,10 +176,10 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
             label: "Qtd. Atual",
             render: (item) => (
               <div className="flex flex-col gap-0.5">
-                <span className="font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800 text-center w-fit text-sm">
+                <span className="font-bold text-atencao bg-atencao-soft px-3 py-0.5 rounded-md border border-atencao-line text-center w-fit text-sm">
                   {item.quantidade}
                 </span>
-                <span className="text-[10px] text-amber-500 dark:text-amber-600 font-bold uppercase tracking-wide">
+                <span className="text-xs text-atencao font-bold uppercase tracking-wide">
                   Estoque Baixo
                 </span>
               </div>
@@ -189,7 +189,7 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
             key: "alertaMinimo",
             label: "Alerta Mín.",
             render: (item) => (
-              <span className="font-semibold text-gray-400 dark:text-gray-500 text-sm">
+              <span className="font-semibold text-ink-3 text-sm">
                 {item.alertaMinimo} un.
               </span>
             ),
@@ -210,14 +210,14 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
             key: "item",
             label: "EPI",
             render: (item) => (
-              <div className="font-semibold text-gray-900 dark:text-gray-100">{item.item}</div>
+              <div className="font-semibold text-ink ">{item.item}</div>
             ),
           },
           {
             key: "ca",
             label: "CA",
             render: (item) => (
-              <span className="inline-flex px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-mono font-bold border border-slate-200 dark:border-slate-700">
+              <span className="inline-flex px-2.5 py-1 rounded-md bg-sunken text-ink text-xs font-mono font-bold border border-line ">
                 {item.ca}
               </span>
             ),
@@ -226,7 +226,7 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
             key: "validade",
             label: "Validade",
             render: (item) => (
-              <span className="font-semibold text-gray-700 dark:text-gray-300 text-sm">{item.validade}</span>
+              <span className="font-semibold text-ink text-sm">{item.validade}</span>
             ),
           },
           {
@@ -234,11 +234,11 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
             label: "Situação",
             render: (item) =>
               item.bloqueadoMte || item.dias < 0 ? (
-                <span className="font-bold text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-0.5 rounded-lg border border-red-200 dark:border-red-800 text-xs uppercase">
+                <span className="font-bold text-erro bg-erro-soft px-3 py-0.5 rounded-md border border-erro-line text-xs uppercase">
                   {item.bloqueadoMte ? `${item.bloqueadoMte} no MTE` : "Vencido"}
                 </span>
               ) : (
-                <span className="font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800 text-xs">
+                <span className="font-bold text-atencao bg-atencao-soft px-3 py-0.5 rounded-md border border-atencao-line text-xs">
                   {item.dias === 0 ? "Vence hoje" : `Vence em ${item.dias} dia${item.dias > 1 ? "s" : ""}`}
                 </span>
               ),
@@ -260,8 +260,8 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
             label: "Funcionário",
             render: (item) => (
               <div>
-                <div className="font-semibold text-gray-900 dark:text-gray-100">{item.funcionario}</div>
-                <div className="text-xs text-gray-400 dark:text-gray-500">Matrícula {item.matricula}</div>
+                <div className="font-semibold text-ink ">{item.funcionario}</div>
+                <div className="text-xs text-ink-3 ">Matrícula {item.matricula}</div>
               </div>
             ),
           },
@@ -269,21 +269,21 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
             key: "item",
             label: "EPI",
             render: (item) => (
-              <div className="font-semibold text-gray-800 dark:text-gray-200">{item.item}</div>
+              <div className="font-semibold text-ink ">{item.item}</div>
             ),
           },
           {
             key: "emPosse",
             label: "Em posse",
             render: (item) => (
-              <span className="font-bold text-gray-900 dark:text-white">{item.emPosse}</span>
+              <span className="font-bold text-ink ">{item.emPosse}</span>
             ),
           },
           {
             key: "ultimaEntrega",
             label: "Última entrega",
             render: (item) => (
-              <span className="font-semibold text-gray-700 dark:text-gray-300 text-sm">{item.ultimaEntrega}</span>
+              <span className="font-semibold text-ink text-sm">{item.ultimaEntrega}</span>
             ),
           },
           {
@@ -291,11 +291,11 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
             label: "Situação",
             render: (item) =>
               item.dias < 0 ? (
-                <span className="font-bold text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-0.5 rounded-lg border border-red-200 dark:border-red-800 text-xs">
+                <span className="font-bold text-erro bg-erro-soft px-3 py-0.5 rounded-md border border-erro-line text-xs">
                   Atrasada há {-item.dias} dia{item.dias < -1 ? "s" : ""}
                 </span>
               ) : (
-                <span className="font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800 text-xs">
+                <span className="font-bold text-atencao bg-atencao-soft px-3 py-0.5 rounded-md border border-atencao-line text-xs">
                   {item.dias === 0 ? "Trocar hoje" : `Trocar em ${item.dias} dia${item.dias > 1 ? "s" : ""}`}
                 </span>
               ),
@@ -317,8 +317,8 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
             label: "Funcionário",
             render: (item) => (
               <div>
-                <div className="font-semibold text-gray-900 dark:text-gray-100">{item.funcionario}</div>
-                <div className="text-xs text-gray-400 dark:text-gray-500">Matrícula {item.matricula} · {item.funcao}</div>
+                <div className="font-semibold text-ink ">{item.funcionario}</div>
+                <div className="text-xs text-ink-3 ">Matrícula {item.matricula} · {item.funcao}</div>
               </div>
             ),
           },
@@ -326,14 +326,14 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
             key: "item",
             label: "EPI",
             render: (item) => (
-              <div className="font-semibold text-gray-800 dark:text-gray-200">{item.item}</div>
+              <div className="font-semibold text-ink ">{item.item}</div>
             ),
           },
           {
             key: "emPosse",
             label: "Em posse / exigido",
             render: (item) => (
-              <span className="font-bold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 px-3 py-0.5 rounded-lg border border-rose-200 dark:border-rose-800 text-xs">
+              <span className="font-bold text-erro bg-erro-soft px-3 py-0.5 rounded-md border border-erro-line text-xs">
                 {item.emPosse} de {item.exigido}
               </span>
             ),
@@ -354,14 +354,14 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
             key: "item",
             label: "Item",
             render: (item) => (
-              <div className="font-semibold text-gray-800 dark:text-gray-100">{item.item}</div>
+              <div className="font-semibold text-ink ">{item.item}</div>
             ),
           },
           {
             key: "tamanho",
             label: "Tamanho",
             render: (item) => (
-              <span className="inline-flex px-2 py-1 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-xs font-bold border border-green-100 dark:border-green-800">
+              <span className="inline-flex px-2 py-1 rounded-md bg-ok-soft text-ok text-xs font-bold border border-ok-line ">
                 {item.tamanho}
               </span>
             ),
@@ -370,14 +370,14 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
             key: "quantidade",
             label: "Quantidade",
             render: (item) => (
-              <span className="font-bold dark:text-gray-200">{item.quantidade}</span>
+              <span className="font-bold ">{item.quantidade}</span>
             ),
           },
           {
             key: "valorTotal",
             label: "Valor",
             render: (item) => (
-              <span className="font-bold text-emerald-700 dark:text-emerald-400">
+              <span className="font-bold text-ok ">
                 {formatarMoeda(item.valorTotal)}
               </span>
             ),

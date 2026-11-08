@@ -3,10 +3,12 @@ import { useModalEntrega } from "../../../hooks/useModalEntrega";
 import { useSignaturePad } from "../../../hooks/useSignaturePad";
 import EntregaHeader from "./EntregaHeader";
 import EntregaForm from "./EntregaForm";
+import AssinaturaPreview from "./AssinaturaPreview";
 import EntregaItensForm from "./EntregaItensForm";
 import EntregaFooter from "./EntregaFooter";
 import ModalAssinatura from "./ModalAssinatura";
 import ModalFoto from "./ModalFoto";
+import Dialogo from "../../Dialogo";
 
 function ModalEntrega({ onClose, onSalvar }) {
   const assinatura = useSignaturePad();
@@ -42,11 +44,11 @@ function ModalEntrega({ onClose, onSalvar }) {
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4 sm:p-6 backdrop-blur-sm text-slate-700 dark:text-slate-300 animate-fade-in">
-        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[95vh] border border-slate-200/60 dark:border-slate-800 transition-colors duration-300">
+      <Dialogo onClose={onClose} className="fixed inset-0 z-50 bg-overlay flex items-center justify-center p-4 sm:p-6 text-ink ">
+        <div className="bg-surface rounded-md shadow-modal w-full max-w-4xl overflow-hidden flex flex-col max-h-[95vh] border border-line transition-colors duration-300">
           <EntregaHeader onClose={onClose} />
 
-          <div className="flex-1 overflow-y-auto p-6 sm:px-8 bg-slate-50/50 dark:bg-slate-900/50 space-y-6 custom-scrollbar transition-colors duration-300">
+          <div className="flex-1 overflow-y-auto p-6 sm:px-8 bg-surface divide-y divide-line [&>*]:py-6 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">
             <EntregaForm
               carregandoDados={false}
               buscaFuncionario={entrega.buscaFuncionario}
@@ -57,10 +59,6 @@ function ModalEntrega({ onClose, onSalvar }) {
               funcionarioSelecionado={entrega.funcionarioSelecionado}
               dataEntrega={entrega.dataEntrega}
               setDataEntrega={entrega.setDataEntrega}
-              assinaturaPreview={previewFinal}
-              limparAssinatura={handleLimparConfirmacao}
-              abrirAssinatura={assinatura.abrirModalAssinatura}
-              abrirCamera={() => setModalFotoAberto(true)}
             />
 
             <EntregaItensForm
@@ -80,6 +78,13 @@ function ModalEntrega({ onClose, onSalvar }) {
               kitPendente={entrega.kitPendente}
               usarItemKit={entrega.usarItemKit}
             />
+
+            <AssinaturaPreview
+              assinaturaPreview={previewFinal}
+              limparAssinatura={handleLimparConfirmacao}
+              abrirAssinatura={assinatura.abrirModalAssinatura}
+              abrirCamera={() => setModalFotoAberto(true)}
+            />
           </div>
 
           <EntregaFooter
@@ -88,7 +93,7 @@ function ModalEntrega({ onClose, onSalvar }) {
             carregando={entrega.carregando}
           />
         </div>
-      </div>
+      </Dialogo>
 
       <ModalAssinatura
         aberto={assinatura.modalAssinaturaAberto}

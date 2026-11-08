@@ -1,10 +1,7 @@
 import { useState } from "react";
 import { temPermissao } from "../utils/permissoes";
 import { useDepartamentos } from "../hooks/useDepartamentos";
-import { 
-  Building2, Briefcase, Plus, Search, Trash2, 
-  ChevronLeft, ChevronRight, X, AlertTriangle, Layers
-} from "lucide-react";
+import { Briefcase, Plus, Search, Trash2, ChevronLeft, ChevronRight, X, AlertTriangle, Layers } from "lucide-react";
 import { toast } from "react-toastify";
 
 const PaginacaoBotao = ({ atual, total, onChange }) => (
@@ -12,24 +9,24 @@ const PaginacaoBotao = ({ atual, total, onChange }) => (
     <button
       disabled={atual === 1}
       onClick={() => onChange(atual - 1)}
-      className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-1 ${
+      className={`px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-1 ${
         atual === 1
-          ? "bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-600 cursor-not-allowed"
-          : "bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-700 shadow-sm hover:border-blue-200 dark:hover:border-slate-600"
+          ? "bg-sunken text-ink-3 cursor-not-allowed"
+          : "bg-surface text-ink border border-line hover:bg-sunken hover:border-line "
       }`}
     >
       <ChevronLeft className="w-4 h-4" /> Anterior
     </button>
-    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-700 transition-colors">
-      Página <span className="text-slate-800 dark:text-white">{atual}</span> de {total}
+    <span className="text-xs font-bold text-ink-2 uppercase tracking-wide bg-sunken px-4 py-2 rounded-md border border-line transition-colors">
+      Página <span className="text-ink ">{atual}</span> de {total}
     </span>
     <button
       disabled={atual === total}
       onClick={() => onChange(atual + 1)}
-      className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-1 ${
+      className={`px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-1 ${
         atual === total
-          ? "bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-600 cursor-not-allowed"
-          : "bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-700 shadow-sm hover:border-blue-200 dark:hover:border-slate-600"
+          ? "bg-sunken text-ink-3 cursor-not-allowed"
+          : "bg-surface text-ink border border-line hover:bg-sunken hover:border-line "
       }`}
     >
       Próxima <ChevronRight className="w-4 h-4" />
@@ -104,8 +101,8 @@ function Departamentos({ usuarioLogado }) {
 
   if (!podeVisualizar) {
     return (
-      <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-800 flex items-center justify-center transition-colors duration-300">
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 rounded-2xl p-6 text-amber-700 dark:text-amber-400 flex items-center gap-3 font-medium">
+      <div className="bg-surface p-8 rounded-md border border-line flex items-center justify-center transition-colors duration-300">
+        <div className="bg-atencao-soft border border-atencao-line rounded-md p-6 text-atencao flex items-center gap-3 font-medium">
           <AlertTriangle className="w-5 h-5" />
           Você não tem permissão para visualizar a tela de departamentos.
         </div>
@@ -115,40 +112,37 @@ function Departamentos({ usuarioLogado }) {
 
   return (
     <div className="space-y-6 transition-colors duration-300">
-      <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-800 animate-fade-in transition-colors duration-300">
+      <div className="max-w-full">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 transition-colors duration-300">
-              <Building2 className="w-5 h-5" strokeWidth={2.5} />
-            </div>
             <div>
-              <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight transition-colors">
+              <h2 className="text-2xl font-bold text-ink tracking-tight transition-colors">
                 Departamentos
               </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 transition-colors">
+              <p className="text-sm text-ink-2 mt-1 transition-colors">
                 Gerenciamento de setores e cargos.
               </p>
             </div>
           </div>
 
           <div className="flex gap-3">
-            <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl px-5 py-3 transition-colors flex flex-col justify-center min-w-[120px]">
-              <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500 dark:text-slate-400 mb-1">Departamentos</span>
-              <span className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">{departamentos.length}</span>
+            <div className="bg-sunken border border-line rounded-md px-5 py-3 transition-colors flex flex-col justify-center min-w-[120px]">
+              <span className="text-xs uppercase font-bold tracking-wide text-ink-2 mb-1">Departamentos</span>
+              <span className="text-2xl font-bold text-ink tracking-tight">{departamentos.length}</span>
             </div>
-            <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl px-5 py-3 transition-colors flex flex-col justify-center min-w-[120px]">
-              <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500 dark:text-slate-400 mb-1">Funções</span>
-              <span className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">{totalFuncoes}</span>
+            <div className="bg-sunken border border-line rounded-md px-5 py-3 transition-colors flex flex-col justify-center min-w-[120px]">
+              <span className="text-xs uppercase font-bold tracking-wide text-ink-2 mb-1">Funções</span>
+              <span className="text-2xl font-bold text-ink tracking-tight">{totalFuncoes}</span>
             </div>
           </div>
         </div>
 
         {isAdmin && (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6 mb-8">
-            <div className="bg-slate-50/50 dark:bg-slate-800/30 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-6 transition-colors">
+            <div className="bg-sunken border border-line rounded-md p-6 transition-colors">
               <div className="flex items-center gap-2 mb-4">
-                <Layers className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <h3 className="text-sm font-extrabold text-slate-800 dark:text-white tracking-wide uppercase transition-colors">Novo Departamento</h3>
+                <Layers className="w-4 h-4 text-ink " />
+                <h3 className="text-sm font-bold text-ink tracking-wide uppercase transition-colors">Novo Departamento</h3>
               </div>
               <form onSubmit={handleAdicionarDepartamento} className="flex gap-3">
                 <input
@@ -156,24 +150,24 @@ function Departamentos({ usuarioLogado }) {
                   value={formDepartamento.nome}
                   onChange={(e) => setFormDepartamento({ nome: e.target.value })}
                   placeholder="Ex: Tecnologia da Informação"
-                  className="flex-1 rounded-xl border border-slate-300/60 dark:border-slate-600/60 bg-white dark:bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/50 outline-none transition-colors placeholder-slate-400"
+                  className="flex-1 rounded-md border border-line-strong bg-surface px-4 py-3 text-sm font-semibold text-ink focus:ring-1 focus:ring-ink outline-none transition-colors placeholder-ink-3"
                 />
-                <button disabled={carregandoDepartamento} className="bg-blue-600 dark:bg-blue-500 text-white px-5 py-3 rounded-xl text-sm font-bold hover:bg-blue-700 dark:hover:bg-blue-600 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm shadow-blue-600/20">
-                  {carregandoDepartamento ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span> : <Plus className="w-4 h-4" strokeWidth={3} />}
+                <button disabled={carregandoDepartamento} className="bg-action text-on-action px-5 py-3 rounded-md text-sm font-bold hover:bg-action-hover transition-all disabled:opacity-50 flex items-center justify-center gap-2 ">
+                  {carregandoDepartamento ? <span className="w-5 h-5 border-2 border-line border-t-transparent rounded-full animate-spin"></span> : <Plus className="w-4 h-4" strokeWidth={3} />}
                 </button>
               </form>
             </div>
 
-            <div className="bg-slate-50/50 dark:bg-slate-800/30 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-6 transition-colors">
+            <div className="bg-sunken border border-line rounded-md p-6 transition-colors">
               <div className="flex items-center gap-2 mb-4">
-                <Briefcase className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <h3 className="text-sm font-extrabold text-slate-800 dark:text-white tracking-wide uppercase transition-colors">Nova Função</h3>
+                <Briefcase className="w-4 h-4 text-ok " />
+                <h3 className="text-sm font-bold text-ink tracking-wide uppercase transition-colors">Nova Função</h3>
               </div>
               <form onSubmit={handleAdicionarFuncao} className="flex flex-col sm:flex-row gap-3">
                 <select
                   value={formFuncao.departamentoId}
                   onChange={(e) => setFormFuncao({ ...formFuncao, departamentoId: e.target.value })}
-                  className="sm:w-48 rounded-xl border border-slate-300/60 dark:border-slate-600/60 bg-white dark:bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500/20 outline-none transition-colors appearance-none cursor-pointer"
+                  className="sm:w-48 rounded-md border border-line-strong bg-surface px-4 py-3 text-sm font-semibold text-ink focus:ring-1 focus:ring-ink outline-none transition-colors appearance-none cursor-pointer"
                 >
                   <option value="">Selecione...</option>
                   {departamentos.map(d => <option key={d.id} value={d.id}>{d.nome}</option>)}
@@ -184,10 +178,10 @@ function Departamentos({ usuarioLogado }) {
                     value={formFuncao.nome}
                     onChange={(e) => setFormFuncao({ ...formFuncao, nome: e.target.value })}
                     placeholder="Ex: Analista de Sistemas"
-                    className="flex-1 rounded-xl border border-slate-300/60 dark:border-slate-600/60 bg-white dark:bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500/20 outline-none transition-colors placeholder-slate-400"
+                    className="flex-1 rounded-md border border-line-strong bg-surface px-4 py-3 text-sm font-semibold text-ink focus:ring-1 focus:ring-ink outline-none transition-colors placeholder-ink-3"
                   />
-                  <button disabled={carregandoFuncao} className="bg-slate-800 dark:bg-slate-700 text-white px-5 py-3 rounded-xl text-sm font-bold hover:bg-slate-900 dark:hover:bg-slate-600 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center shadow-sm">
-                    {carregandoFuncao ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span> : <Plus className="w-4 h-4" strokeWidth={3} />}
+                  <button disabled={carregandoFuncao} className="bg-action text-on-action px-5 py-3 rounded-md text-sm font-bold hover:bg-action-hover transition-all disabled:opacity-50 flex items-center justify-center ">
+                    {carregandoFuncao ? <span className="w-5 h-5 border-2 border-line border-t-transparent rounded-full animate-spin"></span> : <Plus className="w-4 h-4" strokeWidth={3} />}
                   </button>
                 </div>
               </form>
@@ -195,9 +189,9 @@ function Departamentos({ usuarioLogado }) {
           </div>
         )}
 
-        <div className="relative mb-6 flex items-center bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 transition-colors p-1.5">
-          <div className="relative flex items-center bg-white dark:bg-slate-800 rounded-xl border border-slate-200/60 dark:border-slate-700 flex-1 transition-colors">
-            <div className="pl-4 text-slate-400 dark:text-slate-500">
+        <div className="relative mb-6 flex items-center bg-sunken rounded-md border border-line transition-colors p-1.5">
+          <div className="relative flex items-center bg-surface rounded-md border border-line flex-1 transition-colors">
+            <div className="pl-4 text-ink-3 ">
               <Search className="w-4 h-4" />
             </div>
             <input
@@ -208,7 +202,7 @@ function Departamentos({ usuarioLogado }) {
                 setBusca(e.target.value);
                 setPaginaDep(1); 
               }}
-              className="w-full bg-transparent border-none py-3 pl-3 pr-10 focus:ring-0 text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none placeholder-slate-400"
+              className="w-full bg-transparent border-none py-3 pl-3 pr-10 focus:ring-0 text-sm font-semibold text-ink outline-none placeholder-ink-3"
             />
             {busca && (
               <button
@@ -216,7 +210,7 @@ function Departamentos({ usuarioLogado }) {
                   setBusca("");
                   setPaginaDep(1);
                 }}
-                className="absolute right-3 p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+                className="absolute right-3 p-1 rounded-md text-ink-3 hover:text-ink-2 hover:bg-sunken transition"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -225,12 +219,12 @@ function Departamentos({ usuarioLogado }) {
         </div>
 
         {carregandoTela ? (
-          <div className="border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-12 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 gap-3">
-            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <div className="border border-dashed border-line-strong rounded-md p-12 flex flex-col items-center justify-center text-ink-2 gap-3">
+            <div className="w-8 h-8 border-4 border-ink border-t-transparent rounded-full animate-spin"></div>
             <span className="text-sm font-bold tracking-wide">Carregando dados...</span>
           </div>
         ) : departamentosPaginados.length === 0 ? (
-          <div className="p-12 text-center text-slate-500 dark:text-slate-400 border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl transition-colors font-medium text-sm">
+          <div className="p-12 text-center text-ink-2 border border-dashed border-line-strong rounded-md transition-colors font-medium text-sm">
             {busca ? `Nenhum resultado encontrado para "${busca}".` : "Nenhum departamento registrado."}
           </div>
         ) : (
@@ -244,11 +238,11 @@ function Departamentos({ usuarioLogado }) {
               );
 
               return (
-                <div key={dep.id} className="border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-5 sm:p-6 bg-white dark:bg-slate-800/20 hover:border-blue-200 dark:hover:border-slate-600 transition-colors shadow-sm">
+                <div key={dep.id} className="border border-line rounded-md p-5 sm:p-6 bg-surface hover:border-line transition-colors ">
                   <div className="flex justify-between items-start mb-6">
                     <div>
-                      <h4 className="text-lg font-extrabold text-slate-900 dark:text-white transition-colors">{dep.nome}</h4>
-                      <span className="inline-block mt-1 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                      <h4 className="text-lg font-bold text-ink transition-colors">{dep.nome}</h4>
+                      <span className="inline-block mt-1 text-xs font-bold text-ink-2 uppercase tracking-wide bg-sunken px-2 py-1 rounded">
                         CÓDIGO: {dep.id}
                       </span>
                     </div>
@@ -256,7 +250,7 @@ function Departamentos({ usuarioLogado }) {
                       <button 
                         onClick={() => handleExcluirDepartamento(dep.id)} 
                         title="Excluir Departamento"
-                        className="p-2 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors border border-transparent hover:border-red-200 dark:hover:border-red-800/50"
+                        className="p-2 rounded-md bg-erro-soft text-erro hover:bg-erro-soft transition-colors border border-transparent hover:border-erro-line "
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -265,28 +259,28 @@ function Departamentos({ usuarioLogado }) {
 
                   <div>
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                      <span className="text-xs font-bold text-ink-2 uppercase tracking-wide">
                         Cargos Vinculados
                       </span>
-                      <span className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-black px-1.5 py-0.5 rounded-full">
+                      <span className="bg-line text-ink-2 text-xs font-bold px-1.5 py-0.5 rounded-md">
                         {dep.funcoes.length}
                       </span>
                     </div>
 
                     {funcoesPaginadas.length === 0 ? (
-                      <p className="text-sm font-medium text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/30 p-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 transition-colors">
+                      <p className="text-sm font-medium text-ink-3 bg-sunken p-4 rounded-md border border-dashed border-line transition-colors">
                         Nenhum cargo registrado neste setor.
                       </p>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {funcoesPaginadas.map(f => (
-                          <div key={f.id} className="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-3 sm:px-4 rounded-xl border border-slate-100 dark:border-slate-700/50 transition-colors">
-                            <span className="text-sm text-slate-700 dark:text-slate-200 font-bold transition-colors">{f.nome}</span>
+                          <div key={f.id} className="flex justify-between items-center bg-sunken p-3 sm:px-4 rounded-md border border-line transition-colors">
+                            <span className="text-sm text-ink font-bold transition-colors">{f.nome}</span>
                             {podeGerenciarFuncoes && (
                               <button 
                                 onClick={() => excluirFuncao(f.id)} 
                                 title="Excluir Função"
-                                className="p-1.5 rounded-lg text-red-400 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 transition-colors"
+                                className="p-1.5 rounded-md text-erro hover:bg-erro-soft hover:text-erro transition-colors"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>

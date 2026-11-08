@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { criarFornecedor } from "../../services/fornecedorService";
-import { X, Building2, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { X, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import Dialogo from "../Dialogo";
 
 function ModalCriarFornecedor({ aberto, onClose, onSucesso }) {
   const [razaoSocial, setRazaoSocial] = useState("");
@@ -57,22 +58,19 @@ function ModalCriarFornecedor({ aberto, onClose, onSucesso }) {
     }
   };
 
-  const baseInputClass = "w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all disabled:opacity-50 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-700/60 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:text-white placeholder-slate-400";
-  const labelClass = "block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 transition-colors";
+  const baseInputClass = "w-full px-4 py-2.5 rounded-md text-sm font-medium outline-none transition-all disabled:opacity-50 bg-surface border border-line focus:ring-1 focus:ring-ink focus:border-ink placeholder-ink-3";
+  const labelClass = "block text-xs font-bold text-ink-2 uppercase tracking-wide mb-1.5 transition-colors";
 
   return (
-    <div className="fixed inset-0 z-[120] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-fade-in text-slate-700 dark:text-slate-300">
-      <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/60 dark:border-slate-800 overflow-hidden flex flex-col max-h-[95vh] transition-colors duration-300">
-        <div className="px-6 sm:px-8 py-6 border-b border-slate-100 dark:border-slate-800/60 flex justify-between items-start shrink-0 transition-colors duration-300">
+    <Dialogo onClose={onClose} className="fixed inset-0 z-[120] bg-overlay flex items-center justify-center p-4 sm:p-6 text-ink ">
+      <div className="w-full max-w-lg bg-surface rounded-md shadow-modal border border-line overflow-hidden flex flex-col max-h-[95vh] transition-colors duration-300">
+        <div className="px-6 sm:px-8 py-6 border-b border-line flex justify-between items-start shrink-0 transition-colors duration-300">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 transition-colors">
-              <Building2 className="w-6 h-6" strokeWidth={2.5} />
-            </div>
             <div>
-              <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight transition-colors">
+              <h3 className="text-2xl font-bold text-ink tracking-tight transition-colors">
                 Novo Fornecedor
               </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 transition-colors">
+              <p className="text-sm text-ink-2 mt-1 transition-colors">
                 Cadastre um novo fornecedor no sistema.
               </p>
             </div>
@@ -81,7 +79,7 @@ function ModalCriarFornecedor({ aberto, onClose, onSucesso }) {
           <button
             type="button"
             onClick={handleClose}
-            className="p-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+            className="p-2.5 text-ink-3 hover:text-ink-2 hover:bg-sunken rounded-md transition-colors"
             title="Fechar"
           >
             <X className="w-5 h-5" />
@@ -90,17 +88,17 @@ function ModalCriarFornecedor({ aberto, onClose, onSucesso }) {
 
         <form onSubmit={handleSubmit} className="p-6 sm:px-8 space-y-5 overflow-y-auto custom-scrollbar">
           {erro && (
-            <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-2xl border border-red-100 dark:border-red-900/30 font-medium flex items-center gap-2.5 transition-colors">
+            <div className="p-4 bg-erro-soft text-erro text-sm rounded-md border border-erro-line font-medium flex items-center gap-2.5 transition-colors">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{erro}</span>
             </div>
           )}
 
           <div>
-            <label className={labelClass}>
-              Razão Social <span className="text-red-500">*</span>
+            <label htmlFor="criarfornecedor-1" className={labelClass}>
+              Razão Social <span className="text-erro">*</span>
             </label>
-            <input
+            <input id="criarfornecedor-1"
               type="text"
               required
               value={razaoSocial}
@@ -112,10 +110,10 @@ function ModalCriarFornecedor({ aberto, onClose, onSucesso }) {
           </div>
 
           <div>
-            <label className={labelClass}>
+            <label htmlFor="criarfornecedor-2" className={labelClass}>
               Nome Fantasia
             </label>
-            <input
+            <input id="criarfornecedor-2"
               type="text"
               value={nomeFantasia}
               onChange={(e) => setNomeFantasia(e.target.value)}
@@ -126,10 +124,10 @@ function ModalCriarFornecedor({ aberto, onClose, onSucesso }) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label className={labelClass}>
+              <label htmlFor="criarfornecedor-3" className={labelClass}>
                 CNPJ
               </label>
-              <input
+              <input id="criarfornecedor-3"
                 type="text"
                 value={cnpj}
                 onChange={(e) => setCnpj(e.target.value)}
@@ -139,10 +137,10 @@ function ModalCriarFornecedor({ aberto, onClose, onSucesso }) {
             </div>
 
             <div>
-              <label className={labelClass}>
+              <label htmlFor="criarfornecedor-4" className={labelClass}>
                 Inscrição Estadual
               </label>
-              <input
+              <input id="criarfornecedor-4"
                 type="text"
                 value={inscricaoEstadual}
                 onChange={(e) => setInscricaoEstadual(e.target.value)}
@@ -152,11 +150,11 @@ function ModalCriarFornecedor({ aberto, onClose, onSucesso }) {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-end pt-6 gap-3 border-t border-slate-100 dark:border-slate-800/60 mt-6 transition-colors">
+          <div className="flex flex-col sm:flex-row justify-end pt-6 gap-3 border-t border-line mt-6 transition-colors">
             <button
               type="button"
               onClick={handleClose}
-              className="px-6 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors w-full sm:w-auto order-2 sm:order-1"
+              className="px-6 py-2.5 bg-sunken text-ink text-sm font-bold rounded-md hover:bg-line transition-colors w-full sm:w-auto order-2 sm:order-1"
             >
               Cancelar
             </button>
@@ -164,10 +162,10 @@ function ModalCriarFornecedor({ aberto, onClose, onSucesso }) {
             <button
               type="submit"
               disabled={salvando}
-              className={`px-6 py-2.5 flex items-center justify-center gap-2 text-white font-bold rounded-xl text-sm transition-all active:scale-[0.98] w-full sm:w-auto order-1 sm:order-2 ${
+              className={`px-6 py-2.5 flex items-center justify-center gap-2 text-on-action font-bold rounded-md text-sm transition-all w-full sm:w-auto order-1 sm:order-2 ${
                 salvando
-                  ? "bg-indigo-400 dark:bg-indigo-600/50 cursor-not-allowed opacity-80"
-                  : "bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 shadow-sm shadow-indigo-600/20"
+                  ? "bg-action cursor-not-allowed opacity-80"
+                  : "bg-action hover:bg-action-hover "
               }`}
             >
               {salvando ? (
@@ -179,7 +177,7 @@ function ModalCriarFornecedor({ aberto, onClose, onSucesso }) {
           </div>
         </form>
       </div>
-    </div>
+    </Dialogo>
   );
 }
 

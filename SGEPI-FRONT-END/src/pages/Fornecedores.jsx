@@ -6,11 +6,7 @@ import { normalizarFornecedor } from "../utils/fornecedorNormalizer";
 import ModalCriarFornecedor from "../components/modals/ModalCriarFornecedor";
 import ModalDetalhesFornecedor from "../components/modals/ModalDetalhesFornecedor";
 
-import { 
-  Factory, AlertTriangle, Plus, Search, 
-  X, Eye, ChevronLeft, ChevronRight, 
-  Building2, Hash, Receipt
-} from "lucide-react";
+import { AlertTriangle, Plus, Search, X, Eye, ChevronLeft, ChevronRight, Building2, Hash, Receipt } from "lucide-react";
 
 function Fornecedores({ usuarioLogado }) {
   const [fornecedores, setFornecedores] = useState([]);
@@ -118,8 +114,8 @@ function Fornecedores({ usuarioLogado }) {
 
   if (!podeVisualizar) {
     return (
-      <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-800 flex items-center justify-center transition-colors duration-300">
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 rounded-2xl p-6 text-amber-700 dark:text-amber-400 flex items-center gap-3 font-medium">
+      <div className="bg-surface p-8 rounded-md border border-line flex items-center justify-center transition-colors duration-300">
+        <div className="bg-atencao-soft border border-atencao-line rounded-md p-6 text-atencao flex items-center gap-3 font-medium">
           <AlertTriangle className="w-5 h-5" />
           Você não tem permissão para visualizar a tela de fornecedores.
         </div>
@@ -129,18 +125,15 @@ function Fornecedores({ usuarioLogado }) {
 
   return (
     <>
-      <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-800 max-w-full relative transition-colors duration-300">
+      <div className="max-w-full">
         
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 transition-colors duration-300">
-              <Factory className="w-5 h-5" strokeWidth={2.5} />
-            </div>
             <div>
-              <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight transition-colors">
+              <h2 className="text-2xl font-bold text-ink tracking-tight transition-colors">
                 Fornecedores
               </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 transition-colors">
+              <p className="text-sm text-ink-2 mt-1 transition-colors">
                 Gerencie os fornecedores cadastrados no sistema.
               </p>
             </div>
@@ -148,7 +141,7 @@ function Fornecedores({ usuarioLogado }) {
 
           <button
             onClick={() => setModalCriarAberto(true)}
-            className="w-full lg:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-5 py-3 rounded-xl font-bold text-sm transition-all active:scale-[0.98] shadow-sm shadow-blue-600/20 flex items-center justify-center gap-2"
+            className="w-full lg:w-auto bg-action hover:bg-action-hover text-on-action px-5 py-3 rounded-md font-bold text-sm transition-all flex items-center justify-center gap-2"
           >
             <Plus className="w-4 h-4" strokeWidth={3} />
             Novo Fornecedor
@@ -156,46 +149,46 @@ function Fornecedores({ usuarioLogado }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-8">
-          <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-5 transition-colors flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+          <div className="bg-sunken border border-line rounded-md p-5 transition-colors flex flex-col gap-2">
+            <div className="flex items-center gap-2 text-ink-2 ">
               <Building2 className="w-4 h-4" />
-              <p className="text-[11px] uppercase font-bold tracking-widest">
+              <p className="text-xs uppercase font-bold tracking-wide">
                 Total de Fornecedores
               </p>
             </div>
-            <p className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white mt-auto tracking-tight transition-colors">
+            <p className="text-2xl sm:text-3xl font-bold text-ink mt-auto tracking-tight transition-colors">
               {carregando ? "--" : resumo.total}
             </p>
           </div>
 
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 rounded-2xl p-5 transition-colors flex flex-col gap-2">
-             <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+          <div className="bg-sunken border border-line rounded-md p-5 transition-colors flex flex-col gap-2">
+             <div className="flex items-center gap-2 text-ink ">
               <Hash className="w-4 h-4" />
-              <p className="text-[11px] uppercase font-bold tracking-widest">
+              <p className="text-xs uppercase font-bold tracking-wide">
                 Com Nome Fantasia
               </p>
             </div>
-            <p className="text-2xl sm:text-3xl font-black text-blue-800 dark:text-blue-300 mt-auto tracking-tight transition-colors">
+            <p className="text-2xl sm:text-3xl font-bold text-ink mt-auto tracking-tight transition-colors">
               {carregando ? "--" : resumo.comFantasia}
             </p>
           </div>
 
-          <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 rounded-2xl p-5 transition-colors flex flex-col gap-2">
-             <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-500">
+          <div className="bg-ok-soft border border-ok-line rounded-md p-5 transition-colors flex flex-col gap-2">
+             <div className="flex items-center gap-2 text-ok ">
               <Receipt className="w-4 h-4" />
-              <p className="text-[11px] uppercase font-bold tracking-widest">
+              <p className="text-xs uppercase font-bold tracking-wide">
                 Com Inscrição Estadual
               </p>
             </div>
-            <p className="text-2xl sm:text-3xl font-black text-emerald-800 dark:text-emerald-400 mt-auto tracking-tight transition-colors">
+            <p className="text-2xl sm:text-3xl font-bold text-ok mt-auto tracking-tight transition-colors">
               {carregando ? "--" : resumo.comIE}
             </p>
           </div>
         </div>
 
-        <div className="relative mb-8 flex items-center bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 transition-colors p-1.5">
-          <div className="relative flex items-center bg-white dark:bg-slate-800 rounded-xl border border-slate-200/60 dark:border-slate-700 flex-1 transition-colors">
-            <div className="pl-4 text-slate-400 dark:text-slate-500">
+        <div className="relative mb-8 flex items-center bg-sunken rounded-md border border-line transition-colors p-1.5">
+          <div className="relative flex items-center bg-surface rounded-md border border-line flex-1 transition-colors">
+            <div className="pl-4 text-ink-3 ">
               <Search className="w-4 h-4" />
             </div>
             <input
@@ -206,7 +199,7 @@ function Fornecedores({ usuarioLogado }) {
                 setBusca(e.target.value);
                 setPaginaAtual(1);
               }}
-              className="w-full bg-transparent border-none py-3 pl-3 pr-10 focus:ring-0 text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none placeholder-slate-400"
+              className="w-full bg-transparent border-none py-3 pl-3 pr-10 focus:ring-0 text-sm font-semibold text-ink outline-none placeholder-ink-3"
             />
             {busca && (
               <button
@@ -214,7 +207,7 @@ function Fornecedores({ usuarioLogado }) {
                   setBusca("");
                   setPaginaAtual(1);
                 }}
-                className="absolute right-3 p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+                className="absolute right-3 p-1 rounded-md text-ink-3 hover:text-ink-2 hover:bg-sunken transition"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -223,44 +216,44 @@ function Fornecedores({ usuarioLogado }) {
         </div>
 
         {carregando ? (
-          <div className="border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-12 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 gap-3">
-            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <div className="border border-dashed border-line-strong rounded-md p-12 flex flex-col items-center justify-center text-ink-2 gap-3">
+            <div className="w-8 h-8 border-4 border-ink border-t-transparent rounded-full animate-spin"></div>
             <span className="text-sm font-bold tracking-wide">Carregando fornecedores...</span>
           </div>
         ) : (
           <>
-            <div className="hidden lg:block overflow-x-auto rounded-2xl border border-slate-200/60 dark:border-slate-700/60 transition-colors">
+            <div className="hidden lg:block overflow-x-auto rounded-md border border-line transition-colors">
               <table className="w-full text-left border-collapse">
-                <thead className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-200/60 dark:border-slate-700/60 transition-colors">
+                <thead className="bg-sunken border-b border-line transition-colors">
                   <tr>
-                    <th className="p-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Razão Social</th>
-                    <th className="p-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Nome Fantasia</th>
-                    <th className="p-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">CNPJ</th>
-                    <th className="p-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Inscrição Estadual</th>
-                    <th className="p-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">Detalhes</th>
+                    <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide">Razão Social</th>
+                    <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide">Nome Fantasia</th>
+                    <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide">CNPJ</th>
+                    <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide">Inscrição Estadual</th>
+                    <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide text-center">Detalhes</th>
                   </tr>
                 </thead>
 
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                <tbody className="divide-y divide-line ">
                   {fornecedoresVisiveis.length === 0 ? (
                     <tr>
-                      <td colSpan="5" className="p-8 text-center text-slate-500 dark:text-slate-400 font-medium">
+                      <td colSpan="5" className="p-8 text-center text-ink-2 font-medium">
                         Nenhum fornecedor encontrado.
                       </td>
                     </tr>
                   ) : (
                     fornecedoresVisiveis.map((f) => (
-                      <tr key={f.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition duration-150 group">
-                        <td className="p-4 font-extrabold text-sm text-slate-800 dark:text-slate-200 transition-colors">
+                      <tr key={f.id} className="hover:bg-sunken transition duration-150 group">
+                        <td className="p-4 font-bold text-sm text-ink transition-colors">
                           {f.razao_social || "-"}
                         </td>
-                        <td className="p-4 text-slate-600 dark:text-slate-300 font-semibold text-sm transition-colors">
+                        <td className="p-4 text-ink-2 font-semibold text-sm transition-colors">
                           {f.nome_fantasia || "-"}
                         </td>
-                        <td className="p-4 text-slate-600 dark:text-slate-400 font-bold font-mono text-xs transition-colors">
+                        <td className="p-4 text-ink-2 font-bold font-mono text-xs transition-colors">
                           {f.cnpj || "-"}
                         </td>
-                        <td className="p-4 text-slate-600 dark:text-slate-400 font-bold font-mono text-xs transition-colors">
+                        <td className="p-4 text-ink-2 font-bold font-mono text-xs transition-colors">
                           {f.inscricao_estadual || "-"}
                         </td>
                         <td className="p-4 text-center">
@@ -268,7 +261,7 @@ function Fornecedores({ usuarioLogado }) {
                             type="button"
                             onClick={() => setFornecedorDetalhe(f)}
                             title="Ver Detalhes"
-                            className="p-2 mx-auto rounded-xl bg-slate-100 text-slate-600 border border-transparent hover:border-slate-200 hover:bg-white dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200 transition-all flex items-center justify-center"
+                            className="p-2 mx-auto rounded-md bg-sunken text-ink-2 border border-transparent hover:border-line hover:bg-surface transition-all flex items-center justify-center"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
@@ -282,32 +275,32 @@ function Fornecedores({ usuarioLogado }) {
 
             <div className="lg:hidden space-y-4">
               {fornecedoresVisiveis.length === 0 ? (
-                <div className="text-center py-8 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 transition-colors font-medium">
+                <div className="text-center py-8 text-ink-2 bg-sunken rounded-md border border-dashed border-line-strong transition-colors font-medium">
                   Nenhum fornecedor encontrado.
                 </div>
               ) : (
                 fornecedoresVisiveis.map((f) => (
                   <div
                     key={f.id}
-                    className="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 rounded-2xl p-5 shadow-sm transition-colors"
+                    className="bg-surface border border-line rounded-md p-5 transition-colors"
                   >
                     <div className="mb-4">
-                      <h3 className="font-extrabold text-slate-900 dark:text-white text-lg leading-tight transition-colors">
+                      <h3 className="font-bold text-ink text-lg leading-tight transition-colors">
                         {f.razao_social || "-"}
                       </h3>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700/50 px-2 py-1 rounded-md mt-2 inline-block transition-colors">
+                      <span className="text-xs font-bold uppercase tracking-wide text-ink-2 bg-sunken px-2 py-1 rounded-md mt-2 inline-block transition-colors">
                         FANTASIA: {f.nome_fantasia || "-"}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-2 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700 text-sm transition-colors">
+                    <div className="grid grid-cols-1 gap-2 bg-sunken p-4 rounded-md border border-line text-sm transition-colors">
                       <div className="flex flex-col">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-0.5">CNPJ</span>
-                        <span className="text-xs font-semibold font-mono text-slate-700 dark:text-slate-300">{f.cnpj || "-"}</span>
+                        <span className="text-xs font-bold uppercase tracking-wide text-ink-3 mb-0.5">CNPJ</span>
+                        <span className="text-xs font-semibold font-mono text-ink ">{f.cnpj || "-"}</span>
                       </div>
-                      <div className="flex flex-col mt-2 pt-2 border-t border-slate-200 dark:border-slate-700/80">
-                         <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-0.5">Inscrição Estadual</span>
-                         <span className="text-xs font-semibold font-mono text-slate-700 dark:text-slate-300">{f.inscricao_estadual || "-"}</span>
+                      <div className="flex flex-col mt-2 pt-2 border-t border-line ">
+                         <span className="text-xs font-bold uppercase tracking-wide text-ink-3 mb-0.5">Inscrição Estadual</span>
+                         <span className="text-xs font-semibold font-mono text-ink ">{f.inscricao_estadual || "-"}</span>
                       </div>
                     </div>
 
@@ -315,7 +308,7 @@ function Fornecedores({ usuarioLogado }) {
                       <button
                         type="button"
                         onClick={() => setFornecedorDetalhe(f)}
-                        className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-slate-700/50 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                        className="w-full py-2.5 rounded-md bg-sunken text-ink font-bold text-xs flex items-center justify-center gap-2 hover:bg-line transition-colors"
                       >
                          <Eye className="w-4 h-4" /> Ver Detalhes
                       </button>
@@ -330,17 +323,17 @@ function Fornecedores({ usuarioLogado }) {
                 <button
                   onClick={() => setPaginaAtual((prev) => Math.max(prev - 1, 1))}
                   disabled={paginaAtual === 1}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-1 ${
+                  className={`px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-1 ${
                     paginaAtual === 1
-                      ? "bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-600 cursor-not-allowed"
-                      : "bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-700 shadow-sm hover:border-blue-200 dark:hover:border-slate-600"
+                      ? "bg-sunken text-ink-3 cursor-not-allowed"
+                      : "bg-surface text-ink border border-line hover:bg-sunken hover:border-line "
                   }`}
                 >
                   <ChevronLeft className="w-4 h-4" /> Anterior
                 </button>
 
-                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-700 transition-colors">
-                  Página <span className="text-slate-800 dark:text-white">{paginaAtual}</span> de {totalPaginas}
+                <span className="text-xs font-bold text-ink-2 uppercase tracking-wide bg-sunken px-4 py-2 rounded-md border border-line transition-colors">
+                  Página <span className="text-ink ">{paginaAtual}</span> de {totalPaginas}
                 </span>
 
                 <button
@@ -348,10 +341,10 @@ function Fornecedores({ usuarioLogado }) {
                     setPaginaAtual((prev) => Math.min(prev + 1, totalPaginas))
                   }
                   disabled={paginaAtual === totalPaginas}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-1 ${
+                  className={`px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-1 ${
                     paginaAtual === totalPaginas
-                      ? "bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-600 cursor-not-allowed"
-                      : "bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-700 shadow-sm hover:border-blue-200 dark:hover:border-slate-600"
+                      ? "bg-sunken text-ink-3 cursor-not-allowed"
+                      : "bg-surface text-ink border border-line hover:bg-sunken hover:border-line "
                   }`}
                 >
                   Próxima <ChevronRight className="w-4 h-4" />

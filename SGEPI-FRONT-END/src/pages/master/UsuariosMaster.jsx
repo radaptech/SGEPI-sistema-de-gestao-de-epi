@@ -152,32 +152,32 @@ function UsuariosMaster() {
   const getTipoClass = (tipo) => {
     switch (tipo) {
       case "super_admin":
-        return "text-violet-700 bg-violet-50 border-violet-200/60";
+        return "text-info bg-info-soft border-info-line";
       case "admin":
-        return "text-sky-700 bg-sky-50 border-sky-200/60";
+        return "text-ink bg-sunken border-line";
       case "colaborador":
-        return "text-slate-600 bg-slate-50 border-slate-200";
+        return "text-ink-2 bg-sunken border-line";
       default:
-        return "text-slate-600 bg-slate-50 border-slate-200";
+        return "text-ink-2 bg-sunken border-line";
     }
   };
 
   const getStatusClass = (status) => {
-    if (status === true) return "text-emerald-700 bg-emerald-50 border-emerald-200/60";
-    if (status === false) return "text-red-700 bg-red-50 border-red-200/60";
-    return "text-slate-600 bg-slate-50 border-slate-200";
+    if (status === true) return "text-ok bg-ok-soft border-ok-line";
+    if (status === false) return "text-erro bg-erro-soft border-erro-line";
+    return "text-ink-2 bg-sunken border-line";
   };
 
   return (
-    <div className="animate-fade-in min-h-screen bg-slate-50 font-sans pb-12">
+    <div className=" min-h-screen bg-sunken font-sans pb-12">
       <div className="w-full max-w-[1600px] mx-auto p-6 lg:p-10">
         
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
           <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-3xl font-bold text-ink tracking-tight">
               Usuários
             </h1>
-            <p className="text-sm text-slate-500 mt-2 font-medium max-w-xl leading-relaxed">
+            <p className="text-sm text-ink-2 mt-2 font-medium max-w-xl leading-relaxed">
               Controle usuários master, administradores de empresas e usuários internos.
             </p>
           </div>
@@ -185,7 +185,7 @@ function UsuariosMaster() {
           <button
             type="button"
             onClick={() => setModalNovoAberto(true)}
-            className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 hover:shadow-md hover:shadow-blue-600/20 active:scale-[0.98] transition-all shrink-0"
+            className="flex items-center justify-center gap-2 px-5 py-3 rounded-md bg-action text-on-action text-sm font-semibold hover:bg-action-hover transition-all shrink-0"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
@@ -194,11 +194,11 @@ function UsuariosMaster() {
           </button>
         </header>
 
-        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden flex flex-col">
-          <div className="p-4 md:p-5 border-b border-slate-100 bg-white flex flex-col md:flex-row gap-4">
+        <div className="bg-surface rounded-md border border-line overflow-hidden flex flex-col">
+          <div className="p-4 md:p-5 border-b border-line bg-surface flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-4 w-4 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
@@ -207,7 +207,7 @@ function UsuariosMaster() {
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
                 placeholder="Buscar por nome, e-mail ou empresa..."
-                className="w-full pl-11 pr-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-sm text-slate-900 placeholder:text-slate-400"
+                className="w-full pl-11 pr-4 py-2.5 bg-sunken border border-line rounded-md focus:bg-surface focus:ring-1 focus:ring-ink focus:border-ink outline-none transition-all text-sm text-ink placeholder:text-ink-3"
               />
             </div>
 
@@ -215,7 +215,7 @@ function UsuariosMaster() {
               <select
                 value={tipoFiltro}
                 onChange={(e) => setTipoFiltro(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-sm text-slate-900 font-medium appearance-none cursor-pointer"
+                className="w-full px-4 py-2.5 bg-sunken border border-line rounded-md focus:bg-surface focus:ring-1 focus:ring-ink focus:border-ink outline-none transition-all text-sm text-ink font-medium appearance-none cursor-pointer"
                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748B'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: `right 1rem center`, backgroundRepeat: `no-repeat`, backgroundSize: `1.2em 1.2em` }}
               >
                 <option value="Todos">Todos os tipos</option>
@@ -228,7 +228,7 @@ function UsuariosMaster() {
 
           <div className="overflow-x-auto">
             <table className="w-full text-left whitespace-nowrap">
-              <thead className="bg-slate-50/80 border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+              <thead className="bg-sunken border-b border-line text-xs font-bold text-ink-2 uppercase tracking-wide">
                 <tr>
                   <th className="px-6 py-4">Usuário</th>
                   <th className="px-6 py-4">Empresa</th>
@@ -239,39 +239,39 @@ function UsuariosMaster() {
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-slate-100/80">
+              <tbody className="divide-y divide-line">
                 {usuariosFiltrados.map((usuario) => {
                   const bloqueado = usuario.status === false;
 
                   return (
-                    <tr key={usuario.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <tr key={usuario.id} className="hover:bg-sunken transition-colors group">
                       <td className="px-6 py-4">
-                        <p className="text-sm font-bold text-slate-900">{usuario.nome}</p>
-                        <p className="text-[12px] text-slate-500 mt-0.5 font-medium">
+                        <p className="text-sm font-bold text-ink">{usuario.nome}</p>
+                        <p className="text-[12px] text-ink-2 mt-0.5 font-medium">
                           {usuario.email}
                         </p>
                       </td>
 
                       <td className="px-6 py-4">
-                        <p className="text-[13px] font-semibold text-slate-700">
+                        <p className="text-sm font-semibold text-ink">
                           {usuario.empresa || "-"}
                         </p>
                       </td>
 
                       <td className="px-6 py-4 text-center">
-                        <span className={`inline-flex px-2.5 py-1 rounded-md border text-[11px] font-bold tracking-wide ${getTipoClass(usuario.tipo)}`}>
+                        <span className={`inline-flex px-2.5 py-1 rounded-md border text-xs font-bold tracking-wide ${getTipoClass(usuario.tipo)}`}>
                           {getTipoLabel(usuario.tipo)}
                         </span>
                       </td>
 
                       <td className="px-6 py-4 text-center">
-                        <span className={`inline-flex px-2.5 py-1 rounded-md border text-[11px] font-bold tracking-wide ${getStatusClass(usuario.status)}`}>
+                        <span className={`inline-flex px-2.5 py-1 rounded-md border text-xs font-bold tracking-wide ${getStatusClass(usuario.status)}`}>
                           {usuario.status ? "Ativo" : "Bloqueado"}
                         </span>
                       </td>
 
                       <td className="px-6 py-4 text-center">
-                        <p className="text-[12px] font-semibold text-slate-500">
+                        <p className="text-[12px] font-semibold text-ink-2">
                           {usuario.ultimo_acesso || "-"}
                         </p>
                       </td>
@@ -281,7 +281,7 @@ function UsuariosMaster() {
                           <button
                             type="button"
                             onClick={() => abrirEditar(usuario)}
-                            className="px-3 py-1.5 rounded-lg text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-xs font-semibold transition-colors"
+                            className="px-3 py-1.5 rounded-md text-ink hover:text-ink hover:bg-sunken text-xs font-semibold transition-colors"
                           >
                             Editar
                           </button>
@@ -289,10 +289,10 @@ function UsuariosMaster() {
                           <button
                             type="button"
                             onClick={() => abrirBloqueio(usuario)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
                               bloqueado
-                                ? "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                                : "text-red-600 hover:text-red-700 hover:bg-red-50"
+                                ? "text-ok hover:text-ok hover:bg-ok-soft"
+                                : "text-erro hover:text-erro hover:bg-erro-soft"
                             }`}
                           >
                             {bloqueado ? "Desbloquear" : "Bloquear"}
@@ -307,10 +307,10 @@ function UsuariosMaster() {
                   <tr>
                     <td colSpan="6" className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center justify-center gap-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
-                        <p className="text-sm text-slate-500 font-medium">Nenhum usuário encontrado.</p>
+                        <p className="text-sm text-ink-2 font-medium">Nenhum usuário encontrado.</p>
                       </div>
                     </td>
                   </tr>

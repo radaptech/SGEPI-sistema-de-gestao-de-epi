@@ -4,13 +4,24 @@
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href="%PUBLIC_URL%/favicon.svg?v=2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#1e3a8a" />
+    <meta name="theme-color" content="#16181d" />
     <meta name="description" content="Controle de estoque, entrega e devolução de EPIs" />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <title>SGEPI - Gestão de Estoque</title>
+    <script>
+      try { if (localStorage.getItem("theme") === "dark") document.documentElement.classList.add("dark"); } catch (e) {}
+    </script>
   </head>
   <body>
+    <!--!
+      THESIS: cada registro tem cara de etiqueta impressa de almoxarifado; recusa o SaaS de cards azuis translúcidos com glow.
+      OWN-WORLD: tinta preta sobre papel branco (canvas cinza frio), fio de 1px, cantos de 4-6px, sem sombra fora de modal; cor só para estado (atenção âmbar, erro vermelho, ok verde, info azul NBR); Archivo na interface, JetBrains Mono para CA, lote, matrícula e códigos; escuro = etiqueta invertida em grafite.
+      STORY: o técnico vê as pendências de conformidade de cara, o almoxarife registra entrega/devolução em segundos, o gestor confere o estoque.
+      FIRST VIEWPORT: barra branca com abas sublinhadas; saudação e data à esquerda, ações (Nova entrega preta, Devolução, Entrada, Consultar) à direita; quadro de Pendências em etiquetas com faixa que só ganha cor quando há pendência; depois Estoque.
+      FORM: etiqueta de almoxarifado, 4ª da lista ordenada, seed 7d245549.
+      FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+    -->
     <noscript>Você precisa habilitar o JavaScript para executar este app.</noscript>
     <div id="root"></div>
   </body>

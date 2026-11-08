@@ -11,11 +11,11 @@ function ToolbarDesktop({
 }) {
   if (!painelFerramentasAberto) {
     return (
-      <div className="absolute top-4 right-4 z-10 animate-fade-in">
+      <div className="absolute top-4 right-4 z-10 ">
         <button
           type="button"
           onClick={() => setPainelFerramentasAberto(true)}
-          className="flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-lg shadow-blue-600/20 px-4 py-2.5 text-sm font-bold transition-all active:scale-[0.98]"
+          className="flex items-center gap-2 rounded-md bg-action hover:bg-action-hover text-on-action px-4 py-2.5 text-sm font-bold transition-all"
         >
           <Settings2 className="w-4 h-4" />
           <span>Opções</span>
@@ -25,17 +25,17 @@ function ToolbarDesktop({
   }
 
   return (
-    <div className="absolute top-4 right-4 z-10 max-w-[calc(100vw-2rem)] animate-fade-in">
-      <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/60 dark:border-slate-700/60 rounded-2xl shadow-xl p-2 sm:p-2.5 transition-colors">
+    <div className="absolute top-4 right-4 z-10 max-w-[calc(100vw-2rem)] ">
+      <div className="bg-surface border border-line rounded-md shadow-modal p-2 sm:p-2.5 transition-colors">
         <div className="flex flex-wrap items-center justify-end gap-2">
           
           <button
             type="button"
             onClick={() => setFerramentaAtiva("caneta")}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-md border text-sm font-bold transition-all ${
               ferramentaAtiva === "caneta"
-                ? "bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-600/20 dark:bg-blue-500 dark:border-blue-500"
-                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-50 dark:hover:bg-slate-700"
+                ? "bg-action border-ink text-on-action "
+                : "bg-surface text-ink border-line hover:bg-sunken "
             }`}
           >
             <PenLine className="w-4 h-4" />
@@ -45,22 +45,22 @@ function ToolbarDesktop({
           <button
             type="button"
             onClick={() => setFerramentaAtiva("borracha")}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-md border text-sm font-bold transition-all ${
               ferramentaAtiva === "borracha"
-                ? "bg-slate-800 border-slate-800 text-white shadow-sm dark:bg-slate-700 dark:border-slate-600"
-                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-50 dark:hover:bg-slate-700"
+                ? "bg-action border-line-strong text-on-action "
+                : "bg-surface text-ink border-line hover:bg-sunken "
             }`}
           >
             <Eraser className="w-4 h-4" />
             <span className="hidden sm:inline">Borracha</span>
           </button>
 
-          <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
+          <div className="w-px h-6 bg-line mx-1 hidden sm:block"></div>
 
           <button
             type="button"
             onClick={limparAssinatura}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200/60 dark:border-red-900/30 bg-white dark:bg-slate-800 text-red-600 dark:text-red-400 text-sm font-bold hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-erro-line bg-surface text-erro text-sm font-bold hover:bg-erro-soft transition-colors"
           >
             <Trash2 className="w-4 h-4" />
             <span className="hidden sm:inline">Limpar</span>
@@ -69,7 +69,7 @@ function ToolbarDesktop({
           <button
             type="button"
             onClick={() => setPainelFerramentasAberto(false)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-line bg-surface text-ink text-sm font-bold hover:bg-sunken transition-colors"
           >
             <EyeOff className="w-4 h-4" />
             <span className="hidden sm:inline">Ocultar</span>
@@ -78,18 +78,18 @@ function ToolbarDesktop({
           <button
             type="button"
             onClick={fecharAssinatura}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-line bg-surface text-ink text-sm font-bold hover:bg-sunken transition-colors"
           >
             <X className="w-4 h-4" />
             <span className="hidden sm:inline">Sair</span>
           </button>
 
-          <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
+          <div className="w-px h-6 bg-line mx-1 hidden sm:block"></div>
 
           <button
             type="button"
             onClick={concluirAssinatura}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm font-bold transition-all shadow-sm shadow-blue-600/20 active:scale-[0.98]"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-action hover:bg-action-hover text-on-action text-sm font-bold transition-all"
           >
             <Check className="w-4 h-4" />
             <span>Concluir</span>

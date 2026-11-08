@@ -45,8 +45,8 @@ export default function AbaFornecedores() {
 
   const campoComErro = (campo) => {
     return erros[campo]
-      ? "border-red-400 dark:border-red-500/50 focus:ring-red-500/20 focus:border-red-500 bg-red-50/30 dark:bg-red-900/10"
-      : "border-slate-200/60 dark:border-slate-700/60 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200";
+      ? "border-erro focus:ring-erro focus:border-erro bg-erro-soft "
+      : "border-line focus:ring-ink focus:border-ink bg-surface text-ink ";
   };
 
   const limparErroCampo = (campo) => {
@@ -299,15 +299,15 @@ export default function AbaFornecedores() {
     limparFormulario();
   };
 
-  const baseInputClass = "w-full px-4 h-[46px] rounded-xl text-sm font-medium outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed placeholder-slate-400 border";
-  const labelClass = "block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 transition-colors";
+  const baseInputClass = "w-full px-4 h-[46px] rounded-md text-sm font-medium outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed placeholder-ink-3 border";
+  const labelClass = "block text-xs font-bold text-ink-2 uppercase tracking-wide mb-1.5 transition-colors";
 
   return (
-    <div className="animate-fade-in space-y-6 transition-colors duration-300">
+    <div className=" space-y-6 transition-colors duration-300">
       {toast && (
-        <div className={`fixed top-5 left-1/2 z-[9999] w-[90%] max-w-sm -translate-x-1/2 rounded-2xl border px-5 py-4 shadow-xl flex items-start gap-3 transition-colors sm:left-auto sm:right-5 sm:translate-x-0 animate-fade-in ${toast.tipo === "sucesso"
-            ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300"
-            : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/50 text-red-800 dark:text-red-300"
+        <div className={`fixed top-5 left-1/2 z-[9999] w-[90%] max-w-sm -translate-x-1/2 rounded-md border px-5 py-4 shadow-modal flex items-start gap-3 transition-colors sm:left-auto sm:right-5 sm:translate-x-0  ${toast.tipo === "sucesso"
+            ? "bg-ok-soft border-ok-line text-ok "
+            : "bg-erro-soft border-erro-line text-erro "
           }`}>
           {toast.tipo === "sucesso" ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
           <div className="flex-1">
@@ -327,79 +327,79 @@ export default function AbaFornecedores() {
         onSucesso={carregarFornecedores}
         mostrarToast={mostrarToast}
       />
-      <div className="bg-slate-50/50 dark:bg-slate-800/50 p-5 sm:p-6 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 transition-colors">
+      <div className="bg-sunken p-5 sm:p-6 rounded-md border border-line transition-colors">
         <div className="flex items-center gap-2.5 mb-2">
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${editandoId ? "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" : "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+          <div className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 transition-colors ${editandoId ? "bg-atencao-soft text-atencao " : "bg-sunken text-ink "
             }`}>
             {editandoId ? <PenLine className="w-4 h-4" /> : <Truck className="w-4 h-4" />}
           </div>
-          <h3 className="text-base font-bold text-slate-800 dark:text-slate-200 transition-colors">
+          <h3 className="text-base font-bold text-ink transition-colors">
             {editandoId ? "Editar Fornecedor" : "Novo Fornecedor"}
           </h3>
         </div>
 
-        <p className="text-xs text-slate-500 dark:text-slate-400 mb-5 ml-[42px] transition-colors">
-          Campos marcados com <span className="text-red-500 dark:text-red-400 font-bold">*</span> são obrigatórios.
+        <p className="text-xs text-ink-2 mb-5 ml-[42px] transition-colors">
+          Campos marcados com <span className="text-erro font-bold">*</span> são obrigatórios.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
           <div>
-            <label className={labelClass}>
-              Razão Social <span className="text-red-500">*</span>
+            <label htmlFor="abafornecedores-1" className={labelClass}>
+              Razão Social <span className="text-erro">*</span>
             </label>
-            <input
+            <input id="abafornecedores-1"
               className={`${baseInputClass} ${campoComErro("razao_social")}`}
               value={novoForn.razao_social}
               onChange={(e) => atualizarCampo("razao_social", e.target.value)}
               placeholder="Ex: Empresa X Ltda"
             />
             {erros.razao_social && (
-              <p className="text-xs font-medium text-red-500 mt-1.5">{erros.razao_social}</p>
+              <p className="text-xs font-medium text-erro mt-1.5">{erros.razao_social}</p>
             )}
           </div>
 
           <div>
-            <label className={labelClass}>
-              Nome Fantasia <span className="text-red-500">*</span>
+            <label htmlFor="abafornecedores-2" className={labelClass}>
+              Nome Fantasia <span className="text-erro">*</span>
             </label>
-            <input
+            <input id="abafornecedores-2"
               className={`${baseInputClass} ${campoComErro("nome_fantasia")}`}
               value={novoForn.nome_fantasia}
               onChange={(e) => atualizarCampo("nome_fantasia", e.target.value)}
               placeholder="Ex: Empresa X"
             />
             {erros.nome_fantasia && (
-              <p className="text-xs font-medium text-red-500 mt-1.5">{erros.nome_fantasia}</p>
+              <p className="text-xs font-medium text-erro mt-1.5">{erros.nome_fantasia}</p>
             )}
           </div>
 
           <div>
-            <label className={labelClass}>
-              CNPJ <span className="text-red-500">*</span>
+            <label htmlFor="abafornecedores-3" className={labelClass}>
+              CNPJ <span className="text-erro">*</span>
             </label>
-            <input
+            <input id="abafornecedores-3"
               className={`${baseInputClass} font-mono ${campoComErro("cnpj")}`}
               value={novoForn.cnpj}
               onChange={(e) => atualizarCampo("cnpj", e.target.value)}
               placeholder="00.000.000/0000-00"
             />
             {erros.cnpj && (
-              <p className="text-xs font-medium text-red-500 mt-1.5">{erros.cnpj}</p>
+              <p className="text-xs font-medium text-erro mt-1.5">{erros.cnpj}</p>
             )}
           </div>
 
           <div>
-            <label className={labelClass}>
-              Inscrição Estadual <span className="text-red-500">*</span>
+            <label htmlFor="abafornecedores-4" className={labelClass}>
+              Inscrição Estadual <span className="text-erro">*</span>
             </label>
-            <input
+            <input id="abafornecedores-4"
               className={`${baseInputClass} ${campoComErro("inscricao_estadual")}`}
               value={novoForn.inscricao_estadual}
               onChange={(e) => atualizarCampo("inscricao_estadual", e.target.value)}
               placeholder="Ex: 123.456.789/000"
             />
             {erros.inscricao_estadual && (
-              <p className="text-xs font-medium text-red-500 mt-1.5">{erros.inscricao_estadual}</p>
+              <p className="text-xs font-medium text-erro mt-1.5">{erros.inscricao_estadual}</p>
             )}
           </div>
         </div>
@@ -409,7 +409,7 @@ export default function AbaFornecedores() {
             <button
               onClick={cancelarEdicao}
               disabled={carregando}
-              className="w-full sm:w-auto h-[46px] px-6 text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-700 font-bold rounded-xl transition-colors text-sm disabled:opacity-50"
+              className="w-full sm:w-auto h-[46px] px-6 text-ink-2 hover:bg-line font-bold rounded-md transition-colors text-sm disabled:opacity-50"
             >
               Cancelar
             </button>
@@ -418,9 +418,9 @@ export default function AbaFornecedores() {
           <button
             onClick={adicionarFornecedor}
             disabled={carregando}
-            className={`w-full sm:w-auto h-[46px] px-6 text-white font-bold rounded-xl transition-all shadow-sm active:scale-[0.98] flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed ${editandoId
-                ? "bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-500 shadow-amber-500/20"
-                : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 shadow-blue-600/20"
+            className={`w-full sm:w-auto h-[46px] px-6 text-on-action font-bold rounded-md transition-all  flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed ${editandoId
+                ? "bg-action hover:bg-action-hover "
+                : "bg-action hover:bg-action-hover "
               }`}
           >
             {carregando ? (
@@ -434,19 +434,19 @@ export default function AbaFornecedores() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors overflow-hidden">
-        <div className="flex items-center justify-between p-5 sm:px-6 border-b border-slate-100 dark:border-slate-800/60 transition-colors">
-          <h3 className="text-base font-extrabold text-slate-800 dark:text-white transition-colors">
+      <div className="bg-surface rounded-md border border-line transition-colors overflow-hidden">
+        <div className="flex items-center justify-between p-5 sm:px-6 border-b border-line transition-colors">
+          <h3 className="text-base font-bold text-ink transition-colors">
             Fornecedores Cadastrados
           </h3>
 
-          <span className="inline-flex items-center justify-center px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors">
+          <span className="inline-flex items-center justify-center px-2.5 py-1 bg-sunken text-ink-2 text-xs font-bold uppercase tracking-wider rounded-md transition-colors">
             {fornecedores.length} registro(s)
           </span>
         </div>
 
         {fornecedores.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 p-10 text-slate-400 dark:text-slate-500 transition-colors">
+          <div className="flex flex-col items-center justify-center gap-3 p-10 text-ink-3 transition-colors">
             <PackageSearch className="w-10 h-10 opacity-50" strokeWidth={1.5} />
             <span className="font-medium text-sm">Nenhum fornecedor registrado.</span>
           </div>
@@ -456,59 +456,59 @@ export default function AbaFornecedores() {
               {fornecedores.map((f) => (
                 <div
                   key={f.id}
-                  className="bg-slate-50/50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-4 shadow-sm transition-colors"
+                  className="bg-sunken border border-line rounded-md p-4 transition-colors"
                 >
                   <div className="space-y-3">
                     <div>
-                      <span className="block text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-widest mb-0.5">
+                      <span className="block text-xs uppercase font-bold text-ink-3 tracking-wide mb-0.5">
                         Razão Social
                       </span>
-                      <span className="text-slate-800 dark:text-slate-200 font-bold">
+                      <span className="text-ink font-bold">
                         {f.razao_social || "-"}
                       </span>
                     </div>
 
                     <div>
-                      <span className="block text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-widest mb-0.5">
+                      <span className="block text-xs uppercase font-bold text-ink-3 tracking-wide mb-0.5">
                         Nome Fantasia
                       </span>
-                      <span className="text-slate-600 dark:text-slate-300 font-medium">
+                      <span className="text-ink-2 font-medium">
                         {f.nome_fantasia || "-"}
                       </span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <span className="block text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-widest mb-0.5">
+                        <span className="block text-xs uppercase font-bold text-ink-3 tracking-wide mb-0.5">
                           CNPJ
                         </span>
-                        <span className="text-slate-500 dark:text-slate-400 font-mono text-xs">
+                        <span className="text-ink-2 font-mono text-xs">
                           {f.cnpj || "-"}
                         </span>
                       </div>
 
                       <div>
-                        <span className="block text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-widest mb-0.5">
+                        <span className="block text-xs uppercase font-bold text-ink-3 tracking-wide mb-0.5">
                           Insc. Estadual
                         </span>
-                        <span className="text-slate-500 dark:text-slate-400 font-mono text-xs">
+                        <span className="text-ink-2 font-mono text-xs">
                           {f.inscricao_estadual || "-"}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-slate-200/60 dark:border-slate-700/50 flex gap-2">
+                  <div className="mt-4 pt-4 border-t border-line flex gap-2">
                     <button
                       onClick={() => iniciarEdicao(f)}
-                      className="flex-1 py-2.5 flex justify-center items-center gap-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 font-bold text-sm transition-colors"
+                      className="flex-1 py-2.5 flex justify-center items-center gap-2 rounded-md bg-sunken text-ink-2 hover:text-atencao font-bold text-sm transition-colors"
                     >
                       <PenLine className="w-4 h-4" /> Editar
                     </button>
 
                     <button
                       onClick={() => removerFornecedor(f.id)}
-                      className="flex-1 py-2.5 flex justify-center items-center gap-2 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-bold text-sm hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                      className="flex-1 py-2.5 flex justify-center items-center gap-2 rounded-md bg-erro-soft text-erro font-bold text-sm hover:bg-erro-soft transition-colors"
                     >
                       <Trash2 className="w-4 h-4" /> Excluir
                     </button>
@@ -519,32 +519,32 @@ export default function AbaFornecedores() {
 
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm text-left">
-                <thead className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200/60 dark:border-slate-700/60 transition-colors">
+                <thead className="bg-sunken border-b border-line transition-colors">
                   <tr>
-                    <th className="p-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Razão Social</th>
-                    <th className="p-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Nome Fantasia</th>
-                    <th className="p-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">CNPJ</th>
-                    <th className="p-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Insc. Estadual</th>
-                    <th className="p-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">Ações</th>
+                    <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide">Razão Social</th>
+                    <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide">Nome Fantasia</th>
+                    <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide">CNPJ</th>
+                    <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide">Insc. Estadual</th>
+                    <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide text-center">Ações</th>
                   </tr>
                 </thead>
 
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                <tbody className="divide-y divide-line ">
                   {fornecedores.map((f) => (
-                    <tr key={f.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors group">
-                      <td className="p-4 font-bold text-slate-800 dark:text-slate-200 transition-colors">
+                    <tr key={f.id} className="hover:bg-sunken transition-colors group">
+                      <td className="p-4 font-bold text-ink transition-colors">
                         {f.razao_social || "-"}
                       </td>
 
-                      <td className="p-4 text-slate-600 dark:text-slate-300 font-medium transition-colors">
+                      <td className="p-4 text-ink-2 font-medium transition-colors">
                         {f.nome_fantasia || "-"}
                       </td>
 
-                      <td className="p-4 text-slate-500 dark:text-slate-400 font-mono text-xs transition-colors">
+                      <td className="p-4 text-ink-2 font-mono text-xs transition-colors">
                         {f.cnpj || "-"}
                       </td>
 
-                      <td className="p-4 text-slate-500 dark:text-slate-400 font-mono text-xs transition-colors">
+                      <td className="p-4 text-ink-2 font-mono text-xs transition-colors">
                         {f.inscricao_estadual || "-"}
                       </td>
 
@@ -552,7 +552,7 @@ export default function AbaFornecedores() {
                         <div className="flex justify-center items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => iniciarEdicao(f)}
-                            className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:text-amber-400 dark:hover:bg-amber-900/20 transition-colors"
+                            className="w-8 h-8 flex items-center justify-center rounded-md text-ink-3 hover:text-atencao hover:bg-atencao-soft transition-colors"
                             title="Editar"
                           >
                             <PenLine className="w-4 h-4" />
@@ -560,7 +560,7 @@ export default function AbaFornecedores() {
 
                           <button
                             onClick={() => removerFornecedor(f.id)}
-                            className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-colors"
+                            className="w-8 h-8 flex items-center justify-center rounded-md text-ink-3 hover:text-erro hover:bg-erro-soft transition-colors"
                             title="Excluir"
                           >
                             <Trash2 className="w-4 h-4" />
