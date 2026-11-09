@@ -12,8 +12,8 @@ import (
 )
 
 const addFuncionario = `-- name: AddFuncionario :exec
-INSERT INTO funcionario (tenant_id, nome, IdDepartamento, IdFuncao, cpf) 
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO funcionario (tenant_id, nome, IdDepartamento, IdFuncao, cpf, id_unidade)
+VALUES ($1, $2, $3, $4, $5, $6::int)
 `
 
 type AddFuncionarioParams struct {
@@ -22,8 +22,10 @@ type AddFuncionarioParams struct {
 	Iddepartamento int32
 	Idfuncao       int32
 	Cpf            pgtype.Text
+	IDUnidade      pgtype.Int4
 }
 
+// id_unidade NULL = trigger preencher_unidade_padrao põe a primeira unidade do tenant
 func (q *Queries) AddFuncionario(ctx context.Context, arg AddFuncionarioParams) error {
 	_, err := q.db.Exec(ctx, addFuncionario,
 		arg.TenantID,
@@ -31,6 +33,7 @@ func (q *Queries) AddFuncionario(ctx context.Context, arg AddFuncionarioParams) 
 		arg.Iddepartamento,
 		arg.Idfuncao,
 		arg.Cpf,
+		arg.IDUnidade,
 	)
 	return err
 }
@@ -94,13 +97,22 @@ SELECT
     fn.cpf,
     f.nome as funcao_nome,
     fn.IdDepartamento, 
-    d.nome as departamento_nome
+    d.nome as departamento_nome,
+    fn.id_unidade,
+    u.nome as unidade_nome
 FROM funcionario fn
 INNER JOIN departamento d ON fn.IdDepartamento = d.id
 INNER JOIN funcao f ON fn.IdFuncao = f.id
+INNER JOIN unidade u ON u.id = fn.id_unidade AND u.tenant_id = fn.tenant_id
 WHERE fn.tenant_id = $1 
   AND fn.ativo = TRUE
+  AND ($2::int IS NULL OR fn.id_unidade = $2::int)
 `
+
+type BuscaFuncionarioCompletoParams struct {
+	TenantID  int32
+	IDUnidade pgtype.Int4
+}
 
 type BuscaFuncionarioCompletoRow struct {
 	ID               int32
@@ -111,10 +123,12 @@ type BuscaFuncionarioCompletoRow struct {
 	FuncaoNome       string
 	Iddepartamento   int32
 	DepartamentoNome string
+	IDUnidade        int32
+	UnidadeNome      string
 }
 
-func (q *Queries) BuscaFuncionarioCompleto(ctx context.Context, tenantID int32) ([]BuscaFuncionarioCompletoRow, error) {
-	rows, err := q.db.Query(ctx, buscaFuncionarioCompleto, tenantID)
+func (q *Queries) BuscaFuncionarioCompleto(ctx context.Context, arg BuscaFuncionarioCompletoParams) ([]BuscaFuncionarioCompletoRow, error) {
+	rows, err := q.db.Query(ctx, buscaFuncionarioCompleto, arg.TenantID, arg.IDUnidade)
 	if err != nil {
 		return nil, err
 	}
@@ -131,6 +145,8 @@ func (q *Queries) BuscaFuncionarioCompleto(ctx context.Context, tenantID int32) 
 			&i.FuncaoNome,
 			&i.Iddepartamento,
 			&i.DepartamentoNome,
+			&i.IDUnidade,
+			&i.UnidadeNome,
 		); err != nil {
 			return nil, err
 		}
@@ -143,22 +159,29 @@ func (q *Queries) BuscaFuncionarioCompleto(ctx context.Context, tenantID int32) 
 }
 
 const buscaFuncionarioDashbord = `-- name: BuscaFuncionarioDashbord :many
-SELECT id, nome, matricula, cpf
+SELECT id, nome, matricula, cpf, id_unidade
 FROM funcionario
 WHERE tenant_id = $1 
   AND ativo = TRUE 
+  AND ($2::int IS NULL OR id_unidade = $2::int) 
   order by nome asc
 `
+
+type BuscaFuncionarioDashbordParams struct {
+	TenantID  int32
+	IDUnidade pgtype.Int4
+}
 
 type BuscaFuncionarioDashbordRow struct {
 	ID        int32
 	Nome      string
 	Matricula int32
 	Cpf       pgtype.Text
+	IDUnidade int32
 }
 
-func (q *Queries) BuscaFuncionarioDashbord(ctx context.Context, tenantID int32) ([]BuscaFuncionarioDashbordRow, error) {
-	rows, err := q.db.Query(ctx, buscaFuncionarioDashbord, tenantID)
+func (q *Queries) BuscaFuncionarioDashbord(ctx context.Context, arg BuscaFuncionarioDashbordParams) ([]BuscaFuncionarioDashbordRow, error) {
+	rows, err := q.db.Query(ctx, buscaFuncionarioDashbord, arg.TenantID, arg.IDUnidade)
 	if err != nil {
 		return nil, err
 	}
@@ -171,6 +194,7 @@ func (q *Queries) BuscaFuncionarioDashbord(ctx context.Context, tenantID int32) 
 			&i.Nome,
 			&i.Matricula,
 			&i.Cpf,
+			&i.IDUnidade,
 		); err != nil {
 			return nil, err
 		}
@@ -239,26 +263,30 @@ SELECT
     d.nome as departamento_nome,
     fn.IdFuncao, 
     f.nome as funcao_nome,
+    fn.id_unidade,
+    u.nome as unidade_nome,
     COUNT(*) OVER() AS total_geral
 FROM funcionario fn
 INNER JOIN departamento d ON fn.IdDepartamento = d.id
 INNER JOIN funcao f ON fn.IdFuncao = f.id
+INNER JOIN unidade u ON u.id = fn.id_unidade AND u.tenant_id = fn.tenant_id
 WHERE fn.tenant_id = $3 
   AND ($4::int IS NULL OR fn.id = $4::int)
+  AND ($5::int IS NULL OR fn.id_unidade = $5::int)
   -- Formatação aplicada também na hora da busca para o ILIKE bater certinho
   AND (
-      $5::text IS NULL OR 
+      $6::text IS NULL OR 
       (
           CASE 
               WHEN fn.matricula < 10000 THEN LPAD(fn.matricula::text, 4, '0') 
               ELSE fn.matricula::text 
           END
-      ) ILIKE '%' || $5 || '%'
+      ) ILIKE '%' || $6 || '%'
   )
-  AND ($6::text IS NULL OR fn.nome ILIKE '%' || $6 || '%')
+  AND ($7::text IS NULL OR fn.nome ILIKE '%' || $7 || '%')
   AND (
-    ($7::boolean IS FALSE AND fn.deletado_em IS NULL) OR
-    ($7::boolean IS TRUE AND fn.deletado_em IS NOT NULL)
+    ($8::boolean IS FALSE AND fn.deletado_em IS NULL) OR
+    ($8::boolean IS TRUE AND fn.deletado_em IS NOT NULL)
   )
 ORDER BY fn.nome ASC
 LIMIT $1 OFFSET $2
@@ -269,6 +297,7 @@ type BuscarTodosFuncionariosParams struct {
 	Offset     int32
 	TenantID   int32
 	ID         pgtype.Int4
+	IDUnidade  pgtype.Int4
 	Matricula  pgtype.Text
 	Nome       pgtype.Text
 	Cancelados bool
@@ -283,6 +312,8 @@ type BuscarTodosFuncionariosRow struct {
 	DepartamentoNome string
 	Idfuncao         int32
 	FuncaoNome       string
+	IDUnidade        int32
+	UnidadeNome      string
 	TotalGeral       int64
 }
 
@@ -292,6 +323,7 @@ func (q *Queries) BuscarTodosFuncionarios(ctx context.Context, arg BuscarTodosFu
 		arg.Offset,
 		arg.TenantID,
 		arg.ID,
+		arg.IDUnidade,
 		arg.Matricula,
 		arg.Nome,
 		arg.Cancelados,
@@ -312,6 +344,8 @@ func (q *Queries) BuscarTodosFuncionarios(ctx context.Context, arg BuscarTodosFu
 			&i.DepartamentoNome,
 			&i.Idfuncao,
 			&i.FuncaoNome,
+			&i.IDUnidade,
+			&i.UnidadeNome,
 			&i.TotalGeral,
 		); err != nil {
 			return nil, err
@@ -355,6 +389,22 @@ func (q *Queries) TotalDeFuncionarios(ctx context.Context, id int32) (int64, err
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const unidadeDoFuncionario = `-- name: UnidadeDoFuncionario :one
+SELECT id_unidade FROM funcionario WHERE id = $1 AND tenant_id = $2
+`
+
+type UnidadeDoFuncionarioParams struct {
+	ID       int32
+	TenantID int32
+}
+
+func (q *Queries) UnidadeDoFuncionario(ctx context.Context, arg UnidadeDoFuncionarioParams) (int32, error) {
+	row := q.db.QueryRow(ctx, unidadeDoFuncionario, arg.ID, arg.TenantID)
+	var id_unidade int32
+	err := row.Scan(&id_unidade)
+	return id_unidade, err
 }
 
 const updateFuncionarioCpf = `-- name: UpdateFuncionarioCpf :execrows
@@ -439,6 +489,28 @@ type UpdateFuncionarioNomeParams struct {
 
 func (q *Queries) UpdateFuncionarioNome(ctx context.Context, arg UpdateFuncionarioNomeParams) (int64, error) {
 	result, err := q.db.Exec(ctx, updateFuncionarioNome, arg.ID, arg.Nome, arg.TenantID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const updateFuncionarioUnidade = `-- name: UpdateFuncionarioUnidade :execrows
+UPDATE funcionario
+SET id_unidade = $2
+WHERE id = $1 
+  AND tenant_id = $3 -- SEGURANÇA
+  AND ativo = TRUE
+`
+
+type UpdateFuncionarioUnidadeParams struct {
+	ID        int32
+	IDUnidade int32
+	TenantID  int32
+}
+
+func (q *Queries) UpdateFuncionarioUnidade(ctx context.Context, arg UpdateFuncionarioUnidadeParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateFuncionarioUnidade, arg.ID, arg.IDUnidade, arg.TenantID)
 	if err != nil {
 		return 0, err
 	}

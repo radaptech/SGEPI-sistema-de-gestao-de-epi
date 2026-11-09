@@ -41,19 +41,21 @@ type EmpresaRecente struct {
 }
 
 type Empresa struct {
-	ID           int64          `json:"id"`
-	Nome         string         `json:"nome"`
-	CNPJ         string         `json:"cnpj"`
-	Responsavel  string         `json:"responsavel"`
-	Email        string         `json:"email"`
-	Telefone     string         `json:"telefone"`
-	Plano        string         `json:"plano"`
-	Funcionarios int            `json:"funcionarios"`
-	EPIs         int            `json:"epis"`
-	Mensalidade  float64        `json:"mensalidade"`
-	Vencimento   configs.DataBr `json:"vencimento"`
-	Status       string         `json:"status"`
-	Observacoes  string         `json:"observacoes"`
+	ID             int64          `json:"id"`
+	Nome           string         `json:"nome"`
+	CNPJ           string         `json:"cnpj"`
+	Responsavel    string         `json:"responsavel"`
+	Email          string         `json:"email"`
+	Telefone       string         `json:"telefone"`
+	Plano          string         `json:"plano"`
+	Funcionarios   int            `json:"funcionarios"`
+	EPIs           int            `json:"epis"`
+	Unidades       int            `json:"unidades"`
+	LimiteUnidades *int32         `json:"limite_unidades"` // do plano; nil = ilimitado
+	Mensalidade    float64        `json:"mensalidade"`
+	Vencimento     configs.DataBr `json:"vencimento"`
+	Status         string         `json:"status"`
+	Observacoes    string         `json:"observacoes"`
 }
 
 type EditarEmpresaRequest struct {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { listar } from "../services/listas";
 
 import { obterHojeISO, diasAte } from "../utils/dashboardFormatters";
+import { estoqueBaixo } from "../utils/indicadores";
 
 import {
   normalizarEpi,
@@ -26,6 +27,7 @@ export function useDashboardResumo() {
   const [devolucoes, setDevolucoes] = useState([]);
   const [trocas, setTrocas] = useState([]);
   const [faltasKit, setFaltasKit] = useState([]);
+  const [unidades, setUnidades] = useState([]);
   const [carregandoResumo, setCarregandoResumo] = useState(true);
 
   const carregarResumo = async () => {
@@ -42,6 +44,7 @@ export function useDashboardResumo() {
         listaDevolucoes,
         listaTrocas,
         listaFaltasKit,
+        listaUnidades,
       ] = await Promise.all([
         listar("/epis-dashbord"),
         listar("/tamanhos"),
@@ -52,6 +55,7 @@ export function useDashboardResumo() {
         listar("/devolucao"),
         listar(`/trocas-pendentes?dias=${DIAS_ALERTA_TROCA}`),
         listar("/faltas-kit"),
+        listar("/unidades"),
       ]);
       
       setEpis(listaEpis.map(normalizarEpi));
@@ -63,6 +67,7 @@ export function useDashboardResumo() {
       setDevolucoes(listaDevolucoes.map(normalizarDevolucao));
       setTrocas(listaTrocas);
       setFaltasKit(listaFaltasKit);
+      setUnidades(listaUnidades);
     } finally {
       setCarregandoResumo(false);
     }
@@ -238,37 +243,16 @@ export function useDashboardResumo() {
   }, [entregas, funcionariosMap, itensEntreguesPorEntrega, episMap, tamanhosMap]);
 
  
+  // estoque baixo por unidade, EPI e tamanho (soma dos lotes contra o alerta mínimo do EPI)
   const alertasDetalhados = useMemo(() => {
-    return entradas
-      .map((entrada) => {
-        const epi = episMap[Number(entrada.idEpi)];
-        const tamanho = tamanhosMap[Number(entrada.idTamanho)];
-        
-        const alertaMinimo = Number(
-          epi?.alerta_minimo || 
-          epi?.alertaMinimo || 
-          0
-        );
-
-        const quantidadeAtual = Number(entrada.quantidadeAtual || 0);
-
-        return {
-          id: `entrada-${entrada.id}`,
-          item: epi?.nome || `EPI #${entrada.idEpi}`,
-          tamanho: tamanho?.tamanho || "Sem tamanho",
-          quantidade: quantidadeAtual,
-          alertaMinimo,
-          lote: entrada.lote || "Sem lote", // 🌟 Captura o lote da entrada
-        };
-      })
-      .filter(
-        (item) =>
-          Number(item.alertaMinimo) > 0 && 
-          Number(item.quantidade) > 0 && // 🌟 Remove os lotes que já estão ZERADOS
-          Number(item.quantidade) <= Number(item.alertaMinimo) // Mantém apenas os que estão abaixo/no limite
-      )
-      .sort((a, b) => a.quantidade - b.quantidade);
-  }, [entradas, episMap, tamanhosMap]);
+    const nomeUnidade = Object.fromEntries(unidades.map((u) => [Number(u.id), u.nome]));
+    return estoqueBaixo(entradas, epis).map((s) => ({
+      ...s,
+      item: episMap[s.idEpi]?.nome || `EPI #${s.idEpi}`,
+      tamanho: tamanhosMap[s.idTamanho]?.tamanho || "Sem tamanho",
+      unidade: nomeUnidade[s.idUnidade] || "--",
+    }));
+  }, [entradas, epis, unidades, episMap, tamanhosMap]);
 
   // CA vencido, vencendo nos próximos DIAS_ALERTA_CA dias, ou cancelado/suspenso no MTE
   const caVencendoDetalhado = useMemo(() => {
@@ -397,6 +381,7 @@ export function useDashboardResumo() {
     entregas,
     itensEntregues,
     faltasKit,
+    unidades,
     carregandoResumo,
     resumo,
     estoqueDetalhado,

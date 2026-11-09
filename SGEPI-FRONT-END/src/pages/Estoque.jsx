@@ -2,6 +2,9 @@ import DashboardCard from "../components/DashboardCard";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import ModalDetalhesEstoque from "../components/modals/ModalDetalhesEstoque";
+import ModalTransferencia from "../components/modals/ModalTransferencia";
+import ListaTransferencias from "../components/ListaTransferencias";
+import { unidadeAtual } from "../services/unidadeAtual";
 import { CancelarEntrada, ValidarRegrasCancelamento } from "../services/estoqueService";
 import { api } from "../services/api";
 import { temPermissao } from "../utils/permissoes";
@@ -13,7 +16,8 @@ import {
 } from "../utils/estoqueHelpers";
 import { normalizarEntradaCompleta } from "../utils/estoqueNormalizers";
 
-import { AlertTriangle, CheckCircle2, Clock, Trash2, Search, ListFilter, Eye, ChevronLeft, ChevronRight, X, ShieldAlert } from "lucide-react";
+import { AlertTriangle, ArrowLeftRight, CheckCircle2, Clock, Trash2, Search, ListFilter, Eye, ChevronLeft, ChevronRight, X, ShieldAlert } from "lucide-react";
+import Selecao from "../components/Selecao";
 
 function getAlertaValidade(status) {
   if (status === "vencido") {
@@ -45,6 +49,11 @@ function Estoque({ usuarioLogado }) {
   const [carregando, setCarregando] = useState(true);
   const [erroTela, setErroTela] = useState("");
   const [itemDetalhe, setItemDetalhe] = useState(null);
+  // transferência (Fase 7): só com 2 unidades ou mais, e sai da loja escolhida no topo
+  const [unidades, setUnidades] = useState([]);
+  const [transferindo, setTransferindo] = useState(false);
+  const [versaoTransferencias, setVersaoTransferencias] = useState(0);
+  const origem = unidades.find((u) => String(u.id) === unidadeAtual());
 
   const itensPorPagina = 5;
   const podeVisualizar = temPermissao(usuarioLogado, "visualizar_estoque");
@@ -66,6 +75,7 @@ function Estoque({ usuarioLogado }) {
 
   useEffect(() => {
     carregarProdutos();
+    api.get("/unidades?destinos=1").then((lista) => setUnidades(lista ?? [])).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -213,7 +223,7 @@ function Estoque({ usuarioLogado }) {
   return (
     <>
       <div className="max-w-full">
-        <div className="mb-8 flex flex-col gap-2">
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <div>
               <h2 className="text-2xl font-bold text-ink tracking-tight transition-colors">
@@ -224,6 +234,17 @@ function Estoque({ usuarioLogado }) {
               </p>
             </div>
           </div>
+          {unidades.length >= 2 && (
+            <button
+              type="button"
+              onClick={() => setTransferindo(true)}
+              disabled={!origem || carregando}
+              title={origem ? `Mandar EPIs de ${origem.nome} para outra unidade` : "Escolha a unidade no topo para transferir dela"}
+              className="h-11 px-5 inline-flex items-center justify-center gap-2 rounded-md border border-line bg-surface text-sm font-bold text-ink hover:bg-sunken transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ArrowLeftRight className="w-4 h-4" /> Transferir
+            </button>
+          )}
         </div>
 
         <div className="grid grid-cols-2 xl:grid-cols-5 gap-3 mb-8">
@@ -242,7 +263,7 @@ function Estoque({ usuarioLogado }) {
             </div>
 
             {filtroAtivo === "status_validade" ? (
-              <select
+              <Selecao
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
                 className="w-full bg-transparent border-none py-3 pl-3 pr-10 focus:ring-0 text-sm font-semibold text-ink outline-none appearance-none cursor-pointer"
@@ -251,7 +272,7 @@ function Estoque({ usuarioLogado }) {
                 <option value="vencido">Vencidos</option>
                 <option value="proximo">Próximos de Vencer</option>
                 <option value="normal">Dentro da Validade</option>
-              </select>
+              </Selecao>
             ) : (
               <input
                 type={filtroAtivo === "data_entrada" ? "date" : "text"}
@@ -279,7 +300,7 @@ function Estoque({ usuarioLogado }) {
             <div className="pl-4 text-ink-3 pointer-events-none">
                <ListFilter className="w-4 h-4" />
             </div>
-            <select
+            <Selecao
               value={filtroAtivo}
               onChange={(e) => {
                 setFiltroAtivo(e.target.value);
@@ -296,7 +317,7 @@ function Estoque({ usuarioLogado }) {
               <option value="lote">Lote</option>
               <option value="tipoProtecao">Proteção</option>
               <option value="tamanho">Tamanho</option>
-            </select>
+            </Selecao>
           </div>
 
         </div>
@@ -520,7 +541,29 @@ function Estoque({ usuarioLogado }) {
             </div>
           </>
         )}
+
+        {unidades.length >= 2 && (
+          <ListaTransferencias
+            podeCancelar={usuarioLogado?.role === "admin"}
+            recarregar={versaoTransferencias}
+            onCancelada={carregarProdutos}
+          />
+        )}
       </div>
+
+      {transferindo && origem && (
+        <ModalTransferencia
+          origem={origem}
+          unidades={unidades}
+          lotes={entradas}
+          onClose={() => setTransferindo(false)}
+          onSalvo={() => {
+            setTransferindo(false);
+            setVersaoTransferencias((v) => v + 1);
+            carregarProdutos();
+          }}
+        />
+      )}
 
       <ModalDetalhesEstoque
         aberto={!!itemDetalhe}

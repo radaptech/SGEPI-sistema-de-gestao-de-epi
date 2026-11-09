@@ -75,6 +75,8 @@ SELECT
     p.nome AS plano_nome, 
     (SELECT COUNT(*)::int FROM funcionario f WHERE f.tenant_id = e.id) AS funcionarios,
     (SELECT COUNT(*)::int FROM epi ep WHERE ep.tenant_id = e.id) AS epis,
+    (SELECT COUNT(*)::int FROM unidade u WHERE u.tenant_id = e.id AND u.deletado_em IS NULL) AS unidades,
+    p.limite_unidades,
     p.mensalidade::float8,
     e.vencimento,
     e.status,

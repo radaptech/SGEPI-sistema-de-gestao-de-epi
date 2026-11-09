@@ -107,7 +107,7 @@ func TestFaltasKit(t *testing.T) {
 		VALUES ($1, $2, $3, $4, CURRENT_DATE, $5, 10, 'x')`, tenant, botina, devolveu, motivo, tamanho)
 	require.NoError(t, err)
 
-	faltas, err := entregaSvc.ListarFaltasKit(ctx, int32(tenant))
+	faltas, err := entregaSvc.ListarFaltasKit(ctx, int32(tenant), 0)
 	require.NoError(t, err)
 
 	got := map[[2]int32]int32{} // {funcionario, epi} → em posse
@@ -122,7 +122,7 @@ func TestFaltasKit(t *testing.T) {
 	}, got)
 
 	// outro tenant não vê as faltas deste
-	outro, err := entregaSvc.ListarFaltasKit(ctx, int32(CreateEmpresa(t, db, idPlano)))
+	outro, err := entregaSvc.ListarFaltasKit(ctx, int32(CreateEmpresa(t, db, idPlano)), 0)
 	require.NoError(t, err)
 	require.Empty(t, outro)
 }

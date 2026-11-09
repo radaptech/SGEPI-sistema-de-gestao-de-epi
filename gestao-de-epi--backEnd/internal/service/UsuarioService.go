@@ -70,7 +70,8 @@ func (u *UsuarioService) Registrar(ctx context.Context, model model.Usuario) err
 		return err
 	}
 
-	if totalUsuarioAtual >= int64(totalUsuariosPlanos.LimiteUsuarios.Int32) {
+	// limite NULL = ilimitado
+	if totalUsuariosPlanos.LimiteUsuarios.Valid && totalUsuarioAtual >= int64(totalUsuariosPlanos.LimiteUsuarios.Int32) {
 
 		return helper.ErrLimiteExcedido
 	}

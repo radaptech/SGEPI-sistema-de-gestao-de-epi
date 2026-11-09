@@ -5,11 +5,26 @@ FROM entrada_epi_item
 WHERE tenant_id = $1 
   AND id_epi = $2 
   AND id_tamanho = $3 
+  AND id_unidade = $4
   AND quantidade_atual > 0 
   AND data_validade >= CURRENT_DATE
   AND ativo = TRUE
 ORDER BY data_validade ASC
 FOR UPDATE;
+
+-- name: SaldoForaDaUnidade :one
+-- Usada só quando falta estoque: diz o nome da unidade e quanto há nas outras.
+SELECT
+    (SELECT u.nome FROM unidade u WHERE u.id = sqlc.arg('id_unidade') AND u.tenant_id = sqlc.arg('tenant_id'))::text AS unidade,
+    COALESCE(SUM(quantidade_atual), 0)::int AS saldo_fora
+FROM entrada_epi_item
+WHERE tenant_id = sqlc.arg('tenant_id')
+  AND id_epi = sqlc.arg('id_epi')
+  AND id_tamanho = sqlc.arg('id_tamanho')
+  AND id_unidade <> sqlc.arg('id_unidade')
+  AND quantidade_atual > 0
+  AND data_validade >= CURRENT_DATE
+  AND ativo = TRUE;
 
 -- name: AbaterEstoqueLote :execrows
 UPDATE entrada_epi_item 
@@ -62,6 +77,7 @@ FROM entrada_epi_item e
 INNER JOIN epi p ON e.id_epi = p.id
 WHERE e.tenant_id = sqlc.arg('tenant_id')
   AND e.ativo = TRUE
+  AND (sqlc.narg('id_unidade')::int IS NULL OR e.id_unidade = sqlc.narg('id_unidade')::int)
 GROUP BY e.id_epi, p.nome
 LIMIT $1 OFFSET $2;
 
@@ -76,6 +92,7 @@ FROM entrada_epi_item e
 INNER JOIN epi p ON e.id_epi = p.id
 WHERE e.tenant_id = sqlc.arg('tenant_id')
   AND e.ativo = TRUE
+  AND (sqlc.narg('id_unidade')::int IS NULL OR e.id_unidade = sqlc.narg('id_unidade')::int)
   AND (p.fabricante = sqlc.narg('fabricante') OR sqlc.narg('fabricante') IS NULL)
 GROUP BY e.id_epi, p.nome
 LIMIT $1 OFFSET $2;

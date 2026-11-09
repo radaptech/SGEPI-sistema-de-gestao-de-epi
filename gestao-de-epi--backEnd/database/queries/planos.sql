@@ -1,23 +1,25 @@
 -- name: AddPlano :one
-INSERT INTO planos (nome, mensalidade, limite_funcionarios, limite_usuarios, limite_epis, status, descricao)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO planos (nome, mensalidade, limite_funcionarios, limite_usuarios, limite_epis, status, descricao, limite_unidades)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     RETURNING id;
 
 -- name: BuscaPlanos :many
-SELECT id, nome, mensalidade, limite_funcionarios, limite_usuarios, limite_epis, status, descricao
+SELECT id, nome, mensalidade, limite_funcionarios, limite_usuarios, limite_epis, status, descricao, limite_unidades
 FROM planos
 WHERE status = 'Ativo'
 ORDER BY nome ASC;
 
 -- name: AtualizarPlano :exec
+-- Os limites são gravados como vêm: NULL = ilimitado (a tela de edição manda sempre os quatro).
 UPDATE planos
 SET
   nome = COALESCE(sqlc.narg('nome'), nome),
   mensalidade = COALESCE(sqlc.narg('mensalidade'), mensalidade),
   descricao = COALESCE(sqlc.narg('descricao'), descricao),
-  limite_funcionarios = COALESCE(sqlc.narg('limite_funcionarios'), limite_funcionarios),
-  limite_usuarios = COALESCE(sqlc.narg('limite_usuarios'), limite_usuarios),
-  limite_epis = COALESCE(sqlc.narg('limite_epis'), limite_epis),
+  limite_funcionarios = sqlc.narg('limite_funcionarios'),
+  limite_usuarios = sqlc.narg('limite_usuarios'),
+  limite_epis = sqlc.narg('limite_epis'),
+  limite_unidades = sqlc.narg('limite_unidades'),
   status = COALESCE(sqlc.narg('status'), status)
 WHERE id = sqlc.arg('id');
 

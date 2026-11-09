@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/jackc/pgx/v5"
@@ -89,8 +90,8 @@ func (e *EntregaRepository) ListasEntregasPorMatricula(ctx context.Context, args
 	return entrega, nil
 }
 
-func (e *EntregaRepository) BuscaEntregaDashbord(ctx context.Context, tenant int32) ([]EntregaDashbordRow, error) {
-	entregas, err := e.q.EntregaDashbord(ctx, tenant)
+func (e *EntregaRepository) BuscaEntregaDashbord(ctx context.Context, tenant, unidade int32) ([]EntregaDashbordRow, error) {
+	entregas, err := e.q.EntregaDashbord(ctx, EntregaDashbordParams{TenantID: tenant, IDUnidade: pgtype.Int4{Int32: unidade, Valid: unidade > 0}})
 	if err != nil {
 		return nil, helper.TraduzErroPostgres(err)
 	}
@@ -127,9 +128,9 @@ func (e *EntregaRepository) ReporEstoqueEntrada(ctx context.Context, qtx *Querie
 }
 
 // BuscaEntregaItensDashbord implements [service.EntregaRepository].
-func (e *EntregaRepository) BuscaEntregaItensDashbord(ctx context.Context, tenant int32) ([]EntregaItensDashbordRow, error) {
+func (e *EntregaRepository) BuscaEntregaItensDashbord(ctx context.Context, tenant, unidade int32) ([]EntregaItensDashbordRow, error) {
 
-	entregaDash, err := e.q.EntregaItensDashbord(ctx, tenant)
+	entregaDash, err := e.q.EntregaItensDashbord(ctx, EntregaItensDashbordParams{TenantID: tenant, IDUnidade: pgtype.Int4{Int32: unidade, Valid: unidade > 0}})
 	if err != nil {
 		return []EntregaItensDashbordRow{}, helper.TraduzErroPostgres(err)
 	}
@@ -170,8 +171,8 @@ func (e *EntregaRepository) ListarTrocasPendentes(ctx context.Context, args List
 	return trocas, nil
 }
 
-func (e *EntregaRepository) ListarFaltasKit(ctx context.Context, tenantId int32) ([]ListarFaltasKitRow, error) {
-	faltas, err := e.q.ListarFaltasKit(ctx, tenantId)
+func (e *EntregaRepository) ListarFaltasKit(ctx context.Context, tenantId, unidade int32) ([]ListarFaltasKitRow, error) {
+	faltas, err := e.q.ListarFaltasKit(ctx, ListarFaltasKitParams{TenantID: tenantId, IDUnidade: pgtype.Int4{Int32: unidade, Valid: unidade > 0}})
 	if err != nil {
 		return nil, helper.TraduzErroPostgres(err)
 	}

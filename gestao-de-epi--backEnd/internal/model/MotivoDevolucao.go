@@ -1,11 +1,7 @@
 package model
 
-type MotivoDevolucao struct {
-	Motivo   string `json:"motivo" binding:"required"`
-	Descaste bool   `json:"gera_descarte"`
-}
-
 type MotivoDevolucaoEpiDto struct {
-	Id     int    `json:"id"`
-	Motivo string `json:"motivo"`
+	Id           int    `json:"id"`
+	Motivo       string `json:"motivo"`
+	GeraDescarte bool   `json:"gera_descarte"` // true: o EPI devolvido não volta ao estoque
 }

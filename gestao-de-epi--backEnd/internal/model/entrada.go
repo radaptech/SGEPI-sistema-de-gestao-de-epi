@@ -23,7 +23,8 @@ type EntradaEpiInserir struct {
 	Nota_fiscal_serie  string                  `json:"nota_fiscal_serie" binding:"required,max=20"`
 	Data_emissao       configs.DataBr          `json:"data_emissao" binding:"required"`
 	Id_user            int32                   `json:"-"`
-	Itens              []EntradaEpiItemInserir `json:"itens" binding:"required,dive"` // "dive" valida cada item da lista
+	IdUnidade          *int32                  `json:"id_unidade" binding:"omitempty,min=1"` // obrigatório com 2+ unidades
+	Itens              []EntradaEpiItemInserir `json:"itens" binding:"required,dive"`        // "dive" valida cada item da lista
 }
 
 // EntradaEpiDto representa o retorno detalhado (Listagem)
@@ -73,6 +74,7 @@ type EntradaDashbord struct {
 	Quantidade      int             `json:"quantidade"`
 	DataEntrada     configs.DataBr  `json:"data_entrada"`
 	Lote            string          `json:"lote"`
+	IdUnidade       int32           `json:"id_unidade"`
 }
 
 type EpiSimples struct {

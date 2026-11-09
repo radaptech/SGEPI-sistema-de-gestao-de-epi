@@ -21,7 +21,7 @@ import (
 type DevolucaoRepository interface {
 	AdicionarTroca(ctx context.Context, qtx *repository.Queries, arg repository.AddTrocaEpiParams) (int32, error)
 	Cancelar(ctx context.Context, qtx *repository.Queries, arg repository.CancelarDevolucaoParams) (int32, error)
-	Listar(ctx context.Context, tenantId int32) ([]repository.ListarDevolucoesRow, error)
+	Listar(ctx context.Context, tenantId, unidade int32) ([]repository.ListarDevolucoesRow, error)
 	DadosPdfDevolucao(ctx context.Context, arg repository.BuscarDadosPdfDevolucaoParams) (repository.BuscarDadosPdfDevolucaoRow, error)
 }
 
@@ -101,11 +101,15 @@ func (d *DevolucaoService) SalvarDevolucao(ctx context.Context, modelDevolucao m
 		idQuantidadeNova = pgtype.Int4{Int32: int32(*modelDevolucao.NovaQuantidade), Valid: true}
 	}
 
-	// Regra de Descarte: Motivos 1 (Desgaste), 2 (Dano) ou 3 (Vencimento) não voltam ao estoque
-	ehDescarte, err := d.MotivoDevolucao.Descarte(ctx, repository.EhDescarteParams{
-		ID:       int32(modelDevolucao.IdMotivo),
-		TenantID: tenantId,
-	})
+	// A devolução volta para a unidade do funcionário, e a troca sai dela também.
+	// Funcionário que mudou de unidade devolve na nova; se lá não há lote com espaço, nasce um (abaixo).
+	unidade, err := unidadeDaOperacao(ctx, qtx, nil, int32(modelDevolucao.IdFuncionario), tenantId)
+	if err != nil {
+		return err
+	}
+
+	// Motivo com gera_descarte (desgaste, dano, validade...) não volta ao estoque
+	ehDescarte, err := d.MotivoDevolucao.Descarte(ctx, int32(modelDevolucao.IdMotivo))
 	if err != nil {
 
 		return err
@@ -120,6 +124,7 @@ func (d *DevolucaoService) SalvarDevolucao(ctx context.Context, modelDevolucao m
 			TenantID:  tenantId,
 			IDEpi:     int32(modelDevolucao.IdEpi),
 			IDTamanho: int32(modelDevolucao.IdTamanho),
+			IDUnidade: unidade,
 		})
 		if err != nil {
 			slog.ErrorContext(ctx, "buscar lotes para repor", "epi", modelDevolucao.IdEpi, "tamanho", modelDevolucao.IdTamanho, "tenant", tenantId, "err", err)
@@ -155,6 +160,28 @@ func (d *DevolucaoService) SalvarDevolucao(ctx context.Context, modelDevolucao m
 			qtdRestanteParaDevolver -= qtdParaDeixarNoLote
 		}
 
+		// sem lote com espaço nesta unidade (funcionário veio de outra): cria um lote igual ao último
+		// deste EPI e tamanho, como uma transferência. O saldo em posse já foi validado acima.
+		// ponytail: copia o último lote do EPI, não o lote exato que o funcionário recebeu
+		if qtdRestanteParaDevolver > 0 {
+			modelo, err := qtx.UltimoLoteDoEpi(ctx, repository.UltimoLoteDoEpiParams{
+				TenantID: tenantId, IDEpi: int32(modelDevolucao.IdEpi), IDTamanho: int32(modelDevolucao.IdTamanho),
+			})
+			if err == nil {
+				novo, err := qtx.CopiarLoteParaUnidade(ctx, repository.CopiarLoteParaUnidadeParams{
+					Quantidade: qtdRestanteParaDevolver, IDUsuario: int32(modelDevolucao.Iduser),
+					IDUnidade: unidade, IDLote: modelo, TenantID: tenantId,
+				})
+				if err != nil {
+					return helper.TraduzErroPostgres(err)
+				}
+				reposicoes = append(reposicoes, repository.AddDevolucaoLoteParams{
+					TenantID: tenantId, IDEntradaItem: novo, Quantidade: qtdRestanteParaDevolver,
+				})
+				qtdRestanteParaDevolver = 0
+			}
+		}
+
 		if qtdRestanteParaDevolver > 0 {
 			return fmt.Errorf("anomalia de estoque: impossível repor %d itens. A quantidade devolvida excede o total comprado na história deste EPI", qtdRestanteParaDevolver)
 		}
@@ -184,6 +211,7 @@ func (d *DevolucaoService) SalvarDevolucao(ctx context.Context, modelDevolucao m
 		TokenValidacao:        pgtype.Text{String: token, Valid: true},
 		HouveTroca:            pgtype.Bool{Bool: modelDevolucao.Troca, Valid: true},
 		Observacao:            pgtype.Text{String: observacao, Valid: observacao != ""},
+		IDUnidade:             unidade,
 	}
 
 	idDevolucao, err := d.repo.AdicionarTroca(ctx, qtx, arg)
@@ -207,6 +235,7 @@ func (d *DevolucaoService) SalvarDevolucao(ctx context.Context, modelDevolucao m
 			Id_user:            int32(modelDevolucao.Iduser),
 			Data_entrega:       modelDevolucao.DataDevolucao,
 			IdTroca:            &idTrocaInt,
+			IdUnidade:          &unidade,
 			Assinatura_Digital: arg.AssinaturaDigital,
 			Itens: []model.ItemParaInserir{
 				{
@@ -310,9 +339,9 @@ func (d *DevolucaoService) CancelarDevolucao(ctx context.Context, id, iduser, te
 }
 
 // ListarDevolucoes gerencia a busca paginada com filtros
-func (d *DevolucaoService) ListarDevolucoes(ctx context.Context, tenantId int32) ([]model.DevolucaoResponse, error) {
+func (d *DevolucaoService) ListarDevolucoes(ctx context.Context, tenantId, unidade int32) ([]model.DevolucaoResponse, error) {
 
-	devolucoes, err := d.repo.Listar(ctx, tenantId)
+	devolucoes, err := d.repo.Listar(ctx, tenantId, unidade)
 	if err != nil {
 		return []model.DevolucaoResponse{}, helper.TraduzErroPostgres(err)
 	}

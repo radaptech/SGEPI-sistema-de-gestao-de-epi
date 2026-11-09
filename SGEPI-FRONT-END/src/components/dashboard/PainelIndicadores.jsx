@@ -5,7 +5,8 @@ import GraficoColunas from "./GraficoColunas";
 import BarrasRanking from "./BarrasRanking";
 import { listar } from "../../services/listas";
 import { normalizarFuncionario } from "../../utils/funcionarios";
-import { calcularIndicadores } from "../../utils/indicadores";
+import { calcularIndicadores, indicadoresPorUnidade } from "../../utils/indicadores";
+import { unidadeAtual } from "../../services/unidadeAtual";
 import { formatarMoeda } from "../../utils/dashboardFormatters";
 
 const PERIODOS = [3, 6, 12];
@@ -86,6 +87,15 @@ export default function PainelIndicadores({ dados }) {
         meses,
       }),
     [dados, departamentoPorFuncionario, meses]
+  );
+
+  // visão da rede: só em "Todas as unidades", com 2 ou mais (em uma loja, as listas já vêm só dela)
+  const porUnidade = useMemo(
+    () =>
+      (dados.unidades ?? []).length >= 2 && !unidadeAtual()
+        ? indicadoresPorUnidade({ ...dados, meses })
+        : [],
+    [dados, meses]
   );
 
   const carregando = dados.carregandoResumo;
@@ -202,6 +212,42 @@ export default function PainelIndicadores({ dados }) {
           detalhe={(d) => `${d.entregas} entrega(s) · ${d.itens} un.`}
         />
       </Bloco>
+
+      {porUnidade.length > 0 && (
+        <Bloco titulo="Por unidade" subtitulo={`Da que mais gastou para a que menos gastou · últimos ${meses} meses`}>
+          <div className="overflow-x-auto -mx-5 px-5">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs font-semibold text-ink-3 border-b border-line">
+                  <th scope="col" className="py-2 pr-4 font-semibold">Unidade</th>
+                  <th scope="col" className="py-2 pr-4 font-semibold text-right">Custo em EPI</th>
+                  <th scope="col" className="py-2 pr-4 font-semibold text-right">Kit completo</th>
+                  <th scope="col" className="py-2 font-semibold text-right">Estoque baixo</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {porUnidade.map((u) => (
+                  <tr key={u.id}>
+                    <th scope="row" className="py-2.5 pr-4 font-medium text-ink text-left">{u.nome}</th>
+                    <td className="py-2.5 pr-4 text-right tabular-nums text-ink">{moeda(u.custo)}</td>
+                    <td className="py-2.5 pr-4 text-right tabular-nums text-ink-2">
+                      {u.conformidade === null ? "--" : `${u.conformidade}%`}
+                      <span className="ml-1 text-xs text-ink-3">({u.funcionarios - u.comFalta}/{u.funcionarios})</span>
+                    </td>
+                    <td className="py-2.5 text-right">
+                      {u.estoqueBaixo > 0 ? (
+                        <span className={`px-2 py-0.5 rounded-sm border text-xs font-semibold ${SELO.atencao}`}>{u.estoqueBaixo} item(ns)</span>
+                      ) : (
+                        <span className="text-xs text-ink-3">nenhum</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Bloco>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Bloco titulo="Custo por departamento" subtitulo={`Últimos ${meses} meses`}>

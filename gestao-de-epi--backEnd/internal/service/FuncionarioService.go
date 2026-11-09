@@ -27,8 +27,8 @@ type FuncionarioRepository interface {
 	AtualizarFuncionarioCpf(ctx context.Context, arg repository.UpdateFuncionarioCpfParams, qtx *repository.Queries) (int64, error)
 	AtualizarFuncionarioDepartamento(ctx context.Context, arg repository.UpdateFuncionarioDepartamentoParams, qtx *repository.Queries) (int64, error)
 	AtualizarFuncionarioFuncao(ctx context.Context, arg repository.UpdateFuncionarioFuncaoParams, qtx *repository.Queries) (int64, error)
-	BuscarFuncionarioDashbord(ctx context.Context, tenant int32) ([]repository.BuscaFuncionarioDashbordRow, error)
-	BuscaFuncionarioCompleto(ctx context.Context, tenant int32) ([]repository.BuscaFuncionarioCompletoRow, error)
+	BuscarFuncionarioDashbord(ctx context.Context, tenant, unidade int32) ([]repository.BuscaFuncionarioDashbordRow, error)
+	BuscaFuncionarioCompleto(ctx context.Context, tenant, unidade int32) ([]repository.BuscaFuncionarioCompletoRow, error)
 	TotalFuncionarios(ctx context.Context, qtx *repository.Queries, id int32) (int64, error)
 }
 
@@ -55,6 +55,9 @@ func (f *FuncionarioService) SalvarFuncionario(ctx context.Context, model model.
 		TenantID:       tenantId,
 		Cpf:            pgtype.Text{String: model.Cpf, Valid: model.Cpf != ""},
 	}
+	if model.IdUnidade != nil {
+		args.IDUnidade = pgtype.Int4{Int32: *model.IdUnidade, Valid: true}
+	}
 
 	tx, err := f.db.Begin(ctx)
 	if err != nil {
@@ -66,6 +69,12 @@ func (f *FuncionarioService) SalvarFuncionario(ctx context.Context, model model.
 
 	qtx := f.queries.WithTx(tx)
 
+	if model.IdUnidade != nil {
+		if err := unidadeAtiva(ctx, qtx, *model.IdUnidade, tenantId); err != nil {
+			return err
+		}
+	}
+
 	totalFuncionarioPlano, err := qtx.ValidaTotalFuncionarios(ctx, tenantId)
 	if err != nil {
 		return err
@@ -76,7 +85,8 @@ func (f *FuncionarioService) SalvarFuncionario(ctx context.Context, model model.
 		return err
 	}
 
-	if totalFuncionarioAtual >= int64(totalFuncionarioPlano.LimiteFuncionarios.Int32) {
+	// limite NULL = ilimitado
+	if totalFuncionarioPlano.LimiteFuncionarios.Valid && totalFuncionarioAtual >= int64(totalFuncionarioPlano.LimiteFuncionarios.Int32) {
 
 		return helper.ErrLimiteExcedido
 	}
@@ -150,6 +160,7 @@ type FiltroFuncionario struct {
 	Matricula      string `form:"matricula"`
 	Nome           string `form:"nome"`
 	Cancelados     bool   `form:"cancelados"`
+	IdUnidade      int32  `form:"id_unidade"`
 	FiltroPaginacao
 }
 
@@ -171,6 +182,7 @@ func (funcio *FuncionarioService) ListaTodosFuncionarios(ctx context.Context, f 
 		ID:         pgtype.Int4{Int32: f.ID_funcionario, Valid: f.ID_funcionario > 0},
 		Matricula:  pgtype.Text{String: f.Matricula, Valid: f.Matricula != ""},
 		Nome:       pgtype.Text{String: f.Nome, Valid: f.Nome != ""},
+		IDUnidade:  pgtype.Int4{Int32: f.IdUnidade, Valid: f.IdUnidade > 0},
 		Cancelados: f.Cancelados,
 	}
 
@@ -196,7 +208,8 @@ func (funcio *FuncionarioService) ListaTodosFuncionarios(ctx context.Context, f 
 					Departamento: funcionario.DepartamentoNome,
 				},
 			},
-			Cpf: funcionario.Cpf.String,
+			Cpf:     funcionario.Cpf.String,
+			Unidade: model.UnidadeResumo{ID: funcionario.IDUnidade, Nome: funcionario.UnidadeNome},
 		}
 
 		dto = append(dto, funcs)
@@ -395,12 +408,28 @@ func (f *FuncionarioService) AtualizarFuncionarioCompleto(ctx context.Context, i
 		}
 	}
 
+	// mudar de unidade não mexe no histórico: entregas e devoluções guardam a unidade delas
+	if req.IdUnidade != nil {
+		if err := unidadeAtiva(ctx, qtx, *req.IdUnidade, int32(tenantId)); err != nil {
+			return err
+		}
+		linhas, err := qtx.UpdateFuncionarioUnidade(ctx, repository.UpdateFuncionarioUnidadeParams{
+			ID: int32(id), IDUnidade: *req.IdUnidade, TenantID: int32(tenantId),
+		})
+		if err != nil {
+			return helper.TraduzErroPostgres(err)
+		}
+		if linhas == 0 {
+			return helper.ErrNaoEncontrado
+		}
+	}
+
 	return tx.Commit(ctx)
 }
 
-func (f *FuncionarioService) FuncionariosDashbord(ctx context.Context, tenantId int32) ([]model.FuncionarioDashbord, error) {
+func (f *FuncionarioService) FuncionariosDashbord(ctx context.Context, tenantId, unidade int32) ([]model.FuncionarioDashbord, error) {
 
-	funcionarios, err := f.repo.BuscarFuncionarioDashbord(ctx, tenantId)
+	funcionarios, err := f.repo.BuscarFuncionarioDashbord(ctx, tenantId, unidade)
 	if err != nil {
 
 		return []model.FuncionarioDashbord{}, err
@@ -415,6 +444,7 @@ func (f *FuncionarioService) FuncionariosDashbord(ctx context.Context, tenantId 
 			Id:        ff.ID,
 			Nome:      ff.Nome,
 			Matricula: ff.Matricula,
+			IdUnidade: ff.IDUnidade,
 		}
 
 		dto = append(dto, fun)
@@ -423,10 +453,10 @@ func (f *FuncionarioService) FuncionariosDashbord(ctx context.Context, tenantId 
 	return dto, nil
 }
 
-func (f *FuncionarioService) FuncionarioCompleto(ctx context.Context, tenantId int32) ([]model.FuncionarioCompletoDto, error) {
+func (f *FuncionarioService) FuncionarioCompleto(ctx context.Context, tenantId, unidade int32) ([]model.FuncionarioCompletoDto, error) {
 
 	// 1. Busca todos os funcionários
-	funcionarios, err := f.repo.BuscaFuncionarioCompleto(ctx, tenantId)
+	funcionarios, err := f.repo.BuscaFuncionarioCompleto(ctx, tenantId, unidade)
 	if err != nil {
 		return nil, err
 	}
@@ -524,6 +554,7 @@ func (f *FuncionarioService) FuncionarioCompleto(ctx context.Context, tenantId i
 					Departamento: funcionario.DepartamentoNome,
 				},
 			},
+			Unidade:  model.UnidadeResumo{ID: funcionario.IDUnidade, Nome: funcionario.UnidadeNome},
 			Entregas: entregasDoFunc, // Pluga a lista de Entregas aqui!
 		}
 
@@ -531,4 +562,17 @@ func (f *FuncionarioService) FuncionarioCompleto(ctx context.Context, tenantId i
 	}
 
 	return dto, nil
+}
+
+// unidadeAtiva recusa unidade inexistente, desativada ou de outro tenant
+// (a FK composta já barra outro tenant, mas não a desativada).
+func unidadeAtiva(ctx context.Context, qtx *repository.Queries, idUnidade, tenantId int32) error {
+	ativa, err := qtx.UnidadeAtiva(ctx, repository.UnidadeAtivaParams{ID: idUnidade, TenantID: tenantId})
+	if err != nil {
+		return err
+	}
+	if !ativa {
+		return helper.ErrUnidadeInvalida
+	}
+	return nil
 }

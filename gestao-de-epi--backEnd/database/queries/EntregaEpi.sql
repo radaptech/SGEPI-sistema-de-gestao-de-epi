@@ -1,9 +1,9 @@
 -- name: AddEntregaEpi :one
 INSERT INTO entrega_epi (
     tenant_id, 
-    IdFuncionario, data_entrega, assinatura, IdTroca, token_validacao, id_usuario_entrega
+    IdFuncionario, data_entrega, assinatura, IdTroca, token_validacao, id_usuario_entrega, id_unidade
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING id;
 
 -- name: AddItemEntregue :one
@@ -40,6 +40,7 @@ WHERE
     )
     AND (sqlc.narg('id_entrega')::int IS NULL OR ee.id = sqlc.narg('id_entrega'))
     AND (sqlc.narg('idfuncionario')::int IS NULL OR ee.idfuncionario = sqlc.narg('idfuncionario'))
+    AND (sqlc.narg('id_unidade')::int IS NULL OR ee.id_unidade = sqlc.narg('id_unidade')::int)
 ORDER BY ee.data_entrega DESC
 LIMIT $1 OFFSET $2;
 
@@ -111,15 +112,20 @@ ORDER BY ee.data_entrega DESC, ee.id DESC;
 -- name: EntregaDashbord :many
 SELECT
     id, IdFuncionario, data_entrega,
-    assinatura, token_validacao
+    assinatura, token_validacao, id_unidade
 FROM entrega_epi
-WHERE tenant_id = $1 AND ativo = TRUE;
+WHERE tenant_id = sqlc.arg('tenant_id') AND ativo = TRUE
+  AND (sqlc.narg('id_unidade')::int IS NULL OR id_unidade = sqlc.narg('id_unidade')::int);
 
 -- name: EntregaItensDashbord :many
 SELECT
     id, id_entrega_cabecalho, id_epi, id_tamanho, quantidade
-FROM epis_entregues
-WHERE tenant_id = $1 AND ativo = TRUE;
+FROM epis_entregues ie
+WHERE ie.tenant_id = sqlc.arg('tenant_id') AND ie.ativo = TRUE
+  AND (sqlc.narg('id_unidade')::int IS NULL OR EXISTS (
+      SELECT 1 FROM entrega_epi ee
+      WHERE ee.id = ie.id_entrega_cabecalho AND ee.tenant_id = ie.tenant_id AND ee.id_unidade = sqlc.narg('id_unidade')::int
+  ));
 -- name: BuscaTodasEntregasDoTenant :many
 SELECT 
     id, 
@@ -155,6 +161,7 @@ JOIN epi e ON e.id = en.id_epi AND e.tenant_id = sqlc.arg('tenant_id') AND e.ati
 JOIN funcionario f ON f.id = en.idfuncionario AND f.tenant_id = sqlc.arg('tenant_id') AND f.ativo = TRUE
 LEFT JOIN devolvido dv ON dv.idfuncionario = en.idfuncionario AND dv.idepi = en.id_epi
 WHERE en.quantidade - COALESCE(dv.quantidade, 0) > 0
+  AND (sqlc.narg('id_unidade')::int IS NULL OR f.id_unidade = sqlc.narg('id_unidade')::int)
   AND en.ultima_entrega + e.vida_util_dias <= sqlc.arg('ate')::date
 ORDER BY vence_em, f.nome;
 
@@ -187,5 +194,6 @@ LEFT JOIN entregue en ON en.idfuncionario = f.id AND en.id_epi = fe.id_epi
 LEFT JOIN devolvido dv ON dv.idfuncionario = f.id AND dv.idepi = fe.id_epi
 WHERE f.tenant_id = sqlc.arg('tenant_id') -- SEGURANÇA
   AND f.ativo = TRUE
+  AND (sqlc.narg('id_unidade')::int IS NULL OR f.id_unidade = sqlc.narg('id_unidade')::int)
   AND COALESCE(en.quantidade, 0) - COALESCE(dv.quantidade, 0) < fe.quantidade
 ORDER BY f.nome, e.nome;

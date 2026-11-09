@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Dialogo from "../../Dialogo";
+import Selecao from "../../Selecao";
 
 function ModalConfirmarPagamento({ aberto, mensalidade, onFechar, onConfirmar }) {
   const [pagamento, setPagamento] = useState("");
@@ -104,7 +105,7 @@ function ModalConfirmarPagamento({ aberto, mensalidade, onFechar, onConfirmar })
                   Forma de Pagamento
                 </label>
 
-                <select id="confirmarpagamento-2"
+                <Selecao id="confirmarpagamento-2"
                   value={formaPagamento}
                   onChange={(e) => setFormaPagamento(e.target.value)}
                   className="w-full px-4 py-3 bg-sunken border border-line rounded-md focus:bg-surface focus:ring-1 focus:ring-ink focus:border-ink outline-none transition-all text-sm text-ink font-medium appearance-none cursor-pointer"
@@ -115,7 +116,7 @@ function ModalConfirmarPagamento({ aberto, mensalidade, onFechar, onConfirmar })
                   <option value="Dinheiro">Dinheiro</option>
                   <option value="Cartão">Cartão</option>
                   <option value="Transferência">Transferência</option>
-                </select>
+                </Selecao>
               </div>
             </div>
           </form>

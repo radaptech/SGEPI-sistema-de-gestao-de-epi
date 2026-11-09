@@ -68,7 +68,7 @@ function DetalhesEmpresa() {
 
   if (carregando) {
     return (
-      <div className="p-6 bg-sunken min-h-screen flex flex-col items-center justify-center gap-4">
+      <div className="py-24 flex flex-col items-center justify-center gap-4">
         <div className="w-10 h-10 border-4 border-line border-t-ink rounded-full animate-spin" />
         <p className="text-sm font-semibold text-ink-2 animate-pulse">Carregando ficha da empresa...</p>
       </div>
@@ -77,7 +77,7 @@ function DetalhesEmpresa() {
 
   if (!empresa) {
     return (
-      <div className="p-6 bg-sunken min-h-screen flex items-center justify-center">
+      <div className="py-24 flex items-center justify-center">
         <div className="text-center">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-ink-3 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -89,8 +89,8 @@ function DetalhesEmpresa() {
   }
 
   return (
-    <div className=" min-h-screen bg-sunken font-sans pb-12">
-      <div className="w-full max-w-[1600px] mx-auto p-6 lg:p-10">
+    <div className="text-ink pb-16">
+      <div className="w-full">
         <header className="mb-8">
           <h1 className="text-3xl font-bold text-ink tracking-tight">
             Detalhes da Empresa

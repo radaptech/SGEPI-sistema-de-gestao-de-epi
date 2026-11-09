@@ -9,7 +9,6 @@ import (
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/routers"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/middleware"
 	"github.com/go-playground/validator/v10"
-	"github.com/radaptech/ginmw"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -57,13 +56,13 @@ func main() {
 
 	// Só confia em requisições encaminhadas pela rede interna do proxy (Traefik).
 	// Sem isso, o Gin confia em QUALQUER X-Forwarded-For, permitindo que o
-	// cliente forje seu próprio IP e burle o rate limit por IP (ver ginmw.RateLimit).
+	// cliente forje seu próprio IP e burle o rate limit por IP (ver middleware.RateLimit).
 	// Ajuste o CIDR se a rede de produção do proxy reverso for diferente.
 	if err := router.SetTrustedProxies([]string{"172.16.0.0/12"}); err != nil {
 		fatal("configurar proxies confiáveis", err)
 	}
 
-	router.Use(ginmw.CORS("radaptech.com.br"), ginmw.SecurityHeaders())
+	router.Use(middleware.CORS("radaptech.com.br"), middleware.SecurityHeaders())
 
 	db, err := init.InitAplicattion()
 	if err != nil {

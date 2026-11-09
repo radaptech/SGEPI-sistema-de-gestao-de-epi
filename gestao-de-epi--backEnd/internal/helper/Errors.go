@@ -24,6 +24,13 @@ var (
 	ErrLimiteExcedido      = errors.New("limite de funcionários e/ou de usuarios do plano excedido")
 	ErrCpfInvalido         = errors.New("CPF inválido")
 	ErrCaVencido           = errors.New("CA do EPI vencido, cancelado ou suspenso na data da entrega")
+	ErrUnidadeEmUso        = errors.New("a unidade ainda tem estoque ou funcionários ativos")
+	ErrUnidadeInvalida     = errors.New("unidade não encontrada ou desativada")
+	ErrUnidadeObrigatoria  = errors.New("escolha a unidade: a empresa tem mais de uma")
+	ErrUltimaUnidade       = errors.New("a empresa precisa ter pelo menos uma unidade")
+	ErrUnidadeSemAcesso    = errors.New("você não tem acesso a esta unidade")
+	ErrMesmaUnidade        = errors.New("a unidade de destino precisa ser diferente da de origem")
+	ErrTransferenciaUsada  = errors.New("não dá para cancelar: o destino já usou parte do estoque transferido ou o lote de origem foi cancelado")
 )
 
 // Códigos de Erro Oficiais do PostgreSQL

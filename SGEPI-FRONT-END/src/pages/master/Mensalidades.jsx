@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import ModalNovaMensalidade from "../../components/modals/master/ModalNovaMensalidade";
 import ModalEditarMensalidade from "../../components/modals/master/ModalEditarMensalidade";
 import ModalConfirmarPagamento from "../../components/modals/master/ModalConfirmarPagamento";
+import Selecao from "../../components/Selecao";
 
 function Mensalidades() {
   const [statusFiltro, setStatusFiltro] = useState("Todos");
@@ -119,8 +120,8 @@ function Mensalidades() {
   };
 
   return (
-    <div className=" min-h-screen bg-sunken font-sans pb-12">
-      <div className="w-full max-w-[1600px] mx-auto p-6 lg:p-10">
+    <div className="text-ink pb-16">
+      <div className="w-full">
         
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
           <div>
@@ -163,7 +164,7 @@ function Mensalidades() {
             </div>
 
             <div className="md:w-64 shrink-0">
-              <select
+              <Selecao
                 value={statusFiltro}
                 onChange={(e) => setStatusFiltro(e.target.value)}
                 className="w-full px-4 py-2.5 bg-sunken border border-line rounded-md focus:bg-surface focus:ring-1 focus:ring-ink focus:border-ink outline-none transition-all text-sm text-ink font-medium appearance-none cursor-pointer"
@@ -173,7 +174,7 @@ function Mensalidades() {
                 <option value="Pago">Pago</option>
                 <option value="Pendente">Pendente</option>
                 <option value="Atrasado">Atrasado</option>
-              </select>
+              </Selecao>
             </div>
           </div>
 

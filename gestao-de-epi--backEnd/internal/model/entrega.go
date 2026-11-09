@@ -17,7 +17,8 @@ type EntregaParaInserir struct {
 	ID_funcionario     int32             `json:"id_funcionario" binding:"required"`
 	Id_user            int32             `json:"id_user"`
 	Data_entrega       configs.DataBr    `json:"data_entrega" binding:"required"`
-	IdTroca            *int32            `json:"id_troca"` // Usei ponteiro para aceitar nulo
+	IdTroca            *int32            `json:"id_troca"`                             // Usei ponteiro para aceitar nulo
+	IdUnidade          *int32            `json:"id_unidade" binding:"omitempty,min=1"` // sem ela, sai da unidade do funcionário
 	Assinatura_Digital string            `json:"assinatura_digital" binding:"required"`
 	Itens              []ItemParaInserir `json:"itens" binding:"required,min=1,dive"`
 }
@@ -48,6 +49,7 @@ type EntregaDashbord struct {
 	Data_entrega   configs.DataBr `json:"data_entrega"`
 	Assinatura     string         `json:"assinatura"`
 	TokenValidacao string         `json:"token_validacao"`
+	IdUnidade      int32          `json:"id_unidade"`
 }
 
 type EntregaItensDashBord struct {

@@ -14,9 +14,9 @@ import (
 const addEntregaEpi = `-- name: AddEntregaEpi :one
 INSERT INTO entrega_epi (
     tenant_id, 
-    IdFuncionario, data_entrega, assinatura, IdTroca, token_validacao, id_usuario_entrega
+    IdFuncionario, data_entrega, assinatura, IdTroca, token_validacao, id_usuario_entrega, id_unidade
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING id
 `
 
@@ -28,6 +28,7 @@ type AddEntregaEpiParams struct {
 	Idtroca          pgtype.Int4
 	TokenValidacao   pgtype.Text
 	IDUsuarioEntrega pgtype.Int4
+	IDUnidade        int32
 }
 
 func (q *Queries) AddEntregaEpi(ctx context.Context, arg AddEntregaEpiParams) (int32, error) {
@@ -39,6 +40,7 @@ func (q *Queries) AddEntregaEpi(ctx context.Context, arg AddEntregaEpiParams) (i
 		arg.Idtroca,
 		arg.TokenValidacao,
 		arg.IDUsuarioEntrega,
+		arg.IDUnidade,
 	)
 	var id int32
 	err := row.Scan(&id)
@@ -284,10 +286,16 @@ func (q *Queries) CancelarEntrega(ctx context.Context, arg CancelarEntregaParams
 const entregaDashbord = `-- name: EntregaDashbord :many
 SELECT
     id, IdFuncionario, data_entrega,
-    assinatura, token_validacao
+    assinatura, token_validacao, id_unidade
 FROM entrega_epi
 WHERE tenant_id = $1 AND ativo = TRUE
+  AND ($2::int IS NULL OR id_unidade = $2::int)
 `
+
+type EntregaDashbordParams struct {
+	TenantID  int32
+	IDUnidade pgtype.Int4
+}
 
 type EntregaDashbordRow struct {
 	ID             int32
@@ -295,10 +303,11 @@ type EntregaDashbordRow struct {
 	DataEntrega    pgtype.Date
 	Assinatura     string
 	TokenValidacao pgtype.Text
+	IDUnidade      int32
 }
 
-func (q *Queries) EntregaDashbord(ctx context.Context, tenantID int32) ([]EntregaDashbordRow, error) {
-	rows, err := q.db.Query(ctx, entregaDashbord, tenantID)
+func (q *Queries) EntregaDashbord(ctx context.Context, arg EntregaDashbordParams) ([]EntregaDashbordRow, error) {
+	rows, err := q.db.Query(ctx, entregaDashbord, arg.TenantID, arg.IDUnidade)
 	if err != nil {
 		return nil, err
 	}
@@ -312,6 +321,7 @@ func (q *Queries) EntregaDashbord(ctx context.Context, tenantID int32) ([]Entreg
 			&i.DataEntrega,
 			&i.Assinatura,
 			&i.TokenValidacao,
+			&i.IDUnidade,
 		); err != nil {
 			return nil, err
 		}
@@ -326,9 +336,18 @@ func (q *Queries) EntregaDashbord(ctx context.Context, tenantID int32) ([]Entreg
 const entregaItensDashbord = `-- name: EntregaItensDashbord :many
 SELECT
     id, id_entrega_cabecalho, id_epi, id_tamanho, quantidade
-FROM epis_entregues
-WHERE tenant_id = $1 AND ativo = TRUE
+FROM epis_entregues ie
+WHERE ie.tenant_id = $1 AND ie.ativo = TRUE
+  AND ($2::int IS NULL OR EXISTS (
+      SELECT 1 FROM entrega_epi ee
+      WHERE ee.id = ie.id_entrega_cabecalho AND ee.tenant_id = ie.tenant_id AND ee.id_unidade = $2::int
+  ))
 `
+
+type EntregaItensDashbordParams struct {
+	TenantID  int32
+	IDUnidade pgtype.Int4
+}
 
 type EntregaItensDashbordRow struct {
 	ID                 int32
@@ -338,8 +357,8 @@ type EntregaItensDashbordRow struct {
 	Quantidade         int32
 }
 
-func (q *Queries) EntregaItensDashbord(ctx context.Context, tenantID int32) ([]EntregaItensDashbordRow, error) {
-	rows, err := q.db.Query(ctx, entregaItensDashbord, tenantID)
+func (q *Queries) EntregaItensDashbord(ctx context.Context, arg EntregaItensDashbordParams) ([]EntregaItensDashbordRow, error) {
+	rows, err := q.db.Query(ctx, entregaItensDashbord, arg.TenantID, arg.IDUnidade)
 	if err != nil {
 		return nil, err
 	}
@@ -383,6 +402,7 @@ WHERE
     )
     AND ($5::int IS NULL OR ee.id = $5)
     AND ($6::int IS NULL OR ee.idfuncionario = $6)
+    AND ($7::int IS NULL OR ee.id_unidade = $7::int)
 ORDER BY ee.data_entrega DESC
 LIMIT $1 OFFSET $2
 `
@@ -394,6 +414,7 @@ type ListarEntregasParams struct {
 	Canceladas    bool
 	IDEntrega     pgtype.Int4
 	Idfuncionario pgtype.Int4
+	IDUnidade     pgtype.Int4
 }
 
 type ListarEntregasRow struct {
@@ -420,6 +441,7 @@ func (q *Queries) ListarEntregas(ctx context.Context, arg ListarEntregasParams) 
 		arg.Canceladas,
 		arg.IDEntrega,
 		arg.Idfuncionario,
+		arg.IDUnidade,
 	)
 	if err != nil {
 		return nil, err
@@ -480,9 +502,15 @@ LEFT JOIN entregue en ON en.idfuncionario = f.id AND en.id_epi = fe.id_epi
 LEFT JOIN devolvido dv ON dv.idfuncionario = f.id AND dv.idepi = fe.id_epi
 WHERE f.tenant_id = $1 -- SEGURANÇA
   AND f.ativo = TRUE
+  AND ($2::int IS NULL OR f.id_unidade = $2::int)
   AND COALESCE(en.quantidade, 0) - COALESCE(dv.quantidade, 0) < fe.quantidade
 ORDER BY f.nome, e.nome
 `
+
+type ListarFaltasKitParams struct {
+	TenantID  int32
+	IDUnidade pgtype.Int4
+}
 
 type ListarFaltasKitRow struct {
 	FuncionarioID   int32
@@ -497,8 +525,8 @@ type ListarFaltasKitRow struct {
 
 // Funcionários ativos com menos EPI em posse (entregue − devolvido) do que o kit da função pede.
 // Quem nunca recebeu o EPI aparece com em_posse = 0.
-func (q *Queries) ListarFaltasKit(ctx context.Context, tenantID int32) ([]ListarFaltasKitRow, error) {
-	rows, err := q.db.Query(ctx, listarFaltasKit, tenantID)
+func (q *Queries) ListarFaltasKit(ctx context.Context, arg ListarFaltasKitParams) ([]ListarFaltasKitRow, error) {
+	rows, err := q.db.Query(ctx, listarFaltasKit, arg.TenantID, arg.IDUnidade)
 	if err != nil {
 		return nil, err
 	}
@@ -676,13 +704,15 @@ JOIN epi e ON e.id = en.id_epi AND e.tenant_id = $1 AND e.ativo = TRUE AND e.vid
 JOIN funcionario f ON f.id = en.idfuncionario AND f.tenant_id = $1 AND f.ativo = TRUE
 LEFT JOIN devolvido dv ON dv.idfuncionario = en.idfuncionario AND dv.idepi = en.id_epi
 WHERE en.quantidade - COALESCE(dv.quantidade, 0) > 0
-  AND en.ultima_entrega + e.vida_util_dias <= $2::date
+  AND ($2::int IS NULL OR f.id_unidade = $2::int)
+  AND en.ultima_entrega + e.vida_util_dias <= $3::date
 ORDER BY vence_em, f.nome
 `
 
 type ListarTrocasPendentesParams struct {
-	TenantID int32
-	Ate      pgtype.Date
+	TenantID  int32
+	IDUnidade pgtype.Int4
+	Ate       pgtype.Date
 }
 
 type ListarTrocasPendentesRow struct {
@@ -700,7 +730,7 @@ type ListarTrocasPendentesRow struct {
 // e cuja última entrega + vida_util_dias vence até a data informada. A troca na devolução gera
 // uma entrega nova, então ela reinicia a contagem.
 func (q *Queries) ListarTrocasPendentes(ctx context.Context, arg ListarTrocasPendentesParams) ([]ListarTrocasPendentesRow, error) {
-	rows, err := q.db.Query(ctx, listarTrocasPendentes, arg.TenantID, arg.Ate)
+	rows, err := q.db.Query(ctx, listarTrocasPendentes, arg.TenantID, arg.IDUnidade, arg.Ate)
 	if err != nil {
 		return nil, err
 	}

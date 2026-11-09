@@ -5,6 +5,7 @@ import {
   AlertCircle, Loader2, Plus, PenLine, RefreshCw
 } from "lucide-react";
 import Dialogo from "../Dialogo";
+import Selecao from "../Selecao";
 
 const TAMANHOS_SUGERIDOS = [
   "Único", "PP", "P", "M", "G", "GG", "EXG",
@@ -342,7 +343,7 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
                     <label htmlFor="novoepi-2" className={labelClass}>
                       Tipo de Proteção <span className="text-erro">*</span>
                     </label>
-                    <select id="novoepi-2"
+                    <Selecao id="novoepi-2"
                       value={form.id_protecao}
                       onChange={(e) => atualizarCampo("id_protecao", e.target.value)}
                       className={`${baseInputClass} ${campoComErro("id_protecao")}`}
@@ -351,7 +352,7 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
                       {tiposProtecao.map((t) => (
                         <option key={t.id} value={t.id}>{t.nome}</option>
                       ))}
-                    </select>
+                    </Selecao>
                     {erros.id_protecao && <p className="text-xs font-medium text-erro mt-1.5">{erros.id_protecao}</p>}
                   </div>
 
@@ -500,7 +501,7 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
 
                 {mostrandoAddTamanho && (
                   <div className="mb-6 p-4 sm:p-5 bg-sunken border border-line rounded-md flex flex-col sm:flex-row gap-3 transition-colors">
-                    <select
+                    <Selecao
                       value={novoTamanhoNome}
                       onChange={(e) => setNovoTamanhoNome(e.target.value)}
                       className={`${baseInputClass} !border-line !bg-surface focus:!ring-ink`}
@@ -509,7 +510,7 @@ function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
                       {TAMANHOS_SUGERIDOS.map((t) => (
                         <option key={t} value={t}>{t}</option>
                       ))}
-                    </select>
+                    </Selecao>
                     <button
                       onClick={handleAddNovoTamanho}
                       disabled={salvandoNovoTamanho}

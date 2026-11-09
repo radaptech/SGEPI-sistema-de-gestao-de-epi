@@ -99,8 +99,8 @@ func (q *Queries) AddEntregaVinculada(ctx context.Context, arg AddEntregaVincula
 const addTrocaEpi = `-- name: AddTrocaEpi :one
 INSERT INTO devolucao (
     tenant_id, IdFuncionario, IdEpi, IdMotivo, data_devolucao, IdTamanho, 
-    quantidadeAdevolver, IdEpiNovo, IdTamanhoNovo, quantidadeNova, assinatura_digital,id_usuario_cancelamento, token_validacao, houve_troca, observacao
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+    quantidadeAdevolver, IdEpiNovo, IdTamanhoNovo, quantidadeNova, assinatura_digital,id_usuario_cancelamento, token_validacao, houve_troca, observacao, id_unidade
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 RETURNING id
 `
 
@@ -120,6 +120,7 @@ type AddTrocaEpiParams struct {
 	TokenValidacao        pgtype.Text
 	HouveTroca            pgtype.Bool
 	Observacao            pgtype.Text
+	IDUnidade             int32
 }
 
 func (q *Queries) AddTrocaEpi(ctx context.Context, arg AddTrocaEpiParams) (int32, error) {
@@ -139,6 +140,7 @@ func (q *Queries) AddTrocaEpi(ctx context.Context, arg AddTrocaEpiParams) (int32
 		arg.TokenValidacao,
 		arg.HouveTroca,
 		arg.Observacao,
+		arg.IDUnidade,
 	)
 	var id int32
 	err := row.Scan(&id)
@@ -358,8 +360,14 @@ INNER JOIN motivo_devolucao m ON m.id = d.idmotivo
 LEFT JOIN epi en ON en.id = d.idepinovo               
 LEFT JOIN tamanho tn ON tn.id = d.idtamanhonovo       
 WHERE d.tenant_id = $1 AND d.cancelada_em IS NULL
+  AND ($2::int IS NULL OR d.id_unidade = $2::int)
 ORDER BY d.data_devolucao DESC
 `
+
+type ListarDevolucoesParams struct {
+	TenantID  int32
+	IDUnidade pgtype.Int4
+}
 
 type ListarDevolucoesRow struct {
 	ID                  int32
@@ -380,8 +388,8 @@ type ListarDevolucoesRow struct {
 	TokenValidacao      pgtype.Text
 }
 
-func (q *Queries) ListarDevolucoes(ctx context.Context, tenantID int32) ([]ListarDevolucoesRow, error) {
-	rows, err := q.db.Query(ctx, listarDevolucoes, tenantID)
+func (q *Queries) ListarDevolucoes(ctx context.Context, arg ListarDevolucoesParams) ([]ListarDevolucoesRow, error) {
+	rows, err := q.db.Query(ctx, listarDevolucoes, arg.TenantID, arg.IDUnidade)
 	if err != nil {
 		return nil, err
 	}
@@ -423,6 +431,7 @@ FROM entrada_epi_item
 WHERE tenant_id = $1 
   AND id_epi = $2 
   AND id_tamanho = $3
+  AND id_unidade = $4
   AND ativo = TRUE
   AND quantidade_atual < quantidade
 ORDER BY id DESC
@@ -432,6 +441,7 @@ type ListarLotesParaReporParams struct {
 	TenantID  int32
 	IDEpi     int32
 	IDTamanho int32
+	IDUnidade int32
 }
 
 type ListarLotesParaReporRow struct {
@@ -442,7 +452,12 @@ type ListarLotesParaReporRow struct {
 
 // Busca todos os lotes que ainda têm espaço para receber devolução (quantidade_atual < quantidade)
 func (q *Queries) ListarLotesParaRepor(ctx context.Context, arg ListarLotesParaReporParams) ([]ListarLotesParaReporRow, error) {
-	rows, err := q.db.Query(ctx, listarLotesParaRepor, arg.TenantID, arg.IDEpi, arg.IDTamanho)
+	rows, err := q.db.Query(ctx, listarLotesParaRepor,
+		arg.TenantID,
+		arg.IDEpi,
+		arg.IDTamanho,
+		arg.IDUnidade,
+	)
 	if err != nil {
 		return nil, err
 	}

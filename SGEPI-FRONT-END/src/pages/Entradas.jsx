@@ -20,7 +20,8 @@ import {
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-import { AlertTriangle, Plus, Search, X, ChevronLeft, ChevronRight, FileDown, Layers, Hash, DollarSign, ChevronDown } from "lucide-react";
+import { AlertTriangle, Plus, Search, X, ChevronLeft, ChevronRight, FileDown, Layers, Hash, DollarSign } from "lucide-react";
+import Selecao from "../components/Selecao";
 
 function Entradas({ usuarioLogado }) {
   const [entradas, setEntradas] = useState([]);
@@ -294,7 +295,7 @@ function Entradas({ usuarioLogado }) {
 
         <div className="relative mb-8 flex flex-col md:flex-row items-stretch md:items-center bg-sunken rounded-md border border-line transition-colors p-1.5 gap-1.5 md:gap-0">
           <div className="relative w-full md:w-auto bg-surface rounded-md md:rounded-l-md md:rounded-r-none border border-line md:border-r-0 flex items-center px-4 py-1 h-[46px]">
-            <select
+            <Selecao
               value={filtroAtivo}
               onChange={(e) => {
                 setFiltroAtivo(e.target.value);
@@ -308,8 +309,7 @@ function Entradas({ usuarioLogado }) {
               <option value="fornecedorNome">Fornecedor</option>
               <option value="lote">Lote</option>
               <option value="nota_fiscal_numero">Nota Fiscal</option>
-            </select>
-            <ChevronDown className="absolute right-3 w-4 h-4 text-ink-3 pointer-events-none" />
+            </Selecao>
           </div>
 
           <div className="relative flex items-center bg-surface rounded-md md:rounded-r-md md:rounded-l-none border border-line flex-1 w-full transition-colors h-[46px]">

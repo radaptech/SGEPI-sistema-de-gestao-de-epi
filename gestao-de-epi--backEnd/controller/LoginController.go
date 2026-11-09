@@ -11,8 +11,8 @@ import (
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/database/repository"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/middleware"
 	"github.com/gin-gonic/gin"
-	"github.com/radaptech/ginmw"
 )
 
 type LoginService interface {
@@ -117,7 +117,7 @@ func (l *LoginController) Login() gin.HandlerFunc {
 		}
 
 		// Único endpoint em que o tenant vem do header: ainda não existe sessão.
-		tenantID64, ok := ginmw.TenantIDFromHeader(c)
+		tenantID64, ok := middleware.TenantIDFromHeader(c)
 		tenantID := int32(tenantID64)
 		if !ok {
 			c.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -211,7 +211,7 @@ func (l *LoginController) VerPerfil() gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 
-		id, existe := ginmw.UserID(c)
+		id, existe := middleware.UserID(c)
 		if !existe {
 			c.JSON(http.StatusUnauthorized, gin.H{
 
@@ -220,7 +220,7 @@ func (l *LoginController) VerPerfil() gin.HandlerFunc {
 
 			return
 		}
-		tenantID64, ok := ginmw.TenantID(c)
+		tenantID64, ok := middleware.TenantID(c)
 		tenantID := int32(tenantID64)
 		if !ok {
 			c.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -240,6 +240,8 @@ func (l *LoginController) VerPerfil() gin.HandlerFunc {
 			"nome":  usuario.Nome,
 			"email": usuario.Email,
 			"role":  usuario.Role,
+			// unidades que pode ver; vazio = todas (o seletor do topo esconde "Todas" se vier preenchido)
+			"unidades": append([]int32{}, middleware.Unidades(c)...),
 		})
 	}
 }
@@ -248,7 +250,7 @@ func (l *LoginController) ListarUsuario() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		tenantID64, ok := ginmw.TenantID(ctx)
+		tenantID64, ok := middleware.TenantID(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -286,7 +288,7 @@ func (l *LoginController) SalvarToken() gin.HandlerFunc {
 		}
 
 		// Rota pública, sem sessão: tenant vem do header, como no Login.
-		tenantID64, ok := ginmw.TenantIDFromHeader(ctx)
+		tenantID64, ok := middleware.TenantIDFromHeader(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -325,7 +327,7 @@ func (l *LoginController) RedefinirSenha() gin.HandlerFunc {
 		}
 
 		// Rota pública, sem sessão: tenant vem do header, como no Login.
-		tenantID64, ok := ginmw.TenantIDFromHeader(ctx)
+		tenantID64, ok := middleware.TenantIDFromHeader(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})

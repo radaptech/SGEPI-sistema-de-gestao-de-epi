@@ -9,80 +9,23 @@ import (
 	"context"
 )
 
-const addMotivoDevolucao = `-- name: AddMotivoDevolucao :one
-INSERT INTO motivo_devolucao (tenant_id, motivo, gera_descarte) 
-VALUES ($1, $2, $3)
-returning id, motivo
-`
-
-type AddMotivoDevolucaoParams struct {
-	TenantID     int32
-	Motivo       string
-	GeraDescarte bool
-}
-
-type AddMotivoDevolucaoRow struct {
-	ID     int32
-	Motivo string
-}
-
-func (q *Queries) AddMotivoDevolucao(ctx context.Context, arg AddMotivoDevolucaoParams) (AddMotivoDevolucaoRow, error) {
-	row := q.db.QueryRow(ctx, addMotivoDevolucao, arg.TenantID, arg.Motivo, arg.GeraDescarte)
-	var i AddMotivoDevolucaoRow
-	err := row.Scan(&i.ID, &i.Motivo)
-	return i, err
-}
-
-const buscaMotivoDevolucao = `-- name: BuscaMotivoDevolucao :one
-SELECT id, motivo, gera_descarte
-FROM motivo_devolucao 
-WHERE id = $1 
-  AND tenant_id = $2 -- SEGURANÇA
-  AND ativo = TRUE 
-LIMIT 1
-`
-
-type BuscaMotivoDevolucaoParams struct {
-	ID       int32
-	TenantID int32
-}
-
-type BuscaMotivoDevolucaoRow struct {
-	ID           int32
-	Motivo       string
-	GeraDescarte bool
-}
-
-func (q *Queries) BuscaMotivoDevolucao(ctx context.Context, arg BuscaMotivoDevolucaoParams) (BuscaMotivoDevolucaoRow, error) {
-	row := q.db.QueryRow(ctx, buscaMotivoDevolucao, arg.ID, arg.TenantID)
-	var i BuscaMotivoDevolucaoRow
-	err := row.Scan(&i.ID, &i.Motivo, &i.GeraDescarte)
-	return i, err
-}
-
 const buscaTodosMotivosDevolucao = `-- name: BuscaTodosMotivosDevolucao :many
+
 SELECT id, motivo, gera_descarte
-FROM motivo_devolucao 
-WHERE tenant_id = $1 -- SEGURANÇA: Lista apenas os motivos desta empresa
-  AND ativo = TRUE
-ORDER BY motivo ASC
+FROM motivo_devolucao
+ORDER BY gera_descarte, motivo
 `
 
-type BuscaTodosMotivosDevolucaoRow struct {
-	ID           int32
-	Motivo       string
-	GeraDescarte bool
-}
-
-func (q *Queries) BuscaTodosMotivosDevolucao(ctx context.Context, tenantID int32) ([]BuscaTodosMotivosDevolucaoRow, error) {
-	rows, err := q.db.Query(ctx, buscaTodosMotivosDevolucao, tenantID)
+// motivo_devolucao é global (lista pronta, igual para todos os tenants), como tipo_protecao.
+func (q *Queries) BuscaTodosMotivosDevolucao(ctx context.Context) ([]MotivoDevolucao, error) {
+	rows, err := q.db.Query(ctx, buscaTodosMotivosDevolucao)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []BuscaTodosMotivosDevolucaoRow
+	var items []MotivoDevolucao
 	for rows.Next() {
-		var i BuscaTodosMotivosDevolucaoRow
+		var i MotivoDevolucao
 		if err := rows.Scan(&i.ID, &i.Motivo, &i.GeraDescarte); err != nil {
 			return nil, err
 		}
@@ -94,44 +37,14 @@ func (q *Queries) BuscaTodosMotivosDevolucao(ctx context.Context, tenantID int32
 	return items, nil
 }
 
-const deleteMotivoDevolucao = `-- name: DeleteMotivoDevolucao :execrows
-UPDATE motivo_devolucao
-SET ativo = FALSE,
-    deletado_em = current_date
-WHERE id = $1 
-  AND tenant_id = $2 -- SEGURANÇA
-  AND ativo = TRUE
-`
-
-type DeleteMotivoDevolucaoParams struct {
-	ID       int32
-	TenantID int32
-}
-
-func (q *Queries) DeleteMotivoDevolucao(ctx context.Context, arg DeleteMotivoDevolucaoParams) (int64, error) {
-	result, err := q.db.Exec(ctx, deleteMotivoDevolucao, arg.ID, arg.TenantID)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected(), nil
-}
-
 const ehDescarte = `-- name: EhDescarte :one
 SELECT gera_descarte
 FROM motivo_devolucao
 WHERE id = $1
-  AND tenant_id = $2 -- SEGURANÇA
-  AND ativo = TRUE
-LIMIT 1
 `
 
-type EhDescarteParams struct {
-	ID       int32
-	TenantID int32
-}
-
-func (q *Queries) EhDescarte(ctx context.Context, arg EhDescarteParams) (bool, error) {
-	row := q.db.QueryRow(ctx, ehDescarte, arg.ID, arg.TenantID)
+func (q *Queries) EhDescarte(ctx context.Context, id int32) (bool, error) {
+	row := q.db.QueryRow(ctx, ehDescarte, id)
 	var gera_descarte bool
 	err := row.Scan(&gera_descarte)
 	return gera_descarte, err

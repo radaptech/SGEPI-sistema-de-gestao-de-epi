@@ -1,4 +1,5 @@
 import { toast } from "react-toastify";
+import { unidadeAtual } from "./unidadeAtual";
 
 const DEFAULT_BASE_URL = "https://homolog.radaptech.com.br/api";
 
@@ -34,6 +35,12 @@ function montarHeaders(headersExtras = {}, body = null) {
 
     if (!isFormData(body) && !headers["Content-Type"]) {
         headers["Content-Type"] = "application/json";
+    }
+
+    // loja escolhida no topo: listas, estoque e dashboard mostram só ela (sem o header, todas)
+    const unidade = unidadeAtual();
+    if (unidade) {
+        headers["X-Unidade-ID"] = unidade;
     }
 
     if (tenantId) {

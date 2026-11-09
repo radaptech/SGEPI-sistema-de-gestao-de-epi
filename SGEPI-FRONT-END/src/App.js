@@ -103,6 +103,8 @@ function App() {
 
     setUsuario(usuarioRecebido);
     setPaginaAtual(paginaPermitida(usuarioRecebido, paginaDoHash()));
+    // o /login não traz as unidades permitidas (Fase 6); o /me traz
+    api.get("/me").then((u) => u && setUsuario(u)).catch(() => {});
   };
 
   // 🔑 2. LOGOUT COM EXPIRAÇÃO DE COOKIE NO BACKEND

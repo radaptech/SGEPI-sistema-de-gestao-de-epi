@@ -14,5 +14,5 @@ export function normalizarTamanho(item) {
 }
 
 export function normalizarMotivo(item) {
-  return { id: item.id, nome: item.motivo };
+  return { id: item.id, nome: item.motivo, descarte: Boolean(item.gera_descarte) };
 }

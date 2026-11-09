@@ -7,6 +7,28 @@ definitions:
       message:
         type: string
     type: object
+  model.AcessoUnidadeDto:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      nome:
+        type: string
+      role:
+        type: string
+      unidades:
+        items:
+          type: integer
+        type: array
+    type: object
+  model.AcessoUnidadeInserir:
+    properties:
+      unidades:
+        items:
+          type: integer
+        type: array
+    type: object
   model.CaepiDto:
     properties:
       ca:
@@ -159,6 +181,9 @@ definitions:
         type: integer
       id:
         type: integer
+      limite_unidades:
+        description: do plano; nil = ilimitado
+        type: integer
       mensalidade:
         type: number
       nome:
@@ -173,6 +198,8 @@ definitions:
         type: string
       telefone:
         type: string
+      unidades:
+        type: integer
       vencimento:
         type: string
     type: object
@@ -241,6 +268,8 @@ definitions:
         type: integer
       id_tamanho:
         type: integer
+      id_unidade:
+        type: integer
       lote:
         type: string
       quantidade:
@@ -291,6 +320,10 @@ definitions:
     properties:
       data_emissao:
         type: string
+      id_unidade:
+        description: obrigatório com 2+ unidades
+        minimum: 1
+        type: integer
       idfornecedor:
         type: integer
       itens:
@@ -368,6 +401,8 @@ definitions:
         type: integer
       id_funcionario:
         type: integer
+      id_unidade:
+        type: integer
       token_validacao:
         type: string
     type: object
@@ -427,6 +462,10 @@ definitions:
         type: integer
       id_troca:
         description: Usei ponteiro para aceitar nulo
+        type: integer
+      id_unidade:
+        description: sem ela, sai da unidade do funcionário
+        minimum: 1
         type: integer
       id_user:
         type: integer
@@ -658,6 +697,8 @@ definitions:
         type: integer
       nome:
         type: string
+      unidade:
+        $ref: '#/definitions/model.UnidadeResumo'
     type: object
   model.FuncionarioCompletoDto:
     properties:
@@ -675,10 +716,14 @@ definitions:
         type: integer
       nome:
         type: string
+      unidade:
+        $ref: '#/definitions/model.UnidadeResumo'
     type: object
   model.FuncionarioDashbord:
     properties:
       id:
+        type: integer
+      id_unidade:
         type: integer
       matricula:
         type: integer
@@ -693,6 +738,10 @@ definitions:
         minimum: 1
         type: integer
       id_funcao:
+        minimum: 1
+        type: integer
+      id_unidade:
+        description: sem ele, vai para a primeira unidade
         minimum: 1
         type: integer
       nome:
@@ -755,6 +804,16 @@ definitions:
     - id_epi
     - quantidade
     type: object
+  model.MotivoDevolucaoEpiDto:
+    properties:
+      gera_descarte:
+        description: 'true: o EPI devolvido não volta ao estoque'
+        type: boolean
+      id:
+        type: integer
+      motivo:
+        type: string
+    type: object
   model.ResumoDashboard:
     properties:
       empresas_ativas:
@@ -795,6 +854,61 @@ definitions:
       nome:
         type: string
     type: object
+  model.TransferenciaDto:
+    properties:
+      cancelada:
+        type: boolean
+      data:
+        type: string
+      id:
+        type: integer
+      itens:
+        items:
+          $ref: '#/definitions/model.TransferenciaItemDto'
+        type: array
+      observacao:
+        type: string
+      unidade_destino:
+        $ref: '#/definitions/model.UnidadeResumo'
+      unidade_origem:
+        $ref: '#/definitions/model.UnidadeResumo'
+      usuario:
+        type: string
+    type: object
+  model.TransferenciaInserir:
+    properties:
+      id_unidade_destino:
+        type: integer
+      id_unidade_origem:
+        type: integer
+      itens:
+        items:
+          $ref: '#/definitions/model.ItemParaInserir'
+        minItems: 1
+        type: array
+      observacao:
+        maxLength: 500
+        type: string
+    required:
+    - id_unidade_destino
+    - id_unidade_origem
+    - itens
+    type: object
+  model.TransferenciaItemDto:
+    properties:
+      epi_nome:
+        type: string
+      id_epi:
+        type: integer
+      id_tamanho:
+        type: integer
+      lote:
+        type: string
+      quantidade:
+        type: integer
+      tamanho_nome:
+        type: string
+    type: object
   model.TrocaPendenteDto:
     properties:
       em_posse:
@@ -812,6 +926,33 @@ definitions:
       ultima_entrega:
         type: string
       vence_em:
+        type: string
+    type: object
+  model.UnidadeDto:
+    properties:
+      funcionarios:
+        description: ativos lotados nela
+        type: integer
+      id:
+        type: integer
+      nome:
+        type: string
+      saldo:
+        description: unidades de EPI em estoque nela
+        type: integer
+    type: object
+  model.UnidadeInserir:
+    properties:
+      nome:
+        type: string
+    required:
+    - nome
+    type: object
+  model.UnidadeResumo:
+    properties:
+      id:
+        type: integer
+      nome:
         type: string
     type: object
   model.UpdateEpiInput:
@@ -847,6 +988,8 @@ definitions:
       id_departamento:
         type: integer
       id_funcao:
+        type: integer
+      id_unidade:
         type: integer
       nome:
         type: string
@@ -2311,6 +2454,136 @@ paths:
       summary: Consultar CA na base do MTE
       tags:
       - EPIs
+  /gerencial/transferencias/{id}:
+    delete:
+      description: Devolve o estoque à origem. Recusa (409) se o destino já usou parte
+        dele.
+      parameters:
+      - description: ID da transferência
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+      summary: Cancela uma transferência
+      tags:
+      - Transferencia
+  /gerencial/unidades:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Nome da unidade
+        in: body
+        name: unidade
+        required: true
+        schema:
+          $ref: '#/definitions/model.UnidadeInserir'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.UnidadeDto'
+      summary: Cadastra uma unidade
+      tags:
+      - Unidade
+  /gerencial/unidades/{id}:
+    delete:
+      description: Recusa (409) a última unidade da empresa e a que ainda tem estoque
+        ou funcionários ativos.
+      parameters:
+      - description: ID da unidade
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+      summary: Desativa uma unidade
+      tags:
+      - Unidade
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID da unidade
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Novo nome
+        in: body
+        name: unidade
+        required: true
+        schema:
+          $ref: '#/definitions/model.UnidadeInserir'
+      responses:
+        "204":
+          description: No Content
+      summary: Renomeia uma unidade
+      tags:
+      - Unidade
+  /gerencial/unidades/acessos:
+    get:
+      description: Usuários ativos da empresa com as unidades que cada um pode ver.
+        Vazio = todas; admin sempre vê todas.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.AcessoUnidadeDto'
+            type: array
+      summary: Lista quem vê quais unidades
+      tags:
+      - Unidade
+  /gerencial/usuarios/{id}/unidades:
+    put:
+      consumes:
+      - application/json
+      description: Troca a lista inteira. Lista vazia = todas as unidades. Não vale
+        para admin, que sempre vê todas.
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Unidades permitidas
+        in: body
+        name: acesso
+        required: true
+        schema:
+          $ref: '#/definitions/model.AcessoUnidadeInserir'
+      responses:
+        "204":
+          description: No Content
+      summary: Limita o usuário a algumas unidades
+      tags:
+      - Unidade
+  /motivos:
+    get:
+      description: 'Lista global e pronta, igual para todas as empresas. gera_descarte=true:
+        o EPI não volta ao estoque.'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.MotivoDevolucaoEpiDto'
+            type: array
+      summary: Lista os motivos de devolução
+      tags:
+      - Devolucao
   /protecoes:
     get:
       description: Lista os 9 grupos de proteção do Anexo I da NR-6 (globais, iguais
@@ -2333,6 +2606,46 @@ paths:
       summary: Grupos de proteção
       tags:
       - protecao
+  /transferencias:
+    get:
+      description: As 100 mais recentes. Com a unidade escolhida (X-Unidade-ID ou
+        ?id_unidade=), só as que saíram dela ou chegaram nela.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.TransferenciaDto'
+            type: array
+      summary: Lista as transferências
+      tags:
+      - Transferencia
+    post:
+      consumes:
+      - application/json
+      description: Sai da origem pelo FEFO e entra na destino na hora, lote a lote.
+        Falta de saldo → 422; origem fora das unidades do usuário → 403.
+      parameters:
+      - description: Origem, destino e itens
+        in: body
+        name: transferencia
+        required: true
+        schema:
+          $ref: '#/definitions/model.TransferenciaInserir'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: integer
+            type: object
+      summary: Transfere EPIs entre unidades
+      tags:
+      - Transferencia
   /trocas-pendentes:
     get:
       description: EPIs em posse dos funcionários cuja vida útil já venceu ou vence
@@ -2364,6 +2677,28 @@ paths:
       summary: Trocas periódicas pendentes
       tags:
       - Entregas
+  /unidades:
+    get:
+      description: Lojas, obras ou almoxarifados do tenant, com funcionários ativos
+        e saldo de EPI em cada uma.
+      parameters:
+      - description: 1 = todas as unidades, para o destino da transferência (usuário
+          limitado recebe só id e nome)
+        in: query
+        name: destinos
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.UnidadeDto'
+            type: array
+      summary: Lista as unidades da empresa
+      tags:
+      - Unidade
 securityDefinitions:
   BearerAuth:
     in: header

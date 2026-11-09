@@ -116,11 +116,12 @@ Como o tenant chega até a query:
 4. O service repassa `tenantId` como parâmetro de **toda** query.
 
 **Ao escrever qualquer query nova em `database/queries/`, o `WHERE` precisa incluir
-`tenant_id = $N`.** A única exceção é a tabela `caepi` (`Caepi.sql`), que guarda a base pública de CAs
-do MTE e é igual para todos os tenants. Não existe RLS no banco — o isolamento é feito 100% na aplicação. Um `WHERE`
+`tenant_id = $N`.** As exceções são as tabelas globais, iguais para todos os tenants e sem `tenant_id`:
+`caepi` (base pública de CAs do MTE), `tipo_protecao` (os 9 grupos da NR-6) e `motivo_devolucao`
+(lista pronta de motivos; `gera_descarte` diz se o EPI volta ao estoque). Os tenants só leem essas três. Não existe RLS no banco — o isolamento é feito 100% na aplicação. Um `WHERE`
 sem tenant vaza dados entre empresas.
 
-O `userId` logado sai da sessão e é lido com `ginmw.UserID(c)` (usado para auditoria:
+O `userId` logado sai da sessão e é lido com `middleware.UserID(c)` (usado para auditoria:
 `id_usuario_criacao`, `id_usuario_cancelamento`, etc.).
 
 ---
@@ -132,8 +133,11 @@ O `userId` logado sai da sessão e é lido com `ginmw.UserID(c)` (usado para aud
   grava só o **SHA-256** dele na tabela `sessoes` (`usuario_id`, `expira_em` = 24 h). O token vai
   no **cookie `sessao`** (HttpOnly, `Secure`, `SameSite=None`). Não existe header `Authorization`.
 - `middleware.Sessao` busca a sessão a cada request (join com `usuarios`, exige `ativo = TRUE` e
-  `expira_em > now()`) e popula as chaves do `ginmw` (`ginmw.UserID`/`TenantID`/`Role`, usadas por
-  `ginmw.Require`) + `user_nome`. Desativar o usuário derruba a sessão na hora.
+  `expira_em > now()`) e popula as chaves lidas por `middleware.UserID`/`TenantID`/`Role` (usadas por
+  `middleware.Require`) + `user_nome`. Desativar o usuário derruba a sessão na hora.
+- **Unidades permitidas** (`usuario_unidade`, sem linha = todas; admin sempre todas): a `Sessao` põe em
+  `middleware.UnidadesKey`, o `middleware.LimitarUnidade` dá 403 para unidade de fora no header/URL, e
+  `unidadeDaOperacao` (entrega/devolução) recusa com `ErrUnidadeSemAcesso`. Ver `docs/PLANO-UNIDADES.md`, Fase 6.
 - `POST /api/logout` apaga a linha da sessão. Sessões vencidas são limpas a cada login.
 
 ### Roles
@@ -464,6 +468,8 @@ validadores entram no mesmo bloco.
   No **controller**, todo 500 com erro chama `ctx.Error(err)` antes do `ctx.JSON` — o `LogRequest` põe a
   causa no campo `erros` da linha do request. No **service**, erro de infra com contexto útil (lote, entrega)
   vira `slog.ErrorContext` com campos nomeados (`"tenant", tenantId, "err", err`).
+- **Todos os middlewares são do próprio projeto** (`middleware/`): CORS, `SecurityHeaders`, `RateLimit`,
+  `Tenant`, `Sessao`, `Require` e os logs. Antes vinham do módulo externo `radaptech/ginmw`, que foi removido.
 - **CORS** (`middleware/cors.go`) libera `localhost`, `*.localhost` e `*.radaptech.com.br`, com
   `AllowCredentials: true` (necessário para o cookie HttpOnly). Um domínio novo precisa entrar no
   `AllowOriginFunc`.

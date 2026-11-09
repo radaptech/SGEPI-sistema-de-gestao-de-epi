@@ -1,5 +1,6 @@
 import TabelaItens from "./TabelaItens";
-import { Plus, ShoppingCart, Loader2, Shield } from "lucide-react";
+import { Plus, ShoppingCart, Loader2 } from "lucide-react";
+import Selecao from "../../Selecao";
 
 function EntregaItensForm({
   epis,
@@ -58,7 +59,7 @@ function EntregaItensForm({
               EPI
             </label>
             <div className="relative">
-              <select id="entregaitensform-1"
+              <Selecao id="entregaitensform-1"
                 className={baseInputClass}
                 value={idEpiTemp}
                 onChange={(e) => setIdEpiTemp(e.target.value)}
@@ -69,10 +70,7 @@ function EntregaItensForm({
                     {item.nome}
                   </option>
                 ))}
-              </select>
-              <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-ink-3">
-                <Shield className="w-4 h-4" />
-              </div>
+              </Selecao>
             </div>
           </div>
 
@@ -81,7 +79,7 @@ function EntregaItensForm({
               Tamanho
             </label>
             <div className="relative">
-              <select id="entregaitensform-2"
+              <Selecao id="entregaitensform-2"
                 className={baseInputClass}
                 value={idTamanhoTemp}
                 onChange={(e) => {
@@ -102,7 +100,7 @@ function EntregaItensForm({
                     {item.tamanho} (Estoque: {item.saldo_atual})
                   </option>
                 ))}
-              </select>
+              </Selecao>
             </div>
           </div>
 

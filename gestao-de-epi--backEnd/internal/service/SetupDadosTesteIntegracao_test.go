@@ -449,15 +449,16 @@ func CreateEpiEntregues(t *testing.T, db *pgxpool.Pool, IDEntregaCabecalho, idEn
 	return id
 }
 
-func CreateMotivoDevolucao(t *testing.T, db *pgxpool.Pool, motivo string, geraDescarte bool, tenantID int64) int64 {
+// motivo_devolucao é global: o tenant não entra (o parâmetro fica para não mexer nas chamadas).
+func CreateMotivoDevolucao(t *testing.T, db *pgxpool.Pool, motivo string, geraDescarte bool, _ int64) int64 {
 	var id int64
 	query := `
-		INSERT INTO motivo_devolucao (tenant_id, motivo, gera_descarte)
-		VALUES ($1, $2, $3)
+		INSERT INTO motivo_devolucao (motivo, gera_descarte)
+		VALUES ($1, $2)
+		ON CONFLICT (motivo) DO UPDATE SET gera_descarte = EXCLUDED.gera_descarte
 		RETURNING id;
 	`
 	err := db.QueryRow(context.Background(), query,
-		tenantID,
 		motivo,
 		geraDescarte,
 	).Scan(&id)

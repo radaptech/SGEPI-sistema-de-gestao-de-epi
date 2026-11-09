@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -102,9 +103,9 @@ func (f *FuncionarioRepository) AtualizarFuncionarioCpf(ctx context.Context, arg
 	return linhasAfetadas, nil
 }
 
-func (f *FuncionarioRepository) BuscarFuncionarioDashbord(ctx context.Context, tenant int32) ([]BuscaFuncionarioDashbordRow, error) {
+func (f *FuncionarioRepository) BuscarFuncionarioDashbord(ctx context.Context, tenant, unidade int32) ([]BuscaFuncionarioDashbordRow, error) {
 
-	funcionarios, err := f.q.BuscaFuncionarioDashbord(ctx, tenant)
+	funcionarios, err := f.q.BuscaFuncionarioDashbord(ctx, BuscaFuncionarioDashbordParams{TenantID: tenant, IDUnidade: pgtype.Int4{Int32: unidade, Valid: unidade > 0}})
 	if err != nil {
 		return []BuscaFuncionarioDashbordRow{}, helper.TraduzErroPostgres(err)
 	}
@@ -112,9 +113,9 @@ func (f *FuncionarioRepository) BuscarFuncionarioDashbord(ctx context.Context, t
 	return funcionarios, nil
 }
 
-func (f *FuncionarioRepository) BuscaFuncionarioCompleto(ctx context.Context, tenant int32) ([]BuscaFuncionarioCompletoRow, error) {
+func (f *FuncionarioRepository) BuscaFuncionarioCompleto(ctx context.Context, tenant, unidade int32) ([]BuscaFuncionarioCompletoRow, error) {
 
-	funcionarios, err := f.q.BuscaFuncionarioCompleto(ctx, tenant)
+	funcionarios, err := f.q.BuscaFuncionarioCompleto(ctx, BuscaFuncionarioCompletoParams{TenantID: tenant, IDUnidade: pgtype.Int4{Int32: unidade, Valid: unidade > 0}})
 	if err != nil {
 
 		return []BuscaFuncionarioCompletoRow{}, helper.TraduzErroPostgres(err)

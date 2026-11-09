@@ -75,6 +75,7 @@ func TestEntrega(t *testing.T) {
 			Assinatura:       entregas[0].Assinatura_Digital,
 			TokenValidacao:   pgtype.Text{String: "testeToken", Valid: true},
 			IDUsuarioEntrega: pgtype.Int4{Int32: int32(entregas[0].Id_user), Valid: true},
+			IDUnidade:        principalDe(t, db, empresa),
 		}
 
 		identrega, err := repo.AdicionarEntrega(ctx, qtx, args)
@@ -86,6 +87,7 @@ func TestEntrega(t *testing.T) {
 
 			// Adicionado TenantID nos parâmetros de busca de lote
 			lotes := repository.ListarLotesParaConsumoParams{
+				IDUnidade: principalDe(t, db, empresa),
 				TenantID:  int32(empresa),
 				IDEpi:     int32(item.ID_epi),
 				IDTamanho: int32(item.ID_tamanho),
@@ -248,7 +250,7 @@ func TestEntrega(t *testing.T) {
 		}
 		pendentes := func(dias int) []model.TrocaPendenteDto {
 			var doFunc []model.TrocaPendenteDto
-			trocas, err := serv.ListarTrocasPendentes(ctx, int32(empresa), dias)
+			trocas, err := serv.ListarTrocasPendentes(ctx, int32(empresa), 0, dias)
 			require.NoError(t, err)
 			for _, tr := range trocas {
 				if tr.FuncionarioId == int32(func2) {

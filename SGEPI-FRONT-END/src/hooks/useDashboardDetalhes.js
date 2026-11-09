@@ -21,7 +21,9 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
     trocasDetalhadas,
     faltasKitDetalhadas,
     valorEstoqueDetalhado,
+    unidades = [],
   } = resumoDetalhado;
+  const variasUnidades = unidades.length >= 2;
 
   return useMemo(() => {
     if (cardAberto === "estoque") {
@@ -139,9 +141,9 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
 
     if (cardAberto === "alertas") {
       return {
-        titulo: "Lotes com Alerta de Estoque Baixo",
+        titulo: "Estoque baixo",
         subtitulo:
-          "Lotes ativos que atingiram ou estão abaixo do nível de alerta mínimo configurado.",
+          "Saldo de cada EPI e tamanho, por unidade, no alerta mínimo configurado ou abaixo.",
         icon: <AlertTriangle className="w-6 h-6" strokeWidth={2.5} />,
         dados: alertasDetalhados,
         subColunas: null,
@@ -153,14 +155,11 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
               <div className="font-semibold text-ink ">{item.item}</div>
             ),
           },
-          {
-            key: "lote",
-            label: "Lote / CA",
-            render: (item) => (
-              <span className="inline-flex px-2.5 py-1 rounded-md bg-sunken text-ink text-xs font-mono font-bold border border-line ">
-                {item.lote}
-              </span>
-            ),
+          // a coluna só aparece com 2 unidades ou mais
+          variasUnidades && {
+            key: "unidade",
+            label: "Unidade",
+            render: (item) => <span className="text-sm text-ink-2">{item.unidade}</span>,
           },
           {
             key: "tamanho",
@@ -194,7 +193,7 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
               </span>
             ),
           },
-        ],
+        ].filter(Boolean),
       };
     }
 
@@ -396,5 +395,6 @@ export function useDashboardDetalhes(cardAberto, resumoDetalhado) {
     trocasDetalhadas,
     faltasKitDetalhadas,
     valorEstoqueDetalhado,
+    variasUnidades,
   ]);
 }

@@ -1,5 +1,6 @@
 import React, { useState, useId } from "react";
 import Dialogo from "../../Dialogo";
+import Selecao from "../../Selecao";
 
 function ModalNovoUsuario({ aberto, onFechar, onSalvar, empresas = [] }) {
   const [form, setForm] = useState({
@@ -248,7 +249,7 @@ function CampoSelect({ label, value, onChange, options, disabled, obrigatorio })
         {label} {obrigatorio && <span className="text-ink ml-0.5">*</span>}
       </label>
 
-      <select id={idCampo}
+      <Selecao id={idCampo}
         value={value}
         onChange={onChange}
         disabled={disabled}
@@ -264,7 +265,7 @@ function CampoSelect({ label, value, onChange, options, disabled, obrigatorio })
             {option.label}
           </option>
         ))}
-      </select>
+      </Selecao>
     </div>
   );
 }
