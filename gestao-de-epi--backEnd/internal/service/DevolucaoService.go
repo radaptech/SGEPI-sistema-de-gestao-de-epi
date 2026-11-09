@@ -101,9 +101,8 @@ func (d *DevolucaoService) SalvarDevolucao(ctx context.Context, modelDevolucao m
 		idQuantidadeNova = pgtype.Int4{Int32: int32(*modelDevolucao.NovaQuantidade), Valid: true}
 	}
 
-	// A devolução volta para a unidade do funcionário, e a troca sai dela também
-	// ponytail: funcionário transferido devolve na unidade nova; se ela nunca recebeu esse EPI,
-	// não há lote para repor e cai na "anomalia" abaixo. Resolver quando houver transferência (Fase 7).
+	// A devolução volta para a unidade do funcionário, e a troca sai dela também.
+	// Funcionário que mudou de unidade devolve na nova; se lá não há lote com espaço, nasce um (abaixo).
 	unidade, err := unidadeDaOperacao(ctx, qtx, nil, int32(modelDevolucao.IdFuncionario), tenantId)
 	if err != nil {
 		return err
@@ -159,6 +158,28 @@ func (d *DevolucaoService) SalvarDevolucao(ctx context.Context, modelDevolucao m
 			})
 
 			qtdRestanteParaDevolver -= qtdParaDeixarNoLote
+		}
+
+		// sem lote com espaço nesta unidade (funcionário veio de outra): cria um lote igual ao último
+		// deste EPI e tamanho, como uma transferência. O saldo em posse já foi validado acima.
+		// ponytail: copia o último lote do EPI, não o lote exato que o funcionário recebeu
+		if qtdRestanteParaDevolver > 0 {
+			modelo, err := qtx.UltimoLoteDoEpi(ctx, repository.UltimoLoteDoEpiParams{
+				TenantID: tenantId, IDEpi: int32(modelDevolucao.IdEpi), IDTamanho: int32(modelDevolucao.IdTamanho),
+			})
+			if err == nil {
+				novo, err := qtx.CopiarLoteParaUnidade(ctx, repository.CopiarLoteParaUnidadeParams{
+					Quantidade: qtdRestanteParaDevolver, IDUsuario: int32(modelDevolucao.Iduser),
+					IDUnidade: unidade, IDLote: modelo, TenantID: tenantId,
+				})
+				if err != nil {
+					return helper.TraduzErroPostgres(err)
+				}
+				reposicoes = append(reposicoes, repository.AddDevolucaoLoteParams{
+					TenantID: tenantId, IDEntradaItem: novo, Quantidade: qtdRestanteParaDevolver,
+				})
+				qtdRestanteParaDevolver = 0
+			}
 		}
 
 		if qtdRestanteParaDevolver > 0 {

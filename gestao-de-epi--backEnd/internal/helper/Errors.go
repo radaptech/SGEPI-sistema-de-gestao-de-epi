@@ -29,6 +29,8 @@ var (
 	ErrUnidadeObrigatoria  = errors.New("escolha a unidade: a empresa tem mais de uma")
 	ErrUltimaUnidade       = errors.New("a empresa precisa ter pelo menos uma unidade")
 	ErrUnidadeSemAcesso    = errors.New("você não tem acesso a esta unidade")
+	ErrMesmaUnidade        = errors.New("a unidade de destino precisa ser diferente da de origem")
+	ErrTransferenciaUsada  = errors.New("não dá para cancelar: o destino já usou parte do estoque transferido ou o lote de origem foi cancelado")
 )
 
 // Códigos de Erro Oficiais do PostgreSQL

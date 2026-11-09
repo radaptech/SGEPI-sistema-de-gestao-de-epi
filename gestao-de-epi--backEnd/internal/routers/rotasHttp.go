@@ -22,6 +22,7 @@ type Container struct {
 	Usuario         controller.LoginController
 	Departamento    controller.DepartamentoController
 	Unidade         controller.UnidadeController
+	Transferencia   controller.TransferenciaController
 	Funcao          controller.FuncaoController
 	Funcionario     controller.FuncionarioController
 	Tamanho         controller.TamanhoController
@@ -78,6 +79,7 @@ func NewContainer(db *pgxpool.Pool) *Container {
 		Usuario:         *controller.NewLoginController(serviceUsuario),
 		Departamento:    *controller.NewDepartamentoController(departamentoService),
 		Unidade:         *controller.NewUnidadeController(unidadeService),
+		Transferencia:   *controller.NewTransferenciaController(service.NewTransferenciaService(db)),
 		Funcao:          *controller.NewFuncaoController(funcaoService),
 		Funcionario:     *controller.NewFuncionarioController(funcionarioService),
 		Tamanho:         *controller.NewTamanhoControle(tamanhoService),
@@ -223,6 +225,10 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 		api.POST("/cadastro-devolucao", c.Devolucao.Adicionar())
 		api.GET("/devolucao", c.Devolucao.Listar())
 
+		//transferência entre unidades (a origem passa pela trava da Fase 6)
+		api.GET("/transferencias", c.Transferencia.Listar())
+		api.POST("/transferencias", c.Transferencia.Transferir())
+
 		//motivo da Motivo da Devolucao
 		api.GET("/motivos", c.MotivoDevolucao.ListarMotivo())
 
@@ -243,6 +249,7 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 			rotasAdm.DELETE("/unidades/:id", c.Unidade.Desativar())
 			rotasAdm.GET("/unidades/acessos", c.Unidade.Acessos())
 			rotasAdm.PUT("/usuarios/:id/unidades", c.Unidade.DefinirAcesso())
+			rotasAdm.DELETE("/transferencias/:id", c.Transferencia.Cancelar())
 
 			//funçoes
 			rotasAdm.DELETE("/funcao/:id", c.Funcao.DeletarFuncao())

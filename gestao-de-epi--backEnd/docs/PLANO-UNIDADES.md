@@ -194,7 +194,17 @@ espírito do isolamento entre tenants.
 
 **Pronto quando:** um usuário limitado a uma loja não vê dados das outras em nenhuma tela nem rota.
 
-### Fase 7: transferência entre unidades [M]
+### Fase 7: transferência entre unidades [M] (feita em 09/11/2026)
+
+> **Como ficou** (difere do rascunho abaixo em um ponto):
+> - Migração 000044: tabela `transferencia` (com `CHECK` origem ≠ destino e FKs compostas). **Sem `transferencia_item`**: o lote criado no destino ganha `id_lote_origem` e `id_transferencia`, e isso já liga origem e destino.
+> - `TransferenciaService.Transferir`: confere o saldo da origem (`ListarLotesParaConsumo`, `FOR UPDATE`) antes de mexer; faltando, devolve a mesma mensagem da entrega ("há N em outras unidades"). Cada lote consumido vira um lote no destino (`CopiarLoteParaUnidade`: NF, lote, validade, fabricação e valor).
+> - Usuário limitado (F6) só transfere **da** própria loja; o destino pode ser qualquer uma. `GET /unidades?destinos=1` lista todas para isso, sem saldo e funcionários das outras.
+> - Lote com `id_lote_origem` não é compra: fica fora da tela de Entradas.
+> - Cancelar (`DELETE /gerencial/transferencias/:id`, só admin): 409 se o destino já usou algo ou se o lote de origem foi cancelado.
+> - Resolveu o limite da F4: funcionário que mudou de loja devolve na nova; sem lote lá, nasce um copiado do último lote do EPI (`ponytail:` no `DevolucaoService`).
+> - Rotas: `GET` e `POST /api/transferencias`. Front: botão "Transferir" no Estoque (sai da loja do topo; em "Todas" fica desabilitado) e `ListaTransferencias` embaixo, com "Desfazer" para o admin. A tela manda um EPI por vez (a API aceita vários).
+> - Testes: `TestTransferencia` (4 cenários) e `ModalTransferencia.test.jsx`.
 
 **O quê:** mandar 20 botas da Loja 2 para a Loja 5.
 

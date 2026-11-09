@@ -2205,6 +2205,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/gerencial/transferencias/{id}": {
+            "delete": {
+                "description": "Devolve o estoque à origem. Recusa (409) se o destino já usou parte dele.",
+                "tags": [
+                    "Transferencia"
+                ],
+                "summary": "Cancela uma transferência",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da transferência",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
         "/gerencial/unidades": {
             "post": {
                 "consumes": [
@@ -2408,6 +2431,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/transferencias": {
+            "get": {
+                "description": "As 100 mais recentes. Com a unidade escolhida (X-Unidade-ID ou ?id_unidade=), só as que saíram dela ou chegaram nela.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Transferencia"
+                ],
+                "summary": "Lista as transferências",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.TransferenciaDto"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Sai da origem pelo FEFO e entra na destino na hora, lote a lote. Falta de saldo → 422; origem fora das unidades do usuário → 403.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Transferencia"
+                ],
+                "summary": "Transfere EPIs entre unidades",
+                "parameters": [
+                    {
+                        "description": "Origem, destino e itens",
+                        "name": "transferencia",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.TransferenciaInserir"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/trocas-pendentes": {
             "get": {
                 "security": [
@@ -2466,6 +2547,14 @@ const docTemplate = `{
                     "Unidade"
                 ],
                 "summary": "Lista as unidades da empresa",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "1 = todas as unidades, para o destino da transferência (usuário limitado recebe só id e nome)",
+                        "name": "destinos",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -3717,6 +3806,88 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "nome": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.TransferenciaDto": {
+            "type": "object",
+            "properties": {
+                "cancelada": {
+                    "type": "boolean"
+                },
+                "data": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "itens": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.TransferenciaItemDto"
+                    }
+                },
+                "observacao": {
+                    "type": "string"
+                },
+                "unidade_destino": {
+                    "$ref": "#/definitions/model.UnidadeResumo"
+                },
+                "unidade_origem": {
+                    "$ref": "#/definitions/model.UnidadeResumo"
+                },
+                "usuario": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.TransferenciaInserir": {
+            "type": "object",
+            "required": [
+                "id_unidade_destino",
+                "id_unidade_origem",
+                "itens"
+            ],
+            "properties": {
+                "id_unidade_destino": {
+                    "type": "integer"
+                },
+                "id_unidade_origem": {
+                    "type": "integer"
+                },
+                "itens": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/model.ItemParaInserir"
+                    }
+                },
+                "observacao": {
+                    "type": "string",
+                    "maxLength": 500
+                }
+            }
+        },
+        "model.TransferenciaItemDto": {
+            "type": "object",
+            "properties": {
+                "epi_nome": {
+                    "type": "string"
+                },
+                "id_epi": {
+                    "type": "integer"
+                },
+                "id_tamanho": {
+                    "type": "integer"
+                },
+                "lote": {
+                    "type": "string"
+                },
+                "quantidade": {
+                    "type": "integer"
+                },
+                "tamanho_nome": {
                     "type": "string"
                 }
             }

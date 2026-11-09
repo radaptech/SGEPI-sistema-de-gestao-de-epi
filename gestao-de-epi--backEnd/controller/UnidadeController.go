@@ -85,6 +85,7 @@ func idDaRota(ctx *gin.Context) (int32, bool) {
 // @Description  Lojas, obras ou almoxarifados do tenant, com funcionários ativos e saldo de EPI em cada uma.
 // @Tags         Unidade
 // @Produce      json
+// @Param        destinos query string false "1 = todas as unidades, para o destino da transferência (usuário limitado recebe só id e nome)"
 // @Success      200 {array} model.UnidadeDto
 // @Router       /unidades [get]
 func (c *UnidadeController) Listar() gin.HandlerFunc {
@@ -96,11 +97,22 @@ func (c *UnidadeController) Listar() gin.HandlerFunc {
 			return
 		}
 
-		// usuário limitado vê só as unidades dele (o seletor do topo também)
-		unidades, err := c.service.Listar(ctx, tenantID, middleware.Unidades(ctx))
+		// usuário limitado vê só as unidades dele (o seletor do topo também).
+		// ?destinos=1: todas, para escolher o destino de uma transferência, mas sem os números das outras
+		permitidas := middleware.Unidades(ctx)
+		destinos := ctx.Query("destinos") != "" && permitidas != nil
+		if destinos {
+			permitidas = nil
+		}
+		unidades, err := c.service.Listar(ctx, tenantID, permitidas)
 		if err != nil {
 			erroUnidade(ctx, err)
 			return
+		}
+		if destinos {
+			for i := range unidades {
+				unidades[i].Funcionarios, unidades[i].Saldo = 0, 0
+			}
 		}
 
 		ctx.JSON(http.StatusOK, unidades)

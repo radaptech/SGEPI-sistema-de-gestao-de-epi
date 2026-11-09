@@ -88,6 +88,8 @@ type EntradaEpiItem struct {
 	IDUsuarioCriacao      int32
 	IDUsuarioCancelamento pgtype.Int4
 	IDUnidade             int32
+	IDLoteOrigem          pgtype.Int4
+	IDTransferencia       pgtype.Int4
 }
 
 type EntradaNf struct {
@@ -233,6 +235,18 @@ type TipoProtecao struct {
 	ID     int32
 	Nome   string
 	Codigo string
+}
+
+type Transferencium struct {
+	ID                    int32
+	TenantID              int32
+	IDUnidadeOrigem       int32
+	IDUnidadeDestino      int32
+	IDUsuario             int32
+	Observacao            string
+	CriadoEm              pgtype.Timestamp
+	CanceladaEm           pgtype.Timestamp
+	IDUsuarioCancelamento pgtype.Int4
 }
 
 type Unidade struct {

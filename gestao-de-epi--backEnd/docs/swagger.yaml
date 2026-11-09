@@ -843,6 +843,61 @@ definitions:
       nome:
         type: string
     type: object
+  model.TransferenciaDto:
+    properties:
+      cancelada:
+        type: boolean
+      data:
+        type: string
+      id:
+        type: integer
+      itens:
+        items:
+          $ref: '#/definitions/model.TransferenciaItemDto'
+        type: array
+      observacao:
+        type: string
+      unidade_destino:
+        $ref: '#/definitions/model.UnidadeResumo'
+      unidade_origem:
+        $ref: '#/definitions/model.UnidadeResumo'
+      usuario:
+        type: string
+    type: object
+  model.TransferenciaInserir:
+    properties:
+      id_unidade_destino:
+        type: integer
+      id_unidade_origem:
+        type: integer
+      itens:
+        items:
+          $ref: '#/definitions/model.ItemParaInserir'
+        minItems: 1
+        type: array
+      observacao:
+        maxLength: 500
+        type: string
+    required:
+    - id_unidade_destino
+    - id_unidade_origem
+    - itens
+    type: object
+  model.TransferenciaItemDto:
+    properties:
+      epi_nome:
+        type: string
+      id_epi:
+        type: integer
+      id_tamanho:
+        type: integer
+      lote:
+        type: string
+      quantidade:
+        type: integer
+      tamanho_nome:
+        type: string
+    type: object
   model.TrocaPendenteDto:
     properties:
       em_posse:
@@ -2388,6 +2443,22 @@ paths:
       summary: Consultar CA na base do MTE
       tags:
       - EPIs
+  /gerencial/transferencias/{id}:
+    delete:
+      description: Devolve o estoque à origem. Recusa (409) se o destino já usou parte
+        dele.
+      parameters:
+      - description: ID da transferência
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+      summary: Cancela uma transferência
+      tags:
+      - Transferencia
   /gerencial/unidades:
     post:
       consumes:
@@ -2524,6 +2595,46 @@ paths:
       summary: Grupos de proteção
       tags:
       - protecao
+  /transferencias:
+    get:
+      description: As 100 mais recentes. Com a unidade escolhida (X-Unidade-ID ou
+        ?id_unidade=), só as que saíram dela ou chegaram nela.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.TransferenciaDto'
+            type: array
+      summary: Lista as transferências
+      tags:
+      - Transferencia
+    post:
+      consumes:
+      - application/json
+      description: Sai da origem pelo FEFO e entra na destino na hora, lote a lote.
+        Falta de saldo → 422; origem fora das unidades do usuário → 403.
+      parameters:
+      - description: Origem, destino e itens
+        in: body
+        name: transferencia
+        required: true
+        schema:
+          $ref: '#/definitions/model.TransferenciaInserir'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: integer
+            type: object
+      summary: Transfere EPIs entre unidades
+      tags:
+      - Transferencia
   /trocas-pendentes:
     get:
       description: EPIs em posse dos funcionários cuja vida útil já venceu ou vence
@@ -2559,6 +2670,12 @@ paths:
     get:
       description: Lojas, obras ou almoxarifados do tenant, com funcionários ativos
         e saldo de EPI em cada uma.
+      parameters:
+      - description: 1 = todas as unidades, para o destino da transferência (usuário
+          limitado recebe só id e nome)
+        in: query
+        name: destinos
+        type: string
       produces:
       - application/json
       responses:

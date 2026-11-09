@@ -56,6 +56,7 @@ WHERE
     AND (sqlc.narg('data_fim')::date IS NULL OR nf.data_emissao <= sqlc.narg('data_fim'))
     AND (sqlc.narg('nota_fiscal')::text IS NULL OR nf.nota_fiscal_numero ILIKE '%' || sqlc.narg('nota_fiscal') || '%')
     AND (sqlc.narg('id_unidade')::int IS NULL OR ei.id_unidade = sqlc.narg('id_unidade')::int)
+    AND ei.id_lote_origem IS NULL -- lote vindo de transferência/devolução não é compra
 ORDER BY nf.data_emissao ASC
 LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
@@ -68,6 +69,7 @@ SET
 WHERE id = $1 
   AND tenant_id = $3
   AND cancelada_em IS NULL
+  AND id_lote_origem IS NULL -- o lote da transferência se desfaz cancelando a transferência
 ReTURNING entrada_nf_id;
 
 -- name: CancelarEntradaNF :execrows
@@ -101,7 +103,8 @@ WHERE
     AND (sqlc.narg('id_epi')::int IS NULL OR ei.id_epi = sqlc.narg('id_epi'))
     AND (sqlc.narg('data_inicio')::date IS NULL OR nf.data_emissao >= sqlc.narg('data_inicio'))
     AND (sqlc.narg('nota_fiscal')::text IS NULL OR nf.nota_fiscal_numero ILIKE '%' || sqlc.narg('nota_fiscal') || '%')
-    AND (sqlc.narg('id_unidade')::int IS NULL OR ei.id_unidade = sqlc.narg('id_unidade')::int);
+    AND (sqlc.narg('id_unidade')::int IS NULL OR ei.id_unidade = sqlc.narg('id_unidade')::int)
+    AND ei.id_lote_origem IS NULL;
 
 -- name: EntradaDashbord :many
 SELECT

@@ -20,6 +20,7 @@ SET
 WHERE id = $1 
   AND tenant_id = $3
   AND cancelada_em IS NULL
+  AND id_lote_origem IS NULL -- o lote da transferência se desfaz cancelando a transferência
 ReTURNING entrada_nf_id
 `
 
@@ -75,6 +76,7 @@ WHERE
     AND ($4::date IS NULL OR nf.data_emissao >= $4)
     AND ($5::text IS NULL OR nf.nota_fiscal_numero ILIKE '%' || $5 || '%')
     AND ($6::int IS NULL OR ei.id_unidade = $6::int)
+    AND ei.id_lote_origem IS NULL
 `
 
 type ContarEntradasFiltradasParams struct {
@@ -378,6 +380,7 @@ WHERE
     AND ($6::date IS NULL OR nf.data_emissao <= $6)
     AND ($7::text IS NULL OR nf.nota_fiscal_numero ILIKE '%' || $7 || '%')
     AND ($8::int IS NULL OR ei.id_unidade = $8::int)
+    AND ei.id_lote_origem IS NULL -- lote vindo de transferência/devolução não é compra
 ORDER BY nf.data_emissao ASC
 LIMIT $10 OFFSET $9
 `
