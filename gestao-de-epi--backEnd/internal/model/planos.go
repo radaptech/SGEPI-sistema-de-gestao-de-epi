@@ -9,6 +9,7 @@ type Plano struct {
 	LimiteFuncionarios *int32          `json:"limite_funcionarios"`
 	LimiteUsuarios     *int32          `json:"limite_usuarios"`
 	LimiteEpis         *int32          `json:"limite_epis"`
+	LimiteUnidades     *int32          `json:"limite_unidades" binding:"omitempty,min=1"`
 	Status             string          `json:"status" binding:"required"`
 	Descricao          string          `json:"descricao" binding:"required"`
 }
@@ -20,6 +21,7 @@ type AtualizarPlanoParams struct {
 	LimiteFuncionarios *int32           `json:"limite_funcionarios"`
 	LimiteUsuarios     *int32           `json:"limite_usuarios"`
 	LimiteEpis         *int32           `json:"limite_epis"`
+	LimiteUnidades     *int32           `json:"limite_unidades" binding:"omitempty,min=1"`
 	Status             *string          `json:"status"`
 	ID                 int32            `json:"id"`
 }

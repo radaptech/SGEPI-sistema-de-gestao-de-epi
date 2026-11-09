@@ -85,7 +85,8 @@ func (f *FuncionarioService) SalvarFuncionario(ctx context.Context, model model.
 		return err
 	}
 
-	if totalFuncionarioAtual >= int64(totalFuncionarioPlano.LimiteFuncionarios.Int32) {
+	// limite NULL = ilimitado
+	if totalFuncionarioPlano.LimiteFuncionarios.Valid && totalFuncionarioAtual >= int64(totalFuncionarioPlano.LimiteFuncionarios.Int32) {
 
 		return helper.ErrLimiteExcedido
 	}

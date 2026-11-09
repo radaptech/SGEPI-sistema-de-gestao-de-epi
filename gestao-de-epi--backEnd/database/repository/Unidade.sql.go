@@ -42,13 +42,18 @@ func (q *Queries) ContarUnidadesAtivas(ctx context.Context, tenantID int32) (int
 const criarUnidade = `-- name: CriarUnidade :one
 
 INSERT INTO unidade (tenant_id, nome)
-VALUES ($1, $2)
+SELECT e.id, $1
+FROM empresas e
+LEFT JOIN planos p ON p.id = e.plano_id
+WHERE e.id = $2
+  AND (p.limite_unidades IS NULL
+       OR (SELECT COUNT(*) FROM unidade u WHERE u.tenant_id = e.id AND u.deletado_em IS NULL) < p.limite_unidades)
 RETURNING id, nome
 `
 
 type CriarUnidadeParams struct {
-	TenantID int32
 	Nome     string
+	TenantID int32
 }
 
 type CriarUnidadeRow struct {
@@ -57,8 +62,11 @@ type CriarUnidadeRow struct {
 }
 
 // Unidades (lojas, obras, almoxarifados) do tenant. Toda query filtra por tenant_id.
+// Respeita planos.limite_unidades (NULL ou empresa sem plano = ilimitado): no limite, não insere nada
+// e volta sem linha, que o repository traduz para ErrLimiteExcedido.
+// ponytail: duas criações simultâneas podem passar do limite por 1; travar a linha da empresa se importar
 func (q *Queries) CriarUnidade(ctx context.Context, arg CriarUnidadeParams) (CriarUnidadeRow, error) {
-	row := q.db.QueryRow(ctx, criarUnidade, arg.TenantID, arg.Nome)
+	row := q.db.QueryRow(ctx, criarUnidade, arg.Nome, arg.TenantID)
 	var i CriarUnidadeRow
 	err := row.Scan(&i.ID, &i.Nome)
 	return i, err

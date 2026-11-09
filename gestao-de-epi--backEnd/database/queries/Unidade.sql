@@ -1,8 +1,16 @@
 -- Unidades (lojas, obras, almoxarifados) do tenant. Toda query filtra por tenant_id.
 
 -- name: CriarUnidade :one
+-- Respeita planos.limite_unidades (NULL ou empresa sem plano = ilimitado): no limite, não insere nada
+-- e volta sem linha, que o repository traduz para ErrLimiteExcedido.
+-- ponytail: duas criações simultâneas podem passar do limite por 1; travar a linha da empresa se importar
 INSERT INTO unidade (tenant_id, nome)
-VALUES ($1, $2)
+SELECT e.id, sqlc.arg('nome')
+FROM empresas e
+LEFT JOIN planos p ON p.id = e.plano_id
+WHERE e.id = sqlc.arg('tenant_id')
+  AND (p.limite_unidades IS NULL
+       OR (SELECT COUNT(*) FROM unidade u WHERE u.tenant_id = e.id AND u.deletado_em IS NULL) < p.limite_unidades)
 RETURNING id, nome;
 
 -- name: ListarUnidades :many

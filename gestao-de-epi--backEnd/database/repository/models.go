@@ -205,6 +205,7 @@ type Plano struct {
 	Status             pgtype.Text
 	Descricao          string
 	CriadoEm           pgtype.Timestamp
+	LimiteUnidades     pgtype.Int4
 }
 
 type Sesso struct {

@@ -43,6 +43,8 @@ func erroUnidade(ctx *gin.Context, err error) {
 		status, msg = http.StatusConflict, "já existe uma unidade com esse nome"
 	case errors.Is(err, helper.ErrNaoEncontrado):
 		status, msg = http.StatusNotFound, "unidade não encontrada"
+	case errors.Is(err, helper.ErrLimiteExcedido):
+		status, msg = http.StatusForbidden, "o plano da empresa chegou ao limite de unidades"
 	case errors.Is(err, helper.ErrUltimaUnidade):
 		status, msg = http.StatusConflict, "a empresa precisa ter pelo menos uma unidade"
 	case errors.Is(err, helper.ErrConflitoIntegridade):

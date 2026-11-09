@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useId } from "react";
 import Dialogo from "../../Dialogo";
 import Selecao from "../../Selecao";
+import CampoLimite, { CAMPOS_LIMITE, erroLimites, limiteParaApi } from "./CampoLimite";
 
 const RECURSOS_PADRAO = [
   "Controle de funcionários",
@@ -27,14 +28,14 @@ function ModalEditarPlano({
     limite_funcionarios: "",
     limite_usuarios: "",
     limite_epis: "",
+    limite_unidades: "",
     status: "Ativo",
   });
 
   const [erro, setErro] = useState("");
 
-  const formatarLimiteParaExibicao = (valor) => {
-    return valor === null ? "Ilimitado" : valor;
-  };
+  // null (ilimitado) marca o checkbox do CampoLimite; número vira texto do input
+  const formatarLimiteParaExibicao = (valor) => (valor == null ? null : String(valor));
 
   useEffect(() => {
     if (plano) {
@@ -45,6 +46,7 @@ function ModalEditarPlano({
         limite_funcionarios: formatarLimiteParaExibicao(plano.limite_funcionarios),
         limite_usuarios: formatarLimiteParaExibicao(plano.limite_usuarios),
         limite_epis: formatarLimiteParaExibicao(plano.limite_epis),
+        limite_unidades: formatarLimiteParaExibicao(plano.limite_unidades),
         status: plano.status || "Ativo",
       });
 
@@ -57,13 +59,6 @@ function ModalEditarPlano({
   const alterarCampo = (campo, valor) => {
     setForm((prev) => ({ ...prev, [campo]: valor }));
     setErro("");
-  };
-
-  const parseLimite = (valor) => {
-    if (!valor || String(valor).trim().toLowerCase() === "ilimitado") {
-      return null;
-    }
-    return parseInt(valor, 10);
   };
 
   const salvar = (e) => {
@@ -84,14 +79,21 @@ function ModalEditarPlano({
       return;
     }
 
+    const erroLimite = erroLimites(form, CAMPOS_LIMITE);
+    if (erroLimite) {
+      setErro(erroLimite);
+      return;
+    }
+
     const planoAtualizado = {
       ...plano, 
       nome: form.nome.trim(),
       mensalidade: Number(form.mensalidade || 0),
       descricao: form.descricao.trim(),
-      limite_funcionarios: parseLimite(form.limite_funcionarios),
-      limite_usuarios: parseLimite(form.limite_usuarios),
-      limite_epis: parseLimite(form.limite_epis),
+      limite_funcionarios: limiteParaApi(form.limite_funcionarios),
+      limite_usuarios: limiteParaApi(form.limite_usuarios),
+      limite_epis: limiteParaApi(form.limite_epis),
+      limite_unidades: limiteParaApi(form.limite_unidades),
       status: form.status,
     };
 
@@ -157,22 +159,28 @@ function ModalEditarPlano({
                 onChange={(e) => alterarCampo("mensalidade", e.target.value)}
               />
 
-              <CampoTexto
+              <CampoLimite
                 label="Limite de Funcionários"
                 value={form.limite_funcionarios}
-                onChange={(e) => alterarCampo("limite_funcionarios", e.target.value)}
+                onChange={(v) => alterarCampo("limite_funcionarios", v)}
               />
 
-              <CampoTexto
+              <CampoLimite
                 label="Limite de Usuários"
                 value={form.limite_usuarios}
-                onChange={(e) => alterarCampo("limite_usuarios", e.target.value)}
+                onChange={(v) => alterarCampo("limite_usuarios", v)}
               />
 
-              <CampoTexto
+              <CampoLimite
                 label="Limite de EPIs"
                 value={form.limite_epis}
-                onChange={(e) => alterarCampo("limite_epis", e.target.value)}
+                onChange={(v) => alterarCampo("limite_epis", v)}
+              />
+
+              <CampoLimite
+                label="Limite de Unidades"
+                value={form.limite_unidades}
+                onChange={(v) => alterarCampo("limite_unidades", v)}
               />
 
               <CampoSelect

@@ -81,6 +81,8 @@ SELECT
     p.nome AS plano_nome, 
     (SELECT COUNT(*)::int FROM funcionario f WHERE f.tenant_id = e.id) AS funcionarios,
     (SELECT COUNT(*)::int FROM epi ep WHERE ep.tenant_id = e.id) AS epis,
+    (SELECT COUNT(*)::int FROM unidade u WHERE u.tenant_id = e.id AND u.deletado_em IS NULL) AS unidades,
+    p.limite_unidades,
     p.mensalidade::float8,
     e.vencimento,
     e.status,
@@ -90,19 +92,21 @@ INNER JOIN planos p ON e.plano_id = p.id
 `
 
 type DadosEmpresasRow struct {
-	ID           int32
-	Nome         string
-	Cnpj         string
-	Responsavel  pgtype.Text
-	Email        pgtype.Text
-	Telefone     pgtype.Text
-	PlanoNome    string
-	Funcionarios int32
-	Epis         int32
-	PMensalidade float64
-	Vencimento   pgtype.Date
-	Status       string
-	Observacoes  pgtype.Text
+	ID             int32
+	Nome           string
+	Cnpj           string
+	Responsavel    pgtype.Text
+	Email          pgtype.Text
+	Telefone       pgtype.Text
+	PlanoNome      string
+	Funcionarios   int32
+	Epis           int32
+	Unidades       int32
+	LimiteUnidades pgtype.Int4
+	PMensalidade   float64
+	Vencimento     pgtype.Date
+	Status         string
+	Observacoes    pgtype.Text
 }
 
 func (q *Queries) DadosEmpresas(ctx context.Context) ([]DadosEmpresasRow, error) {
@@ -124,6 +128,8 @@ func (q *Queries) DadosEmpresas(ctx context.Context) ([]DadosEmpresasRow, error)
 			&i.PlanoNome,
 			&i.Funcionarios,
 			&i.Epis,
+			&i.Unidades,
+			&i.LimiteUnidades,
 			&i.PMensalidade,
 			&i.Vencimento,
 			&i.Status,

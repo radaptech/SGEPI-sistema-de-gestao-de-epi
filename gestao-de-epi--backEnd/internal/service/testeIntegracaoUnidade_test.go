@@ -147,6 +147,32 @@ func TestUnidade(t *testing.T) {
 		require.NoError(t, err)
 	})
 
+	// Fase 9: planos.limite_unidades (NULL = ilimitado)
+	t.Run("respeita o limite de unidades do plano e libera a vaga da desativada", func(t *testing.T) {
+		ctx := context.Background()
+		db := SetupTestDB(t)
+		defer db.Close()
+
+		plano := CreatePlanos(t, db)
+		empresa := CreateEmpresa(t, db, plano)
+		serv := NewUnidadeService(repository.NewUnidadeRepository(db))
+		tenant := int32(empresa)
+
+		_, err := serv.Criar(ctx, model.UnidadeInserir{Nome: "Sem limite"}, tenant)
+		require.NoError(t, err, "plano sem limite_unidades não barra")
+
+		_, err = db.Exec(ctx, "UPDATE planos SET limite_unidades = 3 WHERE id = $1", plano)
+		require.NoError(t, err)
+		terceira, err := serv.Criar(ctx, model.UnidadeInserir{Nome: "Loja 3"}, tenant) // Principal + 2
+		require.NoError(t, err)
+		_, err = serv.Criar(ctx, model.UnidadeInserir{Nome: "Loja 4"}, tenant)
+		require.ErrorIs(t, err, helper.ErrLimiteExcedido)
+
+		require.NoError(t, serv.Desativar(ctx, terceira.ID, tenant))
+		_, err = serv.Criar(ctx, model.UnidadeInserir{Nome: "Loja 4"}, tenant)
+		require.NoError(t, err, "a desativada não conta")
+	})
+
 	t.Run("uma empresa não enxerga nem mexe na unidade da outra", func(t *testing.T) {
 		ctx := context.Background()
 		db := SetupTestDB(t)

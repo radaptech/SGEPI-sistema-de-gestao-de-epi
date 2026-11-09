@@ -121,8 +121,8 @@ function Empresas() {
   };
 
   return (
-    <div className=" min-h-screen bg-sunken font-sans pb-12">
-      <div className="w-full max-w-[1600px] mx-auto p-6 lg:p-10">
+    <div className="text-ink pb-16">
+      <div className="w-full">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
           <div>
             <h1 className="text-3xl font-bold text-ink tracking-tight">
@@ -182,21 +182,22 @@ function Empresas() {
             <table className="w-full text-left whitespace-nowrap">
               <thead className="bg-sunken border-b border-line text-xs font-bold text-ink-2 uppercase tracking-wide">
                 <tr>
-                  <th className="px-6 py-4">Empresa</th>
-                  <th className="px-6 py-4">Responsável</th>
-                  <th className="px-6 py-4 text-center">Plano</th>
-                  <th className="px-6 py-4 text-center">Equipe</th>
-                  <th className="px-6 py-4 text-center">EPIs</th>
-                  <th className="px-6 py-4 text-right">Mensalidade</th>
-                  <th className="px-6 py-4 text-center">Status</th>
-                  <th className="px-6 py-4 text-center">Ações</th>
+                  <th className="px-4 py-4">Empresa</th>
+                  <th className="px-4 py-4">Responsável</th>
+                  <th className="px-4 py-4 text-center">Plano</th>
+                  <th className="px-4 py-4 text-center">Equipe</th>
+                  <th className="px-4 py-4 text-center">EPIs</th>
+                  <th className="px-4 py-4 text-center">Unidades</th>
+                  <th className="px-4 py-4 text-right">Mensalidade</th>
+                  <th className="px-4 py-4 text-center">Status</th>
+                  <th className="px-4 py-4 text-center">Ações</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-line">
                 {empresasFiltradas.map((empresa) => (
                   <tr key={empresa.id} className="hover:bg-sunken transition-colors group">
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4">
                       <p className="text-sm font-bold text-ink">{empresa.nome}</p>
                       <div className="flex flex-col gap-0.5 mt-1">
                         <p className="text-[12px] text-ink-2 font-medium">
@@ -208,7 +209,7 @@ function Empresas() {
                       </div>
                     </td>
 
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4">
                       <p className="text-sm font-semibold text-ink">
                         {empresa.responsavel || "-"}
                       </p>
@@ -217,21 +218,28 @@ function Empresas() {
                       </p>
                     </td>
 
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-4 py-4 text-center">
                       <span className="inline-flex px-2.5 py-1 rounded-md bg-sunken border border-line text-ink-2 text-xs font-bold tracking-wide">
                         {empresa.planoNome || empresa.plano || "-"}
                       </span>
                     </td>
 
-                    <td className="px-6 py-4 text-center text-sm font-bold text-ink">
+                    <td className="px-4 py-4 text-center text-sm font-bold text-ink">
                       {empresa.funcionarios ?? 0}
                     </td>
 
-                    <td className="px-6 py-4 text-center text-sm font-bold text-ink">
+                    <td className="px-4 py-4 text-center text-sm font-bold text-ink">
                       {empresa.epis ?? 0}
                     </td>
 
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-4 py-4 text-center text-sm font-bold text-ink">
+                      {empresa.unidades ?? 0}
+                      {empresa.limite_unidades != null && (
+                        <span className="text-xs font-medium text-ink-3"> / {empresa.limite_unidades}</span>
+                      )}
+                    </td>
+
+                    <td className="px-4 py-4 text-right">
                       <p className="text-sm font-bold text-ink">
                         {formatarMoeda(empresa.mensalidade)}
                       </p>
@@ -240,13 +248,13 @@ function Empresas() {
                       </p>
                     </td>
 
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-4 py-4 text-center">
                       <span className={`inline-flex px-2.5 py-1 rounded-md border text-xs font-bold tracking-wide ${getStatusClass(empresa.status)}`}>
                         {empresa.status || "Indefinido"}
                       </span>
                     </td>
 
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4">
                       <div className="flex items-center justify-center gap-1.5 transition-opacity">
                         <button
                           type="button"
@@ -270,7 +278,7 @@ function Empresas() {
 
                 {empresasFiltradas.length === 0 && (
                   <tr>
-                    <td colSpan="8" className="px-6 py-12 text-center">
+                    <td colSpan="9" className="px-4 py-12 text-center">
                       <div className="flex flex-col items-center justify-center gap-3">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />

@@ -12,8 +12,8 @@ import (
 )
 
 const addPlano = `-- name: AddPlano :one
-INSERT INTO planos (nome, mensalidade, limite_funcionarios, limite_usuarios, limite_epis, status, descricao)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO planos (nome, mensalidade, limite_funcionarios, limite_usuarios, limite_epis, status, descricao, limite_unidades)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     RETURNING id
 `
 
@@ -25,6 +25,7 @@ type AddPlanoParams struct {
 	LimiteEpis         pgtype.Int4
 	Status             pgtype.Text
 	Descricao          string
+	LimiteUnidades     pgtype.Int4
 }
 
 func (q *Queries) AddPlano(ctx context.Context, arg AddPlanoParams) (int32, error) {
@@ -36,6 +37,7 @@ func (q *Queries) AddPlano(ctx context.Context, arg AddPlanoParams) (int32, erro
 		arg.LimiteEpis,
 		arg.Status,
 		arg.Descricao,
+		arg.LimiteUnidades,
 	)
 	var id int32
 	err := row.Scan(&id)
@@ -48,11 +50,12 @@ SET
   nome = COALESCE($1, nome),
   mensalidade = COALESCE($2, mensalidade),
   descricao = COALESCE($3, descricao),
-  limite_funcionarios = COALESCE($4, limite_funcionarios),
-  limite_usuarios = COALESCE($5, limite_usuarios),
-  limite_epis = COALESCE($6, limite_epis),
-  status = COALESCE($7, status)
-WHERE id = $8
+  limite_funcionarios = $4,
+  limite_usuarios = $5,
+  limite_epis = $6,
+  limite_unidades = $7,
+  status = COALESCE($8, status)
+WHERE id = $9
 `
 
 type AtualizarPlanoParams struct {
@@ -62,10 +65,12 @@ type AtualizarPlanoParams struct {
 	LimiteFuncionarios pgtype.Int4
 	LimiteUsuarios     pgtype.Int4
 	LimiteEpis         pgtype.Int4
+	LimiteUnidades     pgtype.Int4
 	Status             pgtype.Text
 	ID                 int32
 }
 
+// Os limites são gravados como vêm: NULL = ilimitado (a tela de edição manda sempre os quatro).
 func (q *Queries) AtualizarPlano(ctx context.Context, arg AtualizarPlanoParams) error {
 	_, err := q.db.Exec(ctx, atualizarPlano,
 		arg.Nome,
@@ -74,6 +79,7 @@ func (q *Queries) AtualizarPlano(ctx context.Context, arg AtualizarPlanoParams) 
 		arg.LimiteFuncionarios,
 		arg.LimiteUsuarios,
 		arg.LimiteEpis,
+		arg.LimiteUnidades,
 		arg.Status,
 		arg.ID,
 	)
@@ -97,7 +103,7 @@ func (q *Queries) AtualizarStatusPlano(ctx context.Context, arg AtualizarStatusP
 }
 
 const buscaPlanos = `-- name: BuscaPlanos :many
-SELECT id, nome, mensalidade, limite_funcionarios, limite_usuarios, limite_epis, status, descricao
+SELECT id, nome, mensalidade, limite_funcionarios, limite_usuarios, limite_epis, status, descricao, limite_unidades
 FROM planos
 WHERE status = 'Ativo'
 ORDER BY nome ASC
@@ -112,6 +118,7 @@ type BuscaPlanosRow struct {
 	LimiteEpis         pgtype.Int4
 	Status             pgtype.Text
 	Descricao          string
+	LimiteUnidades     pgtype.Int4
 }
 
 func (q *Queries) BuscaPlanos(ctx context.Context) ([]BuscaPlanosRow, error) {
@@ -132,6 +139,7 @@ func (q *Queries) BuscaPlanos(ctx context.Context) ([]BuscaPlanosRow, error) {
 			&i.LimiteEpis,
 			&i.Status,
 			&i.Descricao,
+			&i.LimiteUnidades,
 		); err != nil {
 			return nil, err
 		}

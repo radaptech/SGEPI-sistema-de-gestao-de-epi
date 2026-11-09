@@ -120,8 +120,8 @@ function Mensalidades() {
   };
 
   return (
-    <div className=" min-h-screen bg-sunken font-sans pb-12">
-      <div className="w-full max-w-[1600px] mx-auto p-6 lg:p-10">
+    <div className="text-ink pb-16">
+      <div className="w-full">
         
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
           <div>

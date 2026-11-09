@@ -241,7 +241,14 @@ espírito do isolamento entre tenants.
 - Alerta de estoque mínimo por unidade (o card "Estoque baixo" passa a ser por loja).
 - Opcional: tabela `epi_minimo_unidade (id_epi, id_unidade, minimo)`, para a loja grande ter mínimo maior.
 
-### Fase 9: plano e master [P]
+### Fase 9: plano e master [P] (feita em 09/11/2026)
+
+> **Como ficou:**
+> - Migração 000045: `planos.limite_unidades` (NULL = ilimitado, então nenhum plano existente muda).
+> - A checagem fica no próprio `CriarUnidade`: o INSERT só acontece abaixo do limite. Sem linha → `ErrLimiteExcedido` → 403 "o plano da empresa chegou ao limite de unidades". Unidade desativada não conta. Empresa sem plano = ilimitada. Limite conhecido (`ponytail:` na query): duas criações simultâneas podem passar do limite por 1.
+> - Master: campo "Limite de Unidades" nos modais de novo plano e de edição, o limite no cartão do plano e a coluna "Unidades" na lista de empresas (`3 / 5` quando há limite). `/master/dashboard/dados-empresas` devolve `unidades` e `limite_unidades`.
+> - Nos modais, cada limite tem o checkbox "Ilimitado" (`CampoLimite.jsx`); sem número e sem o checkbox, não salva. O `AtualizarPlano` grava os limites como vêm (antes o `COALESCE` impedia voltar para ilimitado), e o limite NULL de funcionários e de usuários passou a valer como ilimitado (antes contava como 0 e bloqueava todo cadastro).
+> - Testes: subteste de limite no `TestUnidade`.
 
 - `planos.limite_unidades`, com a checagem no `CriarUnidade` (`ErrLimiteExcedido` → 403), como já é feito
   para usuários.

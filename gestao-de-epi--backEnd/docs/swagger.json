@@ -2827,6 +2827,10 @@
                 "id": {
                     "type": "integer"
                 },
+                "limite_unidades": {
+                    "description": "do plano; nil = ilimitado",
+                    "type": "integer"
+                },
                 "mensalidade": {
                     "type": "number"
                 },
@@ -2847,6 +2851,9 @@
                 },
                 "telefone": {
                     "type": "string"
+                },
+                "unidades": {
+                    "type": "integer"
                 },
                 "vencimento": {
                     "type": "string"

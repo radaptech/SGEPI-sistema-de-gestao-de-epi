@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -24,6 +26,9 @@ func NewUnidadeRepository(pool *pgxpool.Pool) *UnidadeRepository {
 func (u *UnidadeRepository) Criar(ctx context.Context, arg CriarUnidadeParams) (CriarUnidadeRow, error) {
 
 	unidade, err := u.q.CriarUnidade(ctx, arg)
+	if errors.Is(err, pgx.ErrNoRows) { // a query não insere quando o plano já está no limite
+		return CriarUnidadeRow{}, helper.ErrLimiteExcedido
+	}
 	if err != nil {
 		return CriarUnidadeRow{}, helper.TraduzErroPostgres(err)
 	}

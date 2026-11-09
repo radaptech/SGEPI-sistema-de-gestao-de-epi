@@ -2833,6 +2833,10 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "limite_unidades": {
+                    "description": "do plano; nil = ilimitado",
+                    "type": "integer"
+                },
                 "mensalidade": {
                     "type": "number"
                 },
@@ -2853,6 +2857,9 @@ const docTemplate = `{
                 },
                 "telefone": {
                     "type": "string"
+                },
+                "unidades": {
+                    "type": "integer"
                 },
                 "vencimento": {
                     "type": "string"

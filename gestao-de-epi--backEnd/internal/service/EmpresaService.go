@@ -125,20 +125,27 @@ func (e *EmpresaService) DadosEmpresas(ctx context.Context) ([]model.Empresa, er
 
 	for _, empresa := range empresas {
 
+		var limite *int32 // nil = ilimitado
+		if empresa.LimiteUnidades.Valid {
+			limite = &empresa.LimiteUnidades.Int32
+		}
+
 		ee := model.Empresa{
-			ID:           int64(empresa.ID),
-			Nome:         empresa.Nome,
-			CNPJ:         empresa.Cnpj,
-			Responsavel:  empresa.Responsavel.String,
-			Email:        empresa.Email.String,
-			Telefone:     empresa.Telefone.String,
-			Plano:        empresa.PlanoNome,
-			Funcionarios: int(empresa.Funcionarios),
-			EPIs:         int(empresa.Epis),
-			Mensalidade:  empresa.PMensalidade,
-			Vencimento:   *configs.NewDataBrPtr(empresa.Vencimento.Time),
-			Status:       empresa.Status,
-			Observacoes:  empresa.Observacoes.String,
+			ID:             int64(empresa.ID),
+			Nome:           empresa.Nome,
+			CNPJ:           empresa.Cnpj,
+			Responsavel:    empresa.Responsavel.String,
+			Email:          empresa.Email.String,
+			Telefone:       empresa.Telefone.String,
+			Plano:          empresa.PlanoNome,
+			Funcionarios:   int(empresa.Funcionarios),
+			EPIs:           int(empresa.Epis),
+			Unidades:       int(empresa.Unidades),
+			LimiteUnidades: limite,
+			Mensalidade:    empresa.PMensalidade,
+			Vencimento:     *configs.NewDataBrPtr(empresa.Vencimento.Time),
+			Status:         empresa.Status,
+			Observacoes:    empresa.Observacoes.String,
 		}
 
 		dto = append(dto, ee)
