@@ -28,6 +28,7 @@ var (
 	ErrUnidadeInvalida     = errors.New("unidade não encontrada ou desativada")
 	ErrUnidadeObrigatoria  = errors.New("escolha a unidade: a empresa tem mais de uma")
 	ErrUltimaUnidade       = errors.New("a empresa precisa ter pelo menos uma unidade")
+	ErrUnidadeSemAcesso    = errors.New("você não tem acesso a esta unidade")
 )
 
 // Códigos de Erro Oficiais do PostgreSQL

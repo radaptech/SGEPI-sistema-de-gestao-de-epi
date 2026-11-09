@@ -7,6 +7,28 @@ definitions:
       message:
         type: string
     type: object
+  model.AcessoUnidadeDto:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      nome:
+        type: string
+      role:
+        type: string
+      unidades:
+        items:
+          type: integer
+        type: array
+    type: object
+  model.AcessoUnidadeInserir:
+    properties:
+      unidades:
+        items:
+          type: integer
+        type: array
+    type: object
   model.CaepiDto:
     properties:
       ca:
@@ -2422,6 +2444,46 @@ paths:
         "204":
           description: No Content
       summary: Renomeia uma unidade
+      tags:
+      - Unidade
+  /gerencial/unidades/acessos:
+    get:
+      description: Usuários ativos da empresa com as unidades que cada um pode ver.
+        Vazio = todas; admin sempre vê todas.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.AcessoUnidadeDto'
+            type: array
+      summary: Lista quem vê quais unidades
+      tags:
+      - Unidade
+  /gerencial/usuarios/{id}/unidades:
+    put:
+      consumes:
+      - application/json
+      description: Troca a lista inteira. Lista vazia = todas as unidades. Não vale
+        para admin, que sempre vê todas.
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Unidades permitidas
+        in: body
+        name: acesso
+        required: true
+        schema:
+          $ref: '#/definitions/model.AcessoUnidadeInserir'
+      responses:
+        "204":
+          description: No Content
+      summary: Limita o usuário a algumas unidades
       tags:
       - Unidade
   /motivos:

@@ -77,6 +77,7 @@ FROM entrada_epi_item e
 INNER JOIN epi p ON e.id_epi = p.id
 WHERE e.tenant_id = sqlc.arg('tenant_id')
   AND e.ativo = TRUE
+  AND (sqlc.narg('id_unidade')::int IS NULL OR e.id_unidade = sqlc.narg('id_unidade')::int)
 GROUP BY e.id_epi, p.nome
 LIMIT $1 OFFSET $2;
 
@@ -91,6 +92,7 @@ FROM entrada_epi_item e
 INNER JOIN epi p ON e.id_epi = p.id
 WHERE e.tenant_id = sqlc.arg('tenant_id')
   AND e.ativo = TRUE
+  AND (sqlc.narg('id_unidade')::int IS NULL OR e.id_unidade = sqlc.narg('id_unidade')::int)
   AND (p.fabricante = sqlc.narg('fabricante') OR sqlc.narg('fabricante') IS NULL)
 GROUP BY e.id_epi, p.nome
 LIMIT $1 OFFSET $2;

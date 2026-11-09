@@ -9,6 +9,8 @@ import (
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/database/repository"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/middleware"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
@@ -98,14 +100,14 @@ func TestUnidade(t *testing.T) {
 		_, err = serv.Criar(ctx, model.UnidadeInserir{Nome: "L"}, tenant)
 		require.ErrorIs(t, err, helper.ErrNomeCurto)
 
-		unidades, err := serv.Listar(ctx, tenant)
+		unidades, err := serv.Listar(ctx, tenant, nil)
 		require.NoError(t, err)
 		require.Len(t, unidades, 2)
 		require.Equal(t, model.UnidadeDto{ID: principalDe(t, db, empresa), Nome: "Principal", Funcionarios: 1, Saldo: 100}, unidades[0])
 		require.Equal(t, model.UnidadeDto{ID: loja2.ID, Nome: "Loja 2", Funcionarios: 0, Saldo: 0}, unidades[1])
 
 		require.NoError(t, serv.Renomear(ctx, loja2.ID, model.UnidadeInserir{Nome: "Loja Centro"}, tenant))
-		unidades, err = serv.Listar(ctx, tenant)
+		unidades, err = serv.Listar(ctx, tenant, nil)
 		require.NoError(t, err)
 		require.Equal(t, "Loja Centro", unidades[1].Nome)
 
@@ -134,7 +136,7 @@ func TestUnidade(t *testing.T) {
 		require.ErrorIs(t, serv.Desativar(ctx, principal, tenant), helper.ErrUnidadeEmUso, "a Principal tem o lote de 100 un")
 
 		require.NoError(t, serv.Desativar(ctx, vazia.ID, tenant))
-		unidades, err := serv.Listar(ctx, tenant)
+		unidades, err := serv.Listar(ctx, tenant, nil)
 		require.NoError(t, err)
 		require.Len(t, unidades, 1, "a desativada some da lista")
 		require.ErrorIs(t, serv.Desativar(ctx, vazia.ID, tenant), helper.ErrNaoEncontrado)
@@ -159,7 +161,7 @@ func TestUnidade(t *testing.T) {
 		lojaA, err := serv.Criar(ctx, model.UnidadeInserir{Nome: "Loja A"}, int32(empresaA))
 		require.NoError(t, err)
 
-		unidadesB, err := serv.Listar(ctx, int32(empresaB))
+		unidadesB, err := serv.Listar(ctx, int32(empresaB), nil)
 		require.NoError(t, err)
 		require.Len(t, unidadesB, 1, "B só vê a própria Principal")
 
@@ -587,4 +589,92 @@ func TestFiltroPorUnidade(t *testing.T) {
 	require.Equal(t, todasEsperado, conta(todas), "sem filtro")
 	require.Equal(t, l1Esperado, conta(l1), "Loja 1")
 	require.Equal(t, l2Esperado, conta(l2), "Loja 2")
+}
+
+// Fase 6: usuário limitado a algumas unidades. O HTTP (403 no header/URL) está em middleware/unidade_test.go;
+// aqui, o que depende do banco e a trava da escrita, que vale mesmo sem header.
+func TestPermissaoPorUnidade(t *testing.T) {
+	validade := time.Now().AddDate(2, 0, 0)
+
+	t.Run("acesso gravado aparece na sessão, lista vazia volta a todas e outro tenant é recusado", func(t *testing.T) {
+		c := novoCenarioDuasLojas(t)
+		defer c.db.Close()
+		unidades := NewUnidadeService(repository.NewUnidadeRepository(c.db))
+		q := repository.New(c.db)
+		require.NoError(t, q.CriarSessao(c.ctx, repository.CriarSessaoParams{
+			TokenHash: "hash-f6", UsuarioID: c.user,
+			ExpiraEm: pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
+		}))
+
+		require.NoError(t, unidades.DefinirAcesso(c.ctx, c.user, model.AcessoUnidadeInserir{Unidades: []int32{c.loja2}}, c.tenant))
+		sessao, err := q.BuscarSessao(c.ctx, "hash-f6")
+		require.NoError(t, err)
+		require.Equal(t, []int32{c.loja2}, sessao.Unidades)
+
+		visiveis, err := unidades.Listar(c.ctx, c.tenant, sessao.Unidades)
+		require.NoError(t, err)
+		require.Len(t, visiveis, 1)
+		require.Equal(t, "Loja 2", visiveis[0].Nome)
+
+		acessos, err := unidades.Acessos(c.ctx, c.tenant)
+		require.NoError(t, err)
+		require.Equal(t, []int32{c.loja2}, acessos[0].Unidades)
+
+		require.NoError(t, unidades.DefinirAcesso(c.ctx, c.user, model.AcessoUnidadeInserir{}, c.tenant))
+		sessao, err = q.BuscarSessao(c.ctx, "hash-f6")
+		require.NoError(t, err)
+		require.Empty(t, sessao.Unidades, "sem linha = todas")
+
+		outra := CreateEmpresa(t, c.db, CreatePlanos(t, c.db))
+		userOutra := int32(CreateUser(t, c.db, outra))
+		require.ErrorIs(t, unidades.DefinirAcesso(c.ctx, userOutra, model.AcessoUnidadeInserir{Unidades: []int32{c.loja1}}, c.tenant),
+			helper.ErrConflitoIntegridade, "usuário de outro tenant")
+		require.ErrorIs(t, unidades.DefinirAcesso(c.ctx, c.user, model.AcessoUnidadeInserir{Unidades: []int32{principalDe(t, c.db, outra)}}, c.tenant),
+			helper.ErrConflitoIntegridade, "unidade de outro tenant")
+	})
+
+	t.Run("usuário da Loja 2 não entrega nem recebe devolução pela Loja 1", func(t *testing.T) {
+		c := novoCenarioDuasLojas(t)
+		defer c.db.Close()
+		require.NoError(t, c.entrada(t, &c.loja1, "NF-L1", 10, validade))
+		require.NoError(t, c.entrada(t, &c.loja2, "NF-L2", 10, validade))
+		require.NoError(t, c.entrega(2, nil)) // ainda sem limite: Loja 1 fica com 8
+
+		// o service recebe o *gin.Context, que acha a chave posta pela Sessao; aqui, o mesmo com WithValue
+		c.ctx = context.WithValue(c.ctx, middleware.UnidadesKey, []int32{c.loja2})
+
+		require.ErrorIs(t, c.entrega(1, nil), helper.ErrUnidadeSemAcesso, "funcionário é da Loja 1")
+		require.ErrorIs(t, c.entrega(1, &c.loja1), helper.ErrUnidadeSemAcesso)
+		require.NoError(t, c.entrega(3, &c.loja2), "a própria loja pode atender qualquer funcionário")
+
+		err := c.devolucoes.SalvarDevolucao(c.ctx, model.DevolucaoInserir{
+			IdFuncionario: int(c.funcionario), IdEpi: int(c.epi), IdMotivo: int(c.motivoVoltaAoEstoque), IdTamanho: int(c.tam),
+			DataDevolucao: *configs.NewDataBrPtr(time.Now()), QuantidadeADevolver: 1, Iduser: int(c.user),
+			AssinaturaDigital: "x", Observacao: new(string),
+		}, c.tenant, "token-f6")
+		require.ErrorIs(t, err, helper.ErrUnidadeSemAcesso, "a devolução volta para a Loja 1")
+
+		require.Equal(t, int32(8), c.saldo(t, c.loja1), "Loja 1 intacta")
+		require.Equal(t, int32(7), c.saldo(t, c.loja2))
+	})
+
+	t.Run("totais de estoque filtram pela unidade", func(t *testing.T) {
+		c := novoCenarioDuasLojas(t)
+		defer c.db.Close()
+		require.NoError(t, c.entrada(t, &c.loja1, "NF-L1", 10, validade))
+		require.NoError(t, c.entrada(t, &c.loja2, "NF-L2", 4, validade))
+		estoque := NewEstoqueService(repository.NewEstoqueRepository(c.db))
+		pag := FiltroPaginacao{Pagina: 1, Quantidade: 10}
+
+		todas, err := estoque.MostrarQuantidadeTotais(c.ctx, FiltroEstoqueAtual{FiltroPaginacao: pag}, c.tenant)
+		require.NoError(t, err)
+		loja2, err := estoque.MostrarQuantidadeTotais(c.ctx, FiltroEstoqueAtual{IdUnidade: c.loja2, FiltroPaginacao: pag}, c.tenant)
+		require.NoError(t, err)
+		saldo2, err := estoque.MostrarSaldoAtual(c.ctx, FiltroEstoqueSaldo{IdUnidade: c.loja2, FiltroPaginacao: pag}, c.tenant)
+		require.NoError(t, err)
+
+		require.EqualValues(t, 14, todas.EstoqueAtual[0].QuantidadeTotal)
+		require.EqualValues(t, 4, loja2.EstoqueAtual[0].QuantidadeTotal)
+		require.EqualValues(t, 4, saldo2.EstoqueSaldo[0].QuantidadeAtual)
+	})
 }

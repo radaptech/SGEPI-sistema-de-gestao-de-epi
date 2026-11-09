@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Check, Loader2, PenLine, Plus, Trash2, X } from "lucide-react";
 import { api } from "../../services/api";
+import AcessoUnidades from "./AcessoUnidades";
 
 // Unidades: lojas, obras ou almoxarifados com estoque próprio dentro da empresa.
-// Plano: gestao-de-epi--backEnd/docs/PLANO-UNIDADES.md (Fase 2).
+// Plano: gestao-de-epi--backEnd/docs/PLANO-UNIDADES.md (Fases 2 e 6).
 
 const inputClass =
   "w-full px-4 h-11 rounded-md text-sm font-medium bg-surface text-ink border border-line-strong outline-none focus:ring-1 focus:ring-ink focus:border-ink placeholder-ink-3 transition-colors";
@@ -96,8 +97,8 @@ export default function AbaUnidades() {
           Quem tem um local só não precisa mexer aqui.
         </p>
         <p className="mt-1 text-xs text-ink-3">
-          Por enquanto, todo o estoque e os funcionários ficam na primeira unidade. A escolha da unidade nas
-          entradas, nas entregas e no cadastro de funcionários vem nas próximas etapas.
+          Com duas ou mais, cada entrada, entrega e funcionário fica numa unidade, e a unidade escolhida no topo
+          filtra as telas.
         </p>
       </div>
 
@@ -245,6 +246,8 @@ export default function AbaUnidades() {
           </ul>
         )}
       </section>
+
+      {total >= 2 && <AcessoUnidades unidades={unidades} />}
     </div>
   );
 }

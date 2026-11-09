@@ -9,6 +9,7 @@ function Header({ paginaAtual, setPagina, onLogout, usuario }) {
   const nomeUsuario = usuario?.nome || "Usuário";
   const isSuperAdmin = usuario?.role === "super_admin";
   const isAdminEmpresa = usuario?.role === "admin";
+  const restrito = usuario?.unidades?.length > 0; // limitado a algumas unidades (Fase 6)
   const perfilNormalizado = String(usuario?.role ?? "").toUpperCase();
 
   useEffect(() => {
@@ -195,7 +196,7 @@ function Header({ paginaAtual, setPagina, onLogout, usuario }) {
               {isSuperAdmin ? (
                 <span className="text-xs text-ink-3 mt-0.5">Painel Master</span>
               ) : (
-                <SeletorUnidade compacto semUnidades={<span className="text-xs text-ink-3 mt-0.5">Gestão de Estoque</span>} />
+                <SeletorUnidade compacto restrito={restrito} semUnidades={<span className="text-xs text-ink-3 mt-0.5">Gestão de Estoque</span>} />
               )}
             </div>
           </div>
@@ -334,7 +335,7 @@ function Header({ paginaAtual, setPagina, onLogout, usuario }) {
               <p className="font-mono text-xs text-ink-3 mt-1">
                 {perfilNormalizado}
               </p>
-              {!isSuperAdmin && <SeletorUnidade id="seletor-unidade-mobile" className="mt-3" />}
+              {!isSuperAdmin && <SeletorUnidade id="seletor-unidade-mobile" className="mt-3" restrito={restrito} />}
             </div>
 
             <nav className="flex flex-col gap-1">

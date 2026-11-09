@@ -14,6 +14,7 @@ import (
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/database/repository"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/middleware"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -470,6 +471,18 @@ func (e *EntregaService) BuscaItemDash(ctx context.Context, tenantID, unidade in
 // unidadeDaOperacao decide de qual unidade sai (ou para qual volta) o estoque:
 // a pedida, se vier; senão, a do funcionário.
 func unidadeDaOperacao(ctx context.Context, qtx *repository.Queries, pedida *int32, idFuncionario, tenantId int32) (int32, error) {
+	unidade, err := unidadePedidaOuDoFuncionario(ctx, qtx, pedida, idFuncionario, tenantId)
+	if err != nil {
+		return 0, err
+	}
+	// usuário limitado a algumas lojas (Fase 6): entrega e devolução passam todas por aqui
+	if !middleware.UnidadePermitida(ctx, unidade) {
+		return 0, helper.ErrUnidadeSemAcesso
+	}
+	return unidade, nil
+}
+
+func unidadePedidaOuDoFuncionario(ctx context.Context, qtx *repository.Queries, pedida *int32, idFuncionario, tenantId int32) (int32, error) {
 	if pedida != nil {
 		if err := unidadeAtiva(ctx, qtx, *pedida, tenantId); err != nil {
 			return 0, err

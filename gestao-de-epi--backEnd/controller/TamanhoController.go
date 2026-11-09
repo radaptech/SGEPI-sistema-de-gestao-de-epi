@@ -220,8 +220,8 @@ func (t *TamanhoController) ListarTamanhoPorIdEpi() gin.HandlerFunc {
 			return
 		}
 
-		idUnidade, _ := strconv.Atoi(ctx.Query("id_unidade")) // opcional: saldo só desta unidade
-		tamanho, err := t.service.ListarTamanhoPorIdEpi(ctx, int32(id), int32(idUnidade), tenantId)
+		// saldo só da unidade pedida (?id_unidade= ou a loja do topo); 0 soma todas
+		tamanho, err := t.service.ListarTamanhoPorIdEpi(ctx, int32(id), unidadeEscolhida(ctx), tenantId)
 		if err != nil {
 
 			if errors.Is(err, helper.ErrNaoEncontrado) {

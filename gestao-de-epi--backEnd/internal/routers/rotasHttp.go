@@ -163,7 +163,7 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 
 	// --- GRUPO 3: Rotas Protegidas (SaaS) ---
 	// Precisa de sessão válida (cookie) para passar
-	api.Use(authSessao)
+	api.Use(authSessao, middleware.LimitarUnidade())
 	{
 
 		//colaborador e adm tem acesso a essas rotas
@@ -241,6 +241,8 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 			rotasAdm.POST("/unidades", c.Unidade.Criar())
 			rotasAdm.PATCH("/unidades/:id", c.Unidade.Renomear())
 			rotasAdm.DELETE("/unidades/:id", c.Unidade.Desativar())
+			rotasAdm.GET("/unidades/acessos", c.Unidade.Acessos())
+			rotasAdm.PUT("/usuarios/:id/unidades", c.Unidade.DefinirAcesso())
 
 			//funçoes
 			rotasAdm.DELETE("/funcao/:id", c.Funcao.DeletarFuncao())

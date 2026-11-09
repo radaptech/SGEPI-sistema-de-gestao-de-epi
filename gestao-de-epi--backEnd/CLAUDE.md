@@ -135,6 +135,9 @@ O `userId` logado sai da sessão e é lido com `middleware.UserID(c)` (usado par
 - `middleware.Sessao` busca a sessão a cada request (join com `usuarios`, exige `ativo = TRUE` e
   `expira_em > now()`) e popula as chaves lidas por `middleware.UserID`/`TenantID`/`Role` (usadas por
   `middleware.Require`) + `user_nome`. Desativar o usuário derruba a sessão na hora.
+- **Unidades permitidas** (`usuario_unidade`, sem linha = todas; admin sempre todas): a `Sessao` põe em
+  `middleware.UnidadesKey`, o `middleware.LimitarUnidade` dá 403 para unidade de fora no header/URL, e
+  `unidadeDaOperacao` (entrega/devolução) recusa com `ErrUnidadeSemAcesso`. Ver `docs/PLANO-UNIDADES.md`, Fase 6.
 - `POST /api/logout` apaga a linha da sessão. Sessões vencidas são limpas a cada login.
 
 ### Roles

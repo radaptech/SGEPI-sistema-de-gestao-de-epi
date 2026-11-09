@@ -163,7 +163,19 @@ devoluções dela.
 
 **Pronto quando:** trocar de loja no topo muda estoque, listas e dashboard, e recarregar a página mantém a loja.
 
-### Fase 6: permissão por loja [M]
+### Fase 6: permissão por loja [M] (feita em 09/11/2026)
+
+> **Como ficou:**
+> - Migração 000043: `usuario_unidade (usuario_id, id_unidade, tenant_id)` com FKs compostas para `usuarios(id, tenant_id)` e `unidade(id, tenant_id)`: o banco recusa ligar usuário e unidade de tenants diferentes. Sem linha = todas.
+> - **Admin sempre vê todas** (é o gestor da rede): a `Sessao` ignora as linhas de quem é admin. Só o colaborador é limitado, então as rotas `/gerencial` ficaram fora do escopo.
+> - O `BuscarSessao` traz as unidades (`int[]`) na mesma query, e a `Sessao` põe no contexto (`middleware.UnidadesKey`).
+> - `middleware.LimitarUnidade` (em `api.Use`, depois da sessão): 403 para `?id_unidade=` ou `X-Unidade-ID` fora das permitidas. Depois deixa a unidade só no header (a escolhida ou a primeira permitida) e tira o `id_unidade` da URL, e assim um `?id_unidade=0` não volta a mostrar todas.
+> - Escrita: `unidadeDaOperacao`, por onde passam entrega, devolução e troca, recusa unidade fora das permitidas (`ErrUnidadeSemAcesso` → 403), mesmo quando a unidade vem do funcionário.
+> - Rotas que ainda somavam o tenant todo ganharam o filtro: `/quantidade-epi`, `/saldo-epi` e o `/tamanhos-id-epi/:id` (agora pelo `unidadeEscolhida`).
+> - `GET /unidades` devolve só as permitidas; `/me` traz `unidades` (vazio = todas). Rotas novas: `GET /gerencial/unidades/acessos` e `PUT /gerencial/usuarios/:id/unidades` `{unidades: []}`.
+> - Front: seção "Quem vê cada unidade" na aba Unidades (`AcessoUnidades.jsx`, com 2 unidades ou mais), em que cada clique salva. Para usuário limitado, o seletor do topo some com "Todas" e guarda a primeira loja dele.
+> - **Limite conhecido** (comentário `ponytail:` em `middleware/unidade.go`): quem tem 2+ lojas vê uma por vez, sem uma visão "todas as minhas". Para ter essa visão, os filtros `id_unidade` viram `int[]` com `ANY`.
+> - Testes: `TestLimitarUnidade` (middleware), `TestPermissaoPorUnidade` (integração), `SeletorUnidade.test.jsx` e `AbaUnidades.test.jsx`.
 
 **O quê:** o almoxarife da Loja 3 só vê e mexe na Loja 3; o gestor da rede vê todas.
 

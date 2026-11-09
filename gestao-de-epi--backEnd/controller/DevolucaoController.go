@@ -104,6 +104,10 @@ func (d *DevolucaoController) Adicionar() gin.HandlerFunc {
 				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 				return
 			}
+			if errors.Is(err, helper.ErrUnidadeSemAcesso) {
+				ctx.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+				return
+			}
 			if errors.Is(err, helper.ErrUnidadeInvalida) {
 				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 				return

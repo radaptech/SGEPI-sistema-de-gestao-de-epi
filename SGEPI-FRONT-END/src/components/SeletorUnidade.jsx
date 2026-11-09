@@ -9,7 +9,9 @@ const TODAS = "todas";
 // "Em qual loja estou": aparece só para empresa com 2 unidades ou mais.
 // Trocar recarrega a página, e assim toda tela busca de novo já com o filtro.
 // semUnidades: o que mostrar no lugar quando a empresa tem uma unidade só
-export default function SeletorUnidade({ id = "seletor-unidade", className = "", compacto = false, semUnidades = null }) {
+// restrito: usuário limitado a algumas unidades (/me traz "unidades"). O /unidades já vem só com
+// as dele, e não existe "Todas": a loja guardada é sempre uma das permitidas.
+export default function SeletorUnidade({ id = "seletor-unidade", className = "", compacto = false, semUnidades = null, restrito = false }) {
   const [unidades, setUnidades] = useState([]);
   const atual = unidadeAtual();
 
@@ -20,6 +22,14 @@ export default function SeletorUnidade({ id = "seletor-unidade", className = "",
       .then((lista) => {
         if (!ativo) return;
         const ativas = lista ?? [];
+        // limitado: guarda a primeira permitida, para a entrada e a entrega saírem dela. Sem loja guardada
+        // o back já filtrava por ela; com uma loja de fora (outro login no navegador), as telas levaram 403
+        if (restrito && ativas.length && !ativas.some((u) => String(u.id) === atual)) {
+          escolherUnidade(ativas[0].id);
+          if (atual) window.location.reload();
+          else setUnidades(ativas);
+          return;
+        }
         // a loja guardada foi desativada (ou a empresa voltou a ter uma só): volta para "todas"
         if (atual && (ativas.length < 2 || !ativas.some((u) => String(u.id) === atual))) {
           escolherUnidade("");
@@ -32,7 +42,7 @@ export default function SeletorUnidade({ id = "seletor-unidade", className = "",
     return () => {
       ativo = false;
     };
-  }, [atual]);
+  }, [atual, restrito]);
 
   if (unidades.length < 2) return semUnidades;
 
@@ -46,13 +56,13 @@ export default function SeletorUnidade({ id = "seletor-unidade", className = "",
             ? "h-6 max-w-[10rem] -ml-1.5 mt-0.5 px-1.5 rounded border border-transparent hover:border-line bg-transparent text-xs font-medium text-ink-2"
             : "h-9 w-full px-3 rounded-md border border-line bg-surface text-sm text-ink"
         }
-        value={atual || TODAS}
+        value={unidadeAtual() || TODAS}
         onChange={(e) => {
           escolherUnidade(e.target.value === TODAS ? "" : e.target.value);
           window.location.reload();
         }}
       >
-        <option value={TODAS}>Todas as unidades</option>
+        {!restrito && <option value={TODAS}>Todas as unidades</option>}
         {unidades.map((u) => (
           <option key={u.id} value={u.id}>{u.nome}</option>
         ))}

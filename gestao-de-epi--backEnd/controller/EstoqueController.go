@@ -27,7 +27,7 @@ func (e *EstoqueController) MostrarQuantidades() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		var filtro service.FiltroEstoqueAtual
+		filtro := service.FiltroEstoqueAtual{IdUnidade: unidadeEscolhida(ctx)}
 
 		if err := ctx.ShouldBindQuery(&filtro); err != nil {
 
@@ -72,7 +72,7 @@ func (e *EstoqueController) MostrarSaldo() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		var filtro service.FiltroEstoqueSaldo
+		filtro := service.FiltroEstoqueSaldo{IdUnidade: unidadeEscolhida(ctx)}
 
 		if err := ctx.ShouldBindQuery(&filtro); err != nil {
 

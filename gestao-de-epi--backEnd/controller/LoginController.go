@@ -240,6 +240,8 @@ func (l *LoginController) VerPerfil() gin.HandlerFunc {
 			"nome":  usuario.Nome,
 			"email": usuario.Email,
 			"role":  usuario.Role,
+			// unidades que pode ver; vazio = todas (o seletor do topo esconde "Todas" se vier preenchido)
+			"unidades": append([]int32{}, middleware.Unidades(c)...),
 		})
 	}
 }

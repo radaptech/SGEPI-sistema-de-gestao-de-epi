@@ -14,7 +14,9 @@ import (
 
 type UnidadeService interface {
 	Criar(ctx context.Context, input model.UnidadeInserir, tenantID int32) (model.UnidadeDto, error)
-	Listar(ctx context.Context, tenantID int32) ([]model.UnidadeDto, error)
+	Listar(ctx context.Context, tenantID int32, permitidas []int32) ([]model.UnidadeDto, error)
+	Acessos(ctx context.Context, tenantID int32) ([]model.AcessoUnidadeDto, error)
+	DefinirAcesso(ctx context.Context, usuarioID int32, input model.AcessoUnidadeInserir, tenantID int32) error
 	Renomear(ctx context.Context, id int32, input model.UnidadeInserir, tenantID int32) error
 	Desativar(ctx context.Context, id int32, tenantID int32) error
 }
@@ -43,6 +45,8 @@ func erroUnidade(ctx *gin.Context, err error) {
 		status, msg = http.StatusNotFound, "unidade não encontrada"
 	case errors.Is(err, helper.ErrUltimaUnidade):
 		status, msg = http.StatusConflict, "a empresa precisa ter pelo menos uma unidade"
+	case errors.Is(err, helper.ErrConflitoIntegridade):
+		status, msg = http.StatusUnprocessableEntity, "usuário ou unidade não encontrados"
 	case errors.Is(err, helper.ErrUnidadeEmUso):
 		status, msg = http.StatusConflict, "transfira o estoque e os funcionários desta unidade antes de desativá-la"
 	default:
@@ -92,7 +96,8 @@ func (c *UnidadeController) Listar() gin.HandlerFunc {
 			return
 		}
 
-		unidades, err := c.service.Listar(ctx, tenantID)
+		// usuário limitado vê só as unidades dele (o seletor do topo também)
+		unidades, err := c.service.Listar(ctx, tenantID, middleware.Unidades(ctx))
 		if err != nil {
 			erroUnidade(ctx, err)
 			return
@@ -202,10 +207,76 @@ func (c *UnidadeController) Desativar() gin.HandlerFunc {
 	}
 }
 
+// AcessosUnidades godoc
+// @Summary      Lista quem vê quais unidades
+// @Description  Usuários ativos da empresa com as unidades que cada um pode ver. Vazio = todas; admin sempre vê todas.
+// @Tags         Unidade
+// @Produce      json
+// @Success      200 {array} model.AcessoUnidadeDto
+// @Router       /gerencial/unidades/acessos [get]
+func (c *UnidadeController) Acessos() gin.HandlerFunc {
+
+	return func(ctx *gin.Context) {
+
+		tenantID, ok := tenantDoContexto(ctx)
+		if !ok {
+			return
+		}
+
+		acessos, err := c.service.Acessos(ctx, tenantID)
+		if err != nil {
+			erroUnidade(ctx, err)
+			return
+		}
+
+		ctx.JSON(http.StatusOK, acessos)
+	}
+}
+
+// DefinirAcessoUnidades godoc
+// @Summary      Limita o usuário a algumas unidades
+// @Description  Troca a lista inteira. Lista vazia = todas as unidades. Não vale para admin, que sempre vê todas.
+// @Tags         Unidade
+// @Accept       json
+// @Param        id path int true "ID do usuário"
+// @Param        acesso body model.AcessoUnidadeInserir true "Unidades permitidas"
+// @Success      204
+// @Router       /gerencial/usuarios/{id}/unidades [put]
+func (c *UnidadeController) DefinirAcesso() gin.HandlerFunc {
+
+	return func(ctx *gin.Context) {
+
+		id, err := strconv.Atoi(ctx.Param("id"))
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "id do usuário inválido"})
+			return
+		}
+
+		var input model.AcessoUnidadeInserir
+		if err := ctx.ShouldBindJSON(&input); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "dados inválidos", "detalhes": err.Error()})
+			return
+		}
+
+		tenantID, ok := tenantDoContexto(ctx)
+		if !ok {
+			return
+		}
+
+		if err := c.service.DefinirAcesso(ctx, int32(id), input, tenantID); err != nil {
+			erroUnidade(ctx, err)
+			return
+		}
+
+		ctx.Status(http.StatusNoContent)
+	}
+}
+
 // unidadeEscolhida diz de qual unidade as listagens e o dashboard mostram dados (0 = todas).
 // Vale o ?id_unidade= da URL, quando a tela filtra explicitamente; senão, o header
 // X-Unidade-ID, que o front manda com a loja escolhida no topo.
 // Uma unidade de outro tenant não vaza nada: toda query filtra tenant_id antes.
+// Para usuário limitado, middleware.LimitarUnidade já validou e deixou a unidade só no header.
 func unidadeEscolhida(ctx *gin.Context) int32 {
 	valor := ctx.Query("id_unidade")
 	if valor == "" {

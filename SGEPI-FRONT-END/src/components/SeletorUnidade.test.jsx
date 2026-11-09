@@ -50,3 +50,20 @@ test("loja guardada que foi desativada volta para todas", async () => {
   await waitFor(() => expect(recarregar).toHaveBeenCalledTimes(1));
   expect(unidadeAtual()).toBe("");
 });
+
+test("usuário limitado não tem Todas e fica com a primeira loja dele", async () => {
+  api.get.mockResolvedValue(duas);
+  render(<SeletorUnidade restrito />);
+  fireEvent.click(await screen.findByLabelText("Unidade"));
+  expect(screen.queryByRole("option", { name: "Todas as unidades" })).toBeNull();
+  expect(unidadeAtual()).toBe("1");
+  expect(recarregar).not.toHaveBeenCalled();
+});
+
+test("usuário limitado com loja de fora guardada troca e recarrega", async () => {
+  escolherUnidade(9);
+  api.get.mockResolvedValue(duas);
+  render(<SeletorUnidade restrito />);
+  await waitFor(() => expect(recarregar).toHaveBeenCalledTimes(1));
+  expect(unidadeAtual()).toBe("1");
+});

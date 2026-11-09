@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import AbaUnidades from "./AbaUnidades";
 import { api } from "../../services/api";
 
-jest.mock("../../services/api", () => ({ api: { get: jest.fn(), post: jest.fn(), patch: jest.fn(), delete: jest.fn() } }));
+jest.mock("../../services/api", () => ({ api: { get: jest.fn(), post: jest.fn(), patch: jest.fn(), delete: jest.fn(), put: jest.fn() } }));
 jest.mock("react-toastify", () => ({ toast: { success: jest.fn(), warning: jest.fn(), error: jest.fn() } }));
 
 const principal = { id: 1, nome: "Principal", funcionarios: 62, saldo: 1844 };
@@ -20,7 +20,8 @@ test("com uma unidade só, nada pode ser desativado", async () => {
 });
 
 test("bloqueia a unidade com estoque e desativa a vazia depois de confirmar na linha", async () => {
-  api.get.mockResolvedValueOnce([principal, vazia]).mockResolvedValueOnce([principal]);
+  const listas = [[principal, vazia], [principal]];
+  api.get.mockImplementation((rota) => Promise.resolve(rota === "/unidades" ? listas.shift() : []));
   api.delete.mockResolvedValue(null);
   render(<AbaUnidades />);
 
@@ -64,4 +65,22 @@ test("renomeia na própria linha", async () => {
   fireEvent.change(screen.getByLabelText("Novo nome de Principal"), { target: { value: "Matriz" } });
   fireEvent.click(screen.getByRole("button", { name: "Salvar nome" }));
   await waitFor(() => expect(api.patch).toHaveBeenCalledWith("/gerencial/unidades/1", { nome: "Matriz" }));
+});
+
+test("com duas unidades, marcar uma loja limita o usuário e admin não tem escolha", async () => {
+  const acessos = [
+    { id: 7, nome: "Ana", email: "ana@x.com", role: "colaborador", unidades: [] },
+    { id: 8, nome: "Bia", email: "bia@x.com", role: "admin", unidades: [] },
+  ];
+  api.get.mockImplementation((rota) => Promise.resolve(rota === "/gerencial/unidades/acessos" ? acessos : [principal, vazia]));
+  api.put.mockResolvedValue(null);
+  render(<AbaUnidades />);
+
+  expect(await screen.findByText("Todas as unidades (administrador)")).toBeInTheDocument();
+  expect(screen.getByText("vê todas")).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("checkbox", { name: "Loja Centro" }));
+  await waitFor(() => expect(api.put).toHaveBeenCalledWith("/gerencial/usuarios/7/unidades", { unidades: [2] }));
+  await waitFor(() => expect(screen.getByRole("checkbox", { name: "Loja Centro" })).toBeChecked());
+  expect(screen.queryByText("vê todas")).toBeNull();
 });

@@ -12,7 +12,8 @@ import (
 )
 
 const buscarSessao = `-- name: BuscarSessao :one
-SELECT u.id, u.tenant_id, u.nome, u.role
+SELECT u.id, u.tenant_id, u.nome, u.role,
+    ARRAY(SELECT uu.id_unidade FROM usuario_unidade uu WHERE uu.usuario_id = u.id ORDER BY uu.id_unidade)::int[] AS unidades
 FROM sessoes s
 INNER JOIN usuarios u ON u.id = s.usuario_id
 WHERE s.token_hash = $1
@@ -26,9 +27,11 @@ type BuscarSessaoRow struct {
 	TenantID pgtype.Int4
 	Nome     string
 	Role     pgtype.Text
+	Unidades []int32
 }
 
 // Só devolve sessão válida de usuário ativo: desativar o usuário derruba a sessão na hora.
+// unidades: as que o usuário pode ver (vazio = todas, Fase 6 do PLANO-UNIDADES)
 func (q *Queries) BuscarSessao(ctx context.Context, tokenHash string) (BuscarSessaoRow, error) {
 	row := q.db.QueryRow(ctx, buscarSessao, tokenHash)
 	var i BuscarSessaoRow
@@ -37,6 +40,7 @@ func (q *Queries) BuscarSessao(ctx context.Context, tokenHash string) (BuscarSes
 		&i.TenantID,
 		&i.Nome,
 		&i.Role,
+		&i.Unidades,
 	)
 	return i, err
 }

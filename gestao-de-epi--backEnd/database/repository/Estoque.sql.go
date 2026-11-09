@@ -128,14 +128,16 @@ FROM entrada_epi_item e
 INNER JOIN epi p ON e.id_epi = p.id
 WHERE e.tenant_id = $3
   AND e.ativo = TRUE
+  AND ($4::int IS NULL OR e.id_unidade = $4::int)
 GROUP BY e.id_epi, p.nome
 LIMIT $1 OFFSET $2
 `
 
 type ListarEstoqueAtualParams struct {
-	Limit    int32
-	Offset   int32
-	TenantID int32
+	Limit     int32
+	Offset    int32
+	TenantID  int32
+	IDUnidade pgtype.Int4
 }
 
 type ListarEstoqueAtualRow struct {
@@ -146,7 +148,12 @@ type ListarEstoqueAtualRow struct {
 }
 
 func (q *Queries) ListarEstoqueAtual(ctx context.Context, arg ListarEstoqueAtualParams) ([]ListarEstoqueAtualRow, error) {
-	rows, err := q.db.Query(ctx, listarEstoqueAtual, arg.Limit, arg.Offset, arg.TenantID)
+	rows, err := q.db.Query(ctx, listarEstoqueAtual,
+		arg.Limit,
+		arg.Offset,
+		arg.TenantID,
+		arg.IDUnidade,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +247,8 @@ FROM entrada_epi_item e
 INNER JOIN epi p ON e.id_epi = p.id
 WHERE e.tenant_id = $3
   AND e.ativo = TRUE
-  AND (p.fabricante = $4 OR $4 IS NULL)
+  AND ($4::int IS NULL OR e.id_unidade = $4::int)
+  AND (p.fabricante = $5 OR $5 IS NULL)
 GROUP BY e.id_epi, p.nome
 LIMIT $1 OFFSET $2
 `
@@ -249,6 +257,7 @@ type ListarSaldoEstoqueParams struct {
 	Limit      int32
 	Offset     int32
 	TenantID   int32
+	IDUnidade  pgtype.Int4
 	Fabricante pgtype.Text
 }
 
@@ -265,6 +274,7 @@ func (q *Queries) ListarSaldoEstoque(ctx context.Context, arg ListarSaldoEstoque
 		arg.Limit,
 		arg.Offset,
 		arg.TenantID,
+		arg.IDUnidade,
 		arg.Fabricante,
 	)
 	if err != nil {

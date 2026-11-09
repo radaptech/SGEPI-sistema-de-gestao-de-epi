@@ -2238,6 +2238,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/gerencial/unidades/acessos": {
+            "get": {
+                "description": "Usuários ativos da empresa com as unidades que cada um pode ver. Vazio = todas; admin sempre vê todas.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Unidade"
+                ],
+                "summary": "Lista quem vê quais unidades",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.AcessoUnidadeDto"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/gerencial/unidades/{id}": {
             "delete": {
                 "description": "Recusa (409) a última unidade da empresa e a que ainda tem estoque ou funcionários ativos.",
@@ -2283,6 +2306,41 @@ const docTemplate = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/model.UnidadeInserir"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/gerencial/usuarios/{id}/unidades": {
+            "put": {
+                "description": "Troca a lista inteira. Lista vazia = todas as unidades. Não vale para admin, que sempre vê todas.",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Unidade"
+                ],
+                "summary": "Limita o usuário a algumas unidades",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do usuário",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Unidades permitidas",
+                        "name": "acesso",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.AcessoUnidadeInserir"
                         }
                     }
                 ],
@@ -2431,6 +2489,40 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string"
+                }
+            }
+        },
+        "model.AcessoUnidadeDto": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "nome": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "unidades": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "model.AcessoUnidadeInserir": {
+            "type": "object",
+            "properties": {
+                "unidades": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 }
             }
         },

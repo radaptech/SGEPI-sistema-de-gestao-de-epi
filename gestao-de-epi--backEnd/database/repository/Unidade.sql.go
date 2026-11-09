@@ -7,7 +7,26 @@ package repository
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const adicionarUnidadesUsuario = `-- name: AdicionarUnidadesUsuario :exec
+INSERT INTO usuario_unidade (usuario_id, id_unidade, tenant_id)
+SELECT $1::int, unnest($2::int[]), $3::int
+`
+
+type AdicionarUnidadesUsuarioParams struct {
+	UsuarioID int32
+	Unidades  []int32
+	TenantID  int32
+}
+
+// a FK composta recusa usuário ou unidade de outro tenant
+func (q *Queries) AdicionarUnidadesUsuario(ctx context.Context, arg AdicionarUnidadesUsuarioParams) error {
+	_, err := q.db.Exec(ctx, adicionarUnidadesUsuario, arg.UsuarioID, arg.Unidades, arg.TenantID)
+	return err
+}
 
 const contarUnidadesAtivas = `-- name: ContarUnidadesAtivas :one
 SELECT COUNT(*) FROM unidade WHERE tenant_id = $1 AND deletado_em IS NULL
@@ -67,6 +86,64 @@ func (q *Queries) DesativarUnidade(ctx context.Context, arg DesativarUnidadePara
 	return result.RowsAffected(), nil
 }
 
+const limparUnidadesUsuario = `-- name: LimparUnidadesUsuario :exec
+DELETE FROM usuario_unidade WHERE usuario_id = $1 AND tenant_id = $2
+`
+
+type LimparUnidadesUsuarioParams struct {
+	UsuarioID int32
+	TenantID  int32
+}
+
+func (q *Queries) LimparUnidadesUsuario(ctx context.Context, arg LimparUnidadesUsuarioParams) error {
+	_, err := q.db.Exec(ctx, limparUnidadesUsuario, arg.UsuarioID, arg.TenantID)
+	return err
+}
+
+const listarAcessosUsuarios = `-- name: ListarAcessosUsuarios :many
+SELECT u.id, u.nome, u.email, COALESCE(u.role, '')::text AS role,
+    ARRAY(SELECT uu.id_unidade FROM usuario_unidade uu WHERE uu.usuario_id = u.id ORDER BY uu.id_unidade)::int[] AS unidades
+FROM usuarios u
+WHERE u.tenant_id = $1
+  AND u.ativo = TRUE
+ORDER BY u.nome
+`
+
+type ListarAcessosUsuariosRow struct {
+	ID       int32
+	Nome     string
+	Email    string
+	Role     string
+	Unidades []int32
+}
+
+// usuários ativos do tenant com as unidades que podem ver (vazio = todas)
+func (q *Queries) ListarAcessosUsuarios(ctx context.Context, tenantID pgtype.Int4) ([]ListarAcessosUsuariosRow, error) {
+	rows, err := q.db.Query(ctx, listarAcessosUsuarios, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListarAcessosUsuariosRow
+	for rows.Next() {
+		var i ListarAcessosUsuariosRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Nome,
+			&i.Email,
+			&i.Role,
+			&i.Unidades,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listarUnidades = `-- name: ListarUnidades :many
 SELECT
     u.id,
@@ -78,8 +155,15 @@ SELECT
 FROM unidade u
 WHERE u.tenant_id = $1
   AND u.deletado_em IS NULL
+  -- usuário limitado a algumas unidades só enxerga elas; NULL = todas
+  AND ($2::int[] IS NULL OR u.id = ANY($2::int[]))
 ORDER BY u.id
 `
+
+type ListarUnidadesParams struct {
+	TenantID   int32
+	Permitidas []int32
+}
 
 type ListarUnidadesRow struct {
 	ID           int32
@@ -89,8 +173,8 @@ type ListarUnidadesRow struct {
 }
 
 // funcionarios e saldo ajudam a tela (e explicam por que uma unidade não pode ser desativada)
-func (q *Queries) ListarUnidades(ctx context.Context, tenantID int32) ([]ListarUnidadesRow, error) {
-	rows, err := q.db.Query(ctx, listarUnidades, tenantID)
+func (q *Queries) ListarUnidades(ctx context.Context, arg ListarUnidadesParams) ([]ListarUnidadesRow, error) {
+	rows, err := q.db.Query(ctx, listarUnidades, arg.TenantID, arg.Permitidas)
 	if err != nil {
 		return nil, err
 	}
