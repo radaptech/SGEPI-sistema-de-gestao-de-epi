@@ -159,7 +159,7 @@ func (q *Queries) BuscaFuncionarioCompleto(ctx context.Context, arg BuscaFuncion
 }
 
 const buscaFuncionarioDashbord = `-- name: BuscaFuncionarioDashbord :many
-SELECT id, nome, matricula, cpf
+SELECT id, nome, matricula, cpf, id_unidade
 FROM funcionario
 WHERE tenant_id = $1 
   AND ativo = TRUE 
@@ -177,6 +177,7 @@ type BuscaFuncionarioDashbordRow struct {
 	Nome      string
 	Matricula int32
 	Cpf       pgtype.Text
+	IDUnidade int32
 }
 
 func (q *Queries) BuscaFuncionarioDashbord(ctx context.Context, arg BuscaFuncionarioDashbordParams) ([]BuscaFuncionarioDashbordRow, error) {
@@ -193,6 +194,7 @@ func (q *Queries) BuscaFuncionarioDashbord(ctx context.Context, arg BuscaFuncion
 			&i.Nome,
 			&i.Matricula,
 			&i.Cpf,
+			&i.IDUnidade,
 		); err != nil {
 			return nil, err
 		}

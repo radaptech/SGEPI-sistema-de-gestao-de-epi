@@ -49,6 +49,7 @@ type EntregaDashbord struct {
 	Data_entrega   configs.DataBr `json:"data_entrega"`
 	Assinatura     string         `json:"assinatura"`
 	TokenValidacao string         `json:"token_validacao"`
+	IdUnidade      int32          `json:"id_unidade"`
 }
 
 type EntregaItensDashBord struct {

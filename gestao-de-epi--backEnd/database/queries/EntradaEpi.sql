@@ -109,7 +109,7 @@ WHERE
 -- name: EntradaDashbord :many
 SELECT
     ei.id, ei.id_epi, ei.id_tamanho, ei.quantidade_atual, ei.valor_unitario, ei.quantidade,
-    nf.data_emissao as data_entrada, ei.lote
+    nf.data_emissao as data_entrada, ei.lote, ei.id_unidade
 FROM entrada_epi_item ei
 INNER JOIN entrada_nf nf ON ei.entrada_nf_id = nf.id
 WHERE ei.tenant_id = sqlc.arg('tenant_id') AND ei.ativo = TRUE

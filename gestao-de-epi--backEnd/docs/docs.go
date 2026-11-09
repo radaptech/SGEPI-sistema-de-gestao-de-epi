@@ -2952,6 +2952,9 @@ const docTemplate = `{
                 "id_tamanho": {
                     "type": "integer"
                 },
+                "id_unidade": {
+                    "type": "integer"
+                },
                 "lote": {
                     "type": "string"
                 },
@@ -3142,6 +3145,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "id_funcionario": {
+                    "type": "integer"
+                },
+                "id_unidade": {
                     "type": "integer"
                 },
                 "token_validacao": {
@@ -3594,6 +3600,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "id": {
+                    "type": "integer"
+                },
+                "id_unidade": {
                     "type": "integer"
                 },
                 "matricula": {

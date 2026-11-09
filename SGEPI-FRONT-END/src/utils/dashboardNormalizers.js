@@ -23,7 +23,7 @@ export function normalizarTamanho(item) {
 }
 
 export function normalizarFuncionario(item) {
-  return { id: item.id, nome: item.nome, matricula: item.matricula };
+  return { id: item.id, nome: item.nome, matricula: item.matricula, idUnidade: item.id_unidade };
 }
 
 export function normalizarEntrada(item) {
@@ -36,6 +36,7 @@ export function normalizarEntrada(item) {
     valor_unitario: Number(item.valor_unitario), // decimal vem como string
     data_entrada: converterDataParaISO(item.data_entrada),
     lote: item.lote,
+    idUnidade: item.id_unidade,
   };
 }
 
@@ -50,7 +51,7 @@ export function normalizarItemEntregue(item) {
 }
 
 export function normalizarEntrega(item) {
-  return { id: item.id, idFuncionario: item.id_funcionario, data_entrega: item.data_entrega };
+  return { id: item.id, idFuncionario: item.id_funcionario, data_entrega: item.data_entrega, idUnidade: item.id_unidade };
 }
 
 export function normalizarDevolucao(item) {

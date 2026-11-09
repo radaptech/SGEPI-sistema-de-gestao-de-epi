@@ -446,7 +446,7 @@ func (e *EntregaService) BuscaEntregaDash(ctx context.Context, tenantId, unidade
 		dto = append(dto, model.EntregaDashbord{
 			Id: ee.ID, IdFuncionario: ee.Idfuncionario,
 			Data_entrega: *configs.NewDataBrPtr(ee.DataEntrega.Time),
-			Assinatura:   ee.Assinatura, TokenValidacao: ee.TokenValidacao.String,
+			Assinatura:   ee.Assinatura, TokenValidacao: ee.TokenValidacao.String, IdUnidade: ee.IDUnidade,
 		})
 	}
 	return dto, nil

@@ -112,7 +112,7 @@ ORDER BY ee.data_entrega DESC, ee.id DESC;
 -- name: EntregaDashbord :many
 SELECT
     id, IdFuncionario, data_entrega,
-    assinatura, token_validacao
+    assinatura, token_validacao, id_unidade
 FROM entrega_epi
 WHERE tenant_id = sqlc.arg('tenant_id') AND ativo = TRUE
   AND (sqlc.narg('id_unidade')::int IS NULL OR id_unidade = sqlc.narg('id_unidade')::int);

@@ -443,6 +443,7 @@ func (f *FuncionarioService) FuncionariosDashbord(ctx context.Context, tenantId,
 			Id:        ff.ID,
 			Nome:      ff.Nome,
 			Matricula: ff.Matricula,
+			IdUnidade: ff.IDUnidade,
 		}
 
 		dto = append(dto, fun)

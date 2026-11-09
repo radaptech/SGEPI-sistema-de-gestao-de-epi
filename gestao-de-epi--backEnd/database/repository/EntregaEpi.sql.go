@@ -286,7 +286,7 @@ func (q *Queries) CancelarEntrega(ctx context.Context, arg CancelarEntregaParams
 const entregaDashbord = `-- name: EntregaDashbord :many
 SELECT
     id, IdFuncionario, data_entrega,
-    assinatura, token_validacao
+    assinatura, token_validacao, id_unidade
 FROM entrega_epi
 WHERE tenant_id = $1 AND ativo = TRUE
   AND ($2::int IS NULL OR id_unidade = $2::int)
@@ -303,6 +303,7 @@ type EntregaDashbordRow struct {
 	DataEntrega    pgtype.Date
 	Assinatura     string
 	TokenValidacao pgtype.Text
+	IDUnidade      int32
 }
 
 func (q *Queries) EntregaDashbord(ctx context.Context, arg EntregaDashbordParams) ([]EntregaDashbordRow, error) {
@@ -320,6 +321,7 @@ func (q *Queries) EntregaDashbord(ctx context.Context, arg EntregaDashbordParams
 			&i.DataEntrega,
 			&i.Assinatura,
 			&i.TokenValidacao,
+			&i.IDUnidade,
 		); err != nil {
 			return nil, err
 		}

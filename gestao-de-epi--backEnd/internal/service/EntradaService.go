@@ -329,6 +329,7 @@ func (e *EntradaService) EntradaDashbordBusca(ctx context.Context, tenantId, uni
 			// Usa o helper para garantir o ponteiro da data formatada
 			DataEntrada: configs.DataBr(ee.DataEntrada.Time),
 			Lote:        ee.Lote,
+			IdUnidade:   ee.IDUnidade,
 		}
 
 		dto = append(dto, d)

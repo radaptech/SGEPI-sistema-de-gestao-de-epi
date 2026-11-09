@@ -263,6 +263,8 @@ definitions:
         type: integer
       id_tamanho:
         type: integer
+      id_unidade:
+        type: integer
       lote:
         type: string
       quantidade:
@@ -393,6 +395,8 @@ definitions:
       id:
         type: integer
       id_funcionario:
+        type: integer
+      id_unidade:
         type: integer
       token_validacao:
         type: string
@@ -713,6 +717,8 @@ definitions:
   model.FuncionarioDashbord:
     properties:
       id:
+        type: integer
+      id_unidade:
         type: integer
       matricula:
         type: integer

@@ -197,7 +197,7 @@ func (q *Queries) CreateEntradaNF(ctx context.Context, arg CreateEntradaNFParams
 const entradaDashbord = `-- name: EntradaDashbord :many
 SELECT
     ei.id, ei.id_epi, ei.id_tamanho, ei.quantidade_atual, ei.valor_unitario, ei.quantidade,
-    nf.data_emissao as data_entrada, ei.lote
+    nf.data_emissao as data_entrada, ei.lote, ei.id_unidade
 FROM entrada_epi_item ei
 INNER JOIN entrada_nf nf ON ei.entrada_nf_id = nf.id
 WHERE ei.tenant_id = $1 AND ei.ativo = TRUE
@@ -219,6 +219,7 @@ type EntradaDashbordRow struct {
 	Quantidade      int32
 	DataEntrada     pgtype.Date
 	Lote            string
+	IDUnidade       int32
 }
 
 func (q *Queries) EntradaDashbord(ctx context.Context, arg EntradaDashbordParams) ([]EntradaDashbordRow, error) {
@@ -239,6 +240,7 @@ func (q *Queries) EntradaDashbord(ctx context.Context, arg EntradaDashbordParams
 			&i.Quantidade,
 			&i.DataEntrada,
 			&i.Lote,
+			&i.IDUnidade,
 		); err != nil {
 			return nil, err
 		}

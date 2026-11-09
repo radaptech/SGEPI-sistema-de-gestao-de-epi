@@ -33,6 +33,7 @@ type FuncionarioDashbord struct {
 	Id        int32  `json:"id"`
 	Nome      string `json:"nome"`
 	Matricula int32  `json:"matricula"`
+	IdUnidade int32  `json:"id_unidade"`
 }
 
 // FuncionarioCompletoDto para o perfil detalhado com histórico

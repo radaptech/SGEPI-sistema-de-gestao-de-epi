@@ -2946,6 +2946,9 @@
                 "id_tamanho": {
                     "type": "integer"
                 },
+                "id_unidade": {
+                    "type": "integer"
+                },
                 "lote": {
                     "type": "string"
                 },
@@ -3136,6 +3139,9 @@
                     "type": "integer"
                 },
                 "id_funcionario": {
+                    "type": "integer"
+                },
+                "id_unidade": {
                     "type": "integer"
                 },
                 "token_validacao": {
@@ -3588,6 +3594,9 @@
             "type": "object",
             "properties": {
                 "id": {
+                    "type": "integer"
+                },
+                "id_unidade": {
                     "type": "integer"
                 },
                 "matricula": {

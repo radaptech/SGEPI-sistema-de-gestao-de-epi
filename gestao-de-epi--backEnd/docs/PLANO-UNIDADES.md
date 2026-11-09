@@ -223,7 +223,14 @@ espírito do isolamento entre tenants.
 
 **Pronto quando:** a soma do estoque da rede não muda com uma transferência, e cada loja vê o que entrou e saiu.
 
-### Fase 8: visão da rede e alertas por loja [M]
+### Fase 8: visão da rede e alertas por loja [M] (feita em 09/11/2026)
+
+> **Como ficou:**
+> - Back: `/entradas-dashbord`, `/entregas-dashbord` e `/funcionarios-dashbord` devolvem `id_unidade`. Nenhuma rota nova: as contas seguem no front (`src/utils/indicadores.js`), como o resto da aba.
+> - Aba Indicadores, em "Todas as unidades" e com 2 ou mais: bloco "Por unidade" com custo no período, % kit completo e quantos itens estão com estoque baixo em cada loja, da que mais gastou para a que menos gastou (`indicadoresPorUnidade`). Com uma loja escolhida no topo, as listas já vêm só dela e o bloco some.
+> - Card "Estoque baixo": antes comparava **cada lote** com o `alerta_minimo` (10 lotes de 3 davam 10 alertas com 30 em estoque). Agora soma os lotes por unidade, EPI e tamanho (`estoqueBaixo`), e saldo zero também conta. Isso muda a contagem também para quem tem uma loja só. A coluna "Unidade" do detalhe só aparece com 2 unidades ou mais; a de lote saiu.
+> - O mínimo próprio por unidade (`epi_minimo_unidade`) ficou de fora: o `alerta_minimo` do EPI vale para cada loja (D7).
+> - Testes: `indicadores.test.js` (estoque baixo e visão da rede).
 
 **O quê:** o painel que faz a venda para quem tem várias lojas.
 

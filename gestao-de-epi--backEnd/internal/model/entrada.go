@@ -74,6 +74,7 @@ type EntradaDashbord struct {
 	Quantidade      int             `json:"quantidade"`
 	DataEntrada     configs.DataBr  `json:"data_entrada"`
 	Lote            string          `json:"lote"`
+	IdUnidade       int32           `json:"id_unidade"`
 }
 
 type EpiSimples struct {

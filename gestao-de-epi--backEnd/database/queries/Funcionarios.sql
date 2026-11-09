@@ -119,7 +119,7 @@ WHERE fn.id = $1
   AND fn.ativo = TRUE;
 
 -- name: BuscaFuncionarioDashbord :many
-SELECT id, nome, matricula, cpf
+SELECT id, nome, matricula, cpf, id_unidade
 FROM funcionario
 WHERE tenant_id = sqlc.arg('tenant_id') 
   AND ativo = TRUE 

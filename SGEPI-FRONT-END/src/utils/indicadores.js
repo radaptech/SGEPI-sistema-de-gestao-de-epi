@@ -45,6 +45,69 @@ export function precoMedioPorEpi(entradas) {
   return Object.fromEntries(Object.entries(soma).map(([id, s]) => [id, s.total / s.qtd]));
 }
 
+// Estoque no alerta mínimo do EPI ou abaixo, por unidade, EPI e tamanho. Soma os lotes: o mínimo
+// vale para o que a loja tem daquele tamanho, não para cada lote. Saldo zero também entra (acabou).
+export function estoqueBaixo(entradas, epis) {
+  const minimo = Object.fromEntries(epis.map((e) => [Number(e.id), Number(e.alerta_minimo || 0)]));
+  const saldo = {};
+  for (const e of entradas) {
+    const idEpi = Number(e.idEpi);
+    if (!minimo[idEpi]) continue;
+    const k = `${e.idUnidade}-${idEpi}-${e.idTamanho}`;
+    saldo[k] ??= { id: k, idUnidade: Number(e.idUnidade), idEpi, idTamanho: Number(e.idTamanho), quantidade: 0, alertaMinimo: minimo[idEpi] };
+    saldo[k].quantidade += Number(e.quantidadeAtual || 0);
+  }
+  return Object.values(saldo)
+    .filter((s) => s.quantidade <= s.alertaMinimo)
+    .sort((a, b) => a.quantidade - b.quantidade);
+}
+
+// Visão da rede (Fase 8 do PLANO-UNIDADES): custo no período, kit completo e estoque baixo de cada
+// unidade, da que mais gasta para a que menos gasta. As listas precisam vir de "Todas as unidades".
+export function indicadoresPorUnidade({
+  unidades = [],
+  entregas = [],
+  itensEntregues = [],
+  entradas = [],
+  epis = [],
+  funcionarios = [],
+  faltasKit = [],
+  meses = 12,
+  hojeISO = obterHojeISO(),
+}) {
+  const preco = precoMedioPorEpi(entradas);
+  const noPeriodo = new Set(ultimosMeses(meses, hojeISO));
+  const entregaPorId = Object.fromEntries(entregas.map((e) => [String(e.id), e]));
+  const linhas = Object.fromEntries(
+    unidades.map((u) => [Number(u.id), { id: Number(u.id), nome: u.nome, custo: 0, funcionarios: 0, comFalta: 0, estoqueBaixo: 0 }])
+  );
+
+  for (const item of itensEntregues) {
+    const entrega = entregaPorId[String(item.idEntrega)];
+    const linha = linhas[Number(entrega?.idUnidade)];
+    const data = paraISO(entrega?.data_entrega);
+    if (!linha || !noPeriodo.has(data.slice(0, 7)) || data > hojeISO) continue;
+    linha.custo += Number(item.quantidade || 0) * (preco[Number(item.idEpi)] ?? 0);
+  }
+
+  const unidadeDoFuncionario = {};
+  for (const f of funcionarios) {
+    unidadeDoFuncionario[Number(f.id)] = Number(f.idUnidade);
+    if (linhas[Number(f.idUnidade)]) linhas[Number(f.idUnidade)].funcionarios += 1;
+  }
+  for (const id of new Set(faltasKit.map((f) => Number(f.funcionario_id)))) {
+    const linha = linhas[unidadeDoFuncionario[id]];
+    if (linha) linha.comFalta += 1;
+  }
+  for (const s of estoqueBaixo(entradas, epis)) {
+    if (linhas[s.idUnidade]) linhas[s.idUnidade].estoqueBaixo += 1;
+  }
+
+  return Object.values(linhas)
+    .map((l) => ({ ...l, conformidade: l.funcionarios ? Math.round(((l.funcionarios - l.comFalta) / l.funcionarios) * 100) : null }))
+    .sort((a, b) => b.custo - a.custo || a.nome.localeCompare(b.nome));
+}
+
 function topN(mapa, n) {
   const linhas = Object.entries(mapa)
     .map(([nome, valor]) => ({ nome, valor }))
