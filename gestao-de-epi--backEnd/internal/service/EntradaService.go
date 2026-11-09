@@ -24,8 +24,8 @@ type EntradaRepository interface {
 	ListarEntradas(ctx context.Context, args repository.ListarEntradasParams) ([]repository.ListarEntradasRow, error)
 	CancelarEntrada(ctx context.Context, qtx *repository.Queries, args repository.CancelarEntradaParams) (int32, error)
 	TotalEntradas(ctx context.Context, args repository.ContarEntradasFiltradasParams) (int64, error)
-	BuscaEntradaDashbord(ctx context.Context, tenant int32) ([]repository.EntradaDashbordRow, error)
-	EntradaEstoque(ctx context.Context, tenant int32) ([]repository.EntradaEpiEstoqueRow, error)
+	BuscaEntradaDashbord(ctx context.Context, tenant, unidade int32) ([]repository.EntradaDashbordRow, error)
+	EntradaEstoque(ctx context.Context, tenant, unidade int32) ([]repository.EntradaEpiEstoqueRow, error)
 	CancelarEntradaNf(ctx context.Context, qtx *repository.Queries, args repository.CancelarEntradaNFParams) error
 	ContarItensAtivosNF(ctx context.Context, qtx *repository.Queries, args repository.ContarItensAtivosNFParams) (int64, error)
 }
@@ -58,6 +58,24 @@ func (e *EntradaService) Adicionar(ctx context.Context, input model.EntradaEpiIn
 		IDUsuarioCriacao: int32(input.Id_user), // Auditoria da Nota
 	}
 
+	// 2.1 Unidade: obrigatória quando a empresa tem mais de uma; com uma só, o trigger põe a única
+	var unidade pgtype.Int4
+	if input.IdUnidade != nil {
+		if err := unidadeAtiva(ctx, e.queries, *input.IdUnidade, tenantID); err != nil {
+			return err
+		}
+		unidade = pgtype.Int4{Int32: *input.IdUnidade, Valid: true}
+	} else {
+		total, err := e.queries.ContarUnidadesAtivas(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		if total > 1 {
+			return helper.ErrUnidadeObrigatoria
+		}
+	}
+	nfArgs.IDUnidade = unidade
+
 	// 3. Prepara a lista de Itens (EPIs no estoque)
 	var itensParams []repository.CreateEntradaEpiItemParams
 	for _, item := range input.Itens {
@@ -80,6 +98,7 @@ func (e *EntradaService) Adicionar(ctx context.Context, input model.EntradaEpiIn
 			Lote:             strings.TrimSpace(item.Lote),
 			ValorUnitario:    vm,
 			IDUsuarioCriacao: int32(input.Id_user), // Auditoria do Item
+			IDUnidade:        unidade,
 		})
 	}
 
@@ -94,6 +113,7 @@ type FiltroEntradas struct {
 	DataInicio configs.DataBr `form:"data_inicio"` // O Gin tentará converter a string para seu tipo Custom
 	DataFim    configs.DataBr `form:"data_fim"`
 	NotaFiscal string         `form:"nota_fiscal"`
+	IdUnidade  int32          `form:"id_unidade"`
 	Pagina     int32          `form:"pagina"`
 	Quantidade int32          `form:"quantidade"`
 }
@@ -125,6 +145,7 @@ func (e *EntradaService) ListarEntradas(ctx context.Context, f FiltroEntradas, t
 		DataInicio: pgtype.Date{Time: f.DataInicio.Time(), Valid: !f.DataInicio.IsZero()},
 		DataFim:    pgtype.Date{Time: f.DataFim.Time(), Valid: !f.DataFim.IsZero()},
 		NotaFiscal: pgtype.Text{String: f.NotaFiscal, Valid: f.NotaFiscal != ""},
+		IDUnidade:  pgtype.Int4{Int32: f.IdUnidade, Valid: f.IdUnidade > 0},
 		Limit:      limit,
 		Offset:     offset,
 		TenantID:   tenantId,
@@ -144,7 +165,7 @@ func (e *EntradaService) ListarEntradas(ctx context.Context, f FiltroEntradas, t
 
 		dto = append(dto, model.EntradaEpiDto{
 			ID:               int(ent.ID),
-			IDEpi:            int(ent.ID),
+			IDEpi:            int(ent.IDEpi),
 			IDTamanho:        int(ent.IDTamanho),
 			IDFornecedor:     int(ent.Idfornecedor),
 			DataEntrada:      *configs.NewDataBrPtr(ent.DataEntrada.Time),
@@ -178,6 +199,7 @@ func (e *EntradaService) ListarEntradas(ctx context.Context, f FiltroEntradas, t
 		IDEpi:      filtro.IDEpi,
 		DataInicio: filtro.DataInicio,
 		NotaFiscal: filtro.NotaFiscal,
+		IDUnidade:  filtro.IDUnidade,
 		TenantID:   tenantId,
 	})
 
@@ -245,8 +267,8 @@ func (e *EntradaService) CancelarEntrada(ctx context.Context, id, idUser, tenant
 }
 
 // BuscaEntradaEstoque: Usado para o almoxarife selecionar o lote na hora da entrega
-func (e *EntradaService) BuscaEntradaEstoque(ctx context.Context, tenantId int32) ([]model.EntradaEstoqueDto, error) {
-	entradas, err := e.repo.EntradaEstoque(ctx, tenantId)
+func (e *EntradaService) BuscaEntradaEstoque(ctx context.Context, tenantId, unidade int32) ([]model.EntradaEstoqueDto, error) {
+	entradas, err := e.repo.EntradaEstoque(ctx, tenantId, unidade)
 	if err != nil {
 		return []model.EntradaEstoqueDto{}, err
 	}
@@ -279,9 +301,9 @@ func (e *EntradaService) BuscaEntradaEstoque(ctx context.Context, tenantId int32
 }
 
 // EntradaDashbordBusca retorna um resumo das entradas para popular os gráficos do Dashboard
-func (e *EntradaService) EntradaDashbordBusca(ctx context.Context, tenantId int32) ([]model.EntradaDashbord, error) {
+func (e *EntradaService) EntradaDashbordBusca(ctx context.Context, tenantId, unidade int32) ([]model.EntradaDashbord, error) {
 	// Busca os dados brutos do repositório (referente aos itens de entrada)
-	entradas, err := e.repo.BuscaEntradaDashbord(ctx, tenantId)
+	entradas, err := e.repo.BuscaEntradaDashbord(ctx, tenantId, unidade)
 	if err != nil {
 		// Retorna slice vazia em vez de nil para evitar problemas no JSON do Frontend
 		return []model.EntradaDashbord{}, err

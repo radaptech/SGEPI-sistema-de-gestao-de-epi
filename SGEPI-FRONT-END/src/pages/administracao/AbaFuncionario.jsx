@@ -17,11 +17,16 @@ import {
   Briefcase
 } from "lucide-react";
 import Dialogo from "../../components/Dialogo";
+import Selecao from "../../components/Selecao";
 
 export default function AbaFuncionarios() {
   const [funcionarios, setFuncionarios] = useState([]);
   const [departamentos, setDepartamentos] = useState([]);
   const [funcoes, setFuncoes] = useState([]);
+  const [unidades, setUnidades] = useState([]);
+  const [filtroUnidade, setFiltroUnidade] = useState("");
+  // com uma unidade só, nada de unidade aparece na tela
+  const variasUnidades = unidades.length >= 2;
 
   const [carregando, setCarregando] = useState(false);
   const [salvando, setSalvando] = useState(false);
@@ -43,6 +48,7 @@ export default function AbaFuncionarios() {
     matricula: "",
     id_departamento: "",
     id_funcao: "",
+    id_unidade: "",
   });
 
   useEffect(() => {
@@ -61,13 +67,15 @@ export default function AbaFuncionarios() {
     try {
       setCarregando(true);
 
-      const [respFunc, respDepto, respFuncs] = await Promise.all([
+      const [respFunc, respDepto, respFuncs, respUnidades] = await Promise.all([
         api.get("/funcionarios"),
         api.get("/departamentos"),
         api.get("/funcoes"),
+        api.get("/unidades"),
       ]);
 
       setFuncionarios(respFunc.funcionarios ?? []);
+      setUnidades(respUnidades ?? []);
       setDepartamentos(respDepto?.departamentos || []);
       setFuncoes(respFuncs?.funcoes || []);
     } catch {
@@ -79,10 +87,13 @@ export default function AbaFuncionarios() {
 
   const funcionariosFiltrados = useMemo(() => {
     const termo = busca.toLowerCase().trim();
+    const daUnidade = filtroUnidade
+      ? funcionarios.filter((f) => String(f.unidade?.id) === filtroUnidade)
+      : funcionarios;
 
-    if (!termo) return funcionarios;
+    if (!termo) return daUnidade;
 
-    return funcionarios.filter((f) => {
+    return daUnidade.filter((f) => {
       const nomeDepto = f.funcao?.departamento?.departamento || "";
       const nomeFuncao = f.funcao?.cargo || "";
       const cpfLimpo = (f.cpf || "").replace(/\D/g, "");
@@ -96,7 +107,7 @@ export default function AbaFuncionarios() {
         nomeFuncao.toLowerCase().includes(termo)
       );
     });
-  }, [funcionarios, busca]);
+  }, [funcionarios, busca, filtroUnidade]);
 
   const totalPaginas = Math.max(1, Math.ceil(funcionariosFiltrados.length / itensPorPagina));
 
@@ -109,7 +120,7 @@ export default function AbaFuncionarios() {
 
   useEffect(() => {
     setPaginaAtual(1);
-  }, [busca]);
+  }, [busca, filtroUnidade]);
 
   const funcoesDisponiveisForm = funcoes.filter(
     (f) => String(f.departamento?.id) === String(form.id_departamento)
@@ -178,6 +189,7 @@ export default function AbaFuncionarios() {
       matricula: "AUTOMÁTICA",
       id_departamento: "",
       id_funcao: "",
+      id_unidade: filtroUnidade || String(unidades[0]?.id ?? ""),
     });
 
     setModalAberto(true);
@@ -194,6 +206,7 @@ export default function AbaFuncionarios() {
       matricula: func.matricula || "",
       id_departamento: func.funcao?.departamento?.id || "",
       id_funcao: func.funcao?.id || "",
+      id_unidade: String(func.unidade?.id ?? ""),
     });
 
     setModalAberto(true);
@@ -217,6 +230,7 @@ export default function AbaFuncionarios() {
         cpf: form.cpf.replace(/\D/g, ""),
         id_departamento: Number(form.id_departamento),
         id_funcao: Number(form.id_funcao),
+        ...(variasUnidades && form.id_unidade && { id_unidade: Number(form.id_unidade) }),
       };
 
       if (editando) {
@@ -287,7 +301,23 @@ export default function AbaFuncionarios() {
               Funcionários
             </h2>
 
-            <div className="relative">
+            <div className="flex flex-col sm:flex-row gap-3">
+            {variasUnidades && (
+              <div className="sm:w-56 shrink-0">
+                <label htmlFor="abafuncionario-filtro-unidade" className="sr-only">Filtrar por unidade</label>
+                <Selecao id="abafuncionario-filtro-unidade"
+                  className="w-full h-[46px] px-4 border border-line bg-sunken rounded-md text-sm text-ink"
+                  value={filtroUnidade}
+                  onChange={(e) => setFiltroUnidade(e.target.value)}
+                >
+                  <option value="">Todas as unidades</option>
+                  {unidades.map((u) => (
+                    <option key={u.id} value={u.id}>{u.nome}</option>
+                  ))}
+                </Selecao>
+              </div>
+            )}
+            <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-3 pointer-events-none" />
               <input
                 className="w-full h-[46px] pl-11 pr-4 border border-line bg-sunken rounded-md focus:ring-1 focus:ring-ink focus:border-ink outline-none text-sm transition-all text-ink placeholder-ink-3"
@@ -295,6 +325,7 @@ export default function AbaFuncionarios() {
                 onChange={(e) => setBusca(e.target.value)}
                 placeholder="Nome, CPF, matrícula, departamento ou função..."
               />
+            </div>
             </div>
           </div>
 
@@ -327,6 +358,7 @@ export default function AbaFuncionarios() {
                 <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide">Nome / CPF</th>
                 <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide">Departamento</th>
                 <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide">Função</th>
+                {variasUnidades && <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide">Unidade</th>}
                 <th className="p-4 text-xs font-bold text-ink-2 uppercase tracking-wide text-center">Ações</th>
               </tr>
             </thead>
@@ -334,7 +366,7 @@ export default function AbaFuncionarios() {
             <tbody className="divide-y divide-line ">
               {carregando ? (
                 <tr>
-                  <td colSpan="5" className="p-16 text-center text-ink-3 ">
+                  <td colSpan={variasUnidades ? 6 : 5} className="p-16 text-center text-ink-3 ">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <Loader2 className="w-8 h-8 animate-spin text-ink" />
                       <span className="font-medium">Sincronizando dados...</span>
@@ -343,7 +375,7 @@ export default function AbaFuncionarios() {
                 </tr>
               ) : funcionariosPaginados.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="p-16 text-center text-ink-3 transition-colors">
+                  <td colSpan={variasUnidades ? 6 : 5} className="p-16 text-center text-ink-3 transition-colors">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <UserSearch className="w-10 h-10 opacity-50" strokeWidth={1.5} />
                       <span className="font-medium">Nenhum funcionário encontrado.</span>
@@ -377,6 +409,10 @@ export default function AbaFuncionarios() {
                         {f.funcao?.cargo || "-"}
                       </div>
                     </td>
+
+                    {variasUnidades && (
+                      <td className="p-4 text-ink-2 font-medium">{f.unidade?.nome || "-"}</td>
+                    )}
 
                     <td className="p-4">
                       <div className="flex items-center justify-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
@@ -467,6 +503,15 @@ export default function AbaFuncionarios() {
                     {f.funcao?.cargo || "-"}
                   </div>
                 </div>
+
+                {variasUnidades && (
+                  <div>
+                    <span className="block text-xs uppercase font-bold text-ink-3 tracking-wide mb-1">
+                      Unidade
+                    </span>
+                    <span className="text-ink text-sm font-medium">{f.unidade?.nome || "-"}</span>
+                  </div>
+                )}
               </div>
             </div>
           ))
@@ -582,7 +627,7 @@ export default function AbaFuncionarios() {
                   <label htmlFor="abafuncionario-4" className={labelClass}>
                     Departamento <span className="text-erro">*</span>
                   </label>
-                  <select id="abafuncionario-4"
+                  <Selecao id="abafuncionario-4"
                     className={`${baseInputClass} ${campoComErro("id_departamento")}`}
                     value={form.id_departamento}
                     onChange={(e) => {
@@ -601,7 +646,7 @@ export default function AbaFuncionarios() {
                         {d.departamento}
                       </option>
                     ))}
-                  </select>
+                  </Selecao>
                   {erros.id_departamento && (
                     <p className="text-xs font-medium text-erro mt-1.5">{erros.id_departamento}</p>
                   )}
@@ -611,7 +656,7 @@ export default function AbaFuncionarios() {
                   <label htmlFor="abafuncionario-5" className={labelClass}>
                     Função <span className="text-erro">*</span>
                   </label>
-                  <select id="abafuncionario-5"
+                  <Selecao id="abafuncionario-5"
                     className={`${baseInputClass} ${campoComErro("id_funcao")}`}
                     value={form.id_funcao}
                     onChange={(e) => atualizarCampo("id_funcao", e.target.value)}
@@ -627,11 +672,31 @@ export default function AbaFuncionarios() {
                         {fn.cargo}
                       </option>
                     ))}
-                  </select>
+                  </Selecao>
                   {erros.id_funcao && (
                     <p className="text-xs font-medium text-erro mt-1.5">{erros.id_funcao}</p>
                   )}
                 </div>
+
+                {variasUnidades && (
+                  <div>
+                    <label htmlFor="abafuncionario-6" className={labelClass}>
+                      Unidade
+                    </label>
+                    <Selecao id="abafuncionario-6"
+                      className={`${baseInputClass} ${campoComErro("id_unidade")}`}
+                      value={form.id_unidade}
+                      onChange={(e) => atualizarCampo("id_unidade", e.target.value)}
+                    >
+                      {unidades.map((u) => (
+                        <option key={u.id} value={u.id}>{u.nome}</option>
+                      ))}
+                    </Selecao>
+                    <p className="text-xs text-ink-3 mt-1.5">
+                      Onde ele trabalha. Mudar a unidade não altera as entregas já feitas.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 

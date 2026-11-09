@@ -14,6 +14,7 @@ import {
 import { normalizarEntradaCompleta } from "../utils/estoqueNormalizers";
 
 import { AlertTriangle, CheckCircle2, Clock, Trash2, Search, ListFilter, Eye, ChevronLeft, ChevronRight, X, ShieldAlert } from "lucide-react";
+import Selecao from "../components/Selecao";
 
 function getAlertaValidade(status) {
   if (status === "vencido") {
@@ -242,7 +243,7 @@ function Estoque({ usuarioLogado }) {
             </div>
 
             {filtroAtivo === "status_validade" ? (
-              <select
+              <Selecao
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
                 className="w-full bg-transparent border-none py-3 pl-3 pr-10 focus:ring-0 text-sm font-semibold text-ink outline-none appearance-none cursor-pointer"
@@ -251,7 +252,7 @@ function Estoque({ usuarioLogado }) {
                 <option value="vencido">Vencidos</option>
                 <option value="proximo">Próximos de Vencer</option>
                 <option value="normal">Dentro da Validade</option>
-              </select>
+              </Selecao>
             ) : (
               <input
                 type={filtroAtivo === "data_entrada" ? "date" : "text"}
@@ -279,7 +280,7 @@ function Estoque({ usuarioLogado }) {
             <div className="pl-4 text-ink-3 pointer-events-none">
                <ListFilter className="w-4 h-4" />
             </div>
-            <select
+            <Selecao
               value={filtroAtivo}
               onChange={(e) => {
                 setFiltroAtivo(e.target.value);
@@ -296,7 +297,7 @@ function Estoque({ usuarioLogado }) {
               <option value="lote">Lote</option>
               <option value="tipoProtecao">Proteção</option>
               <option value="tamanho">Tamanho</option>
-            </select>
+            </Selecao>
           </div>
 
         </div>

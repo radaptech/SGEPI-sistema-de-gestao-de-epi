@@ -1,5 +1,3 @@
-- repository, service e controller login
-- banco de dados login
 
 rodar testes
 go test -v -tags=integration ./...
@@ -7,53 +5,90 @@ go test -v -tags=integration ./...
 rodar docker
  sudo docker compose -f docker-compose.dev.yml  --env-file .env up -d --build
 
-entradas:
-[
-  {
-    "id": 1,
-    "idEpi": 1,
-    "idTamanho": 1,
-    "quantidadeAtual": 50,
-    "valor_unitario": 12.50,
-    "quantidade": 50, 
-    "data_entrada": "2024-05-01T10:00:00Z",
-    "lote": "LOTE-123"
-  }
-]
-
-entregas:
-
-[
-  {
-    "id": 1,
-    "idFuncionario": 1,
-    "data_entrega": "2024-05-20T14:30:00Z",
-    "assinatura": "url_da_imagem_ou_base64",
-    "token_validacao": "ABC-123"
-  }
-]
 
 
-itens_entregues
-[
-  {
-    "id": 1,
-    "idEntrega": 1,
-    "idEpi": 1,
-    "idTamanho": 1,
-    "quantidade": 2
-  }
-]
+
+==================================================================
+SITUAÇÃO EM 07/11/2026
+==================================================================
+
+FEITO
+------------------------------------------------------------------
+
+Pontos que a análise de mercado apontava como faltando:
+- [x] Consulta do CA na base do MTE (CAEPI), com botão "Buscar" no cadastro de EPI
+      e bloqueio de entrega de EPI com CA cancelado, suspenso ou vencido.
+- [x] Alerta de CA vencendo (dashboard e aba Indicadores).
+- [x] Vida útil do EPI e troca periódica, com aviso de troca pendente.
+- [x] Kit de EPI por função, com sugestão do kit na entrega
+      e lista de funcionários sem o EPI obrigatório (dashboard).
+- [x] tipo_protecao global com os 9 grupos da NR-6, sugerido pela consulta do CA.
+
+Qualidade:
+- [x] Corrigidos os 3 bugs achados pelo e2e (cadastro de departamento/função dava 500,
+      EPI sem alerta mínimo falhava, lista de entradas não atualizava).
+- [x] Testes e2e com Playwright rodando no CI.
+- [x] Saldo/estoque da devolução corrigidos.
+- [x] Contrato JSON da API padronizado em snake_case.
+- [x] Limpeza do front e alinhamento aos contratos reais da API.
+
+Infra:
+- [x] Monorepo (back + front) com CI na raiz.
+- [x] Sessão no servidor no lugar do JWT.
+- [x] PWA.
+- [x] Docker de dev mais rápido.
+- [x] Log estruturado (slog) com request_id; middlewares na lib ginmw.
+
+Front (repaginada visual):
+- [x] Identidade "etiqueta de almoxarifado", tema claro e escuro, DESIGN.md.
+- [x] Login, esqueci e redefinir senha com o logo da RadapTech.
+- [x] Modais acessíveis (Esc, foco preso), devolução no mesmo fluxo da entrega.
+- [x] Página na URL (voltar/recarregar funcionam), logo leva ao início.
+- [x] Dashboard com abas: Indicadores para o admin (custo por mês, por departamento,
+      EPIs mais entregues, % kit completo, o que vem pela frente) e Pendências.
 
 
-devolucoes:
+FALTA
+------------------------------------------------------------------
 
-[
-  {
-    "id": 1,
-    "data_devolucao": "2024-05-20T16:00:00Z"
-  }
-]
+Para vender (ordem sugerida):
+1. [ ] Alertas por e-mail: estoque baixo, CA vencendo, troca atrasada.
+       Já existe EmailService (usado no esqueci a senha); falta o job agendado e os modelos.
+       Depois, WhatsApp.
+2. [ ] eSocial S-2240 (EPIs por função com CA e eficácia). O mais pesado;
+       começar como exportação/integração, não emissão própria.
+3. [ ] Assinatura com mais peso jurídico (biometria, geolocalização, hash).
+       Diferencial, não obrigação.
+4. [ ] Recursos para empresa maior:
+       - vários almoxarifados, obras ou lojas no mesmo tenant (ex.: rede com 10 lojas, uma URL só,
+         cada loja com seu estoque). Plano em fases: docs/PLANO-UNIDADES.md;
+       - centro de custo e custo de EPI por funcionário;
+       - integração com folha/ERP;
+       - uso offline no canteiro (o PWA já ajuda).
 
+Custo exato no dashboard (Indicadores):
+   Hoje o custo é estimado no front: quantidade entregue × preço médio de entrada do EPI.
+   O exato usaria o preço do lote de onde saiu cada item.
+   Medido no banco local em 07/11/2026: +0,1% no total (R$ 20.537,97 exato x R$ 20.550,02
+   estimado); nenhum mês passou de 2%. O preço do mesmo EPI varia em média 6% entre lotes (máx. 17%).
+   Passa a pesar quando o preço entre lotes variar muito ou for preciso bater com a nota fiscal.
+   Como fazer (pequeno):
+   - [ ] epis_entregues já guarda id_entrada_item: devolver esse campo (ou o valor_unitario
+         do lote, via join com entrada_epi_item) no /entrega-itens-dashbord;
+   - [ ] no front, em src/utils/indicadores.js, usar esse preço no lugar do precoMedioPorEpi
+         e tirar o aviso "custo estimado".
+   - [ ] Quando o volume crescer: endpoint /dashboard/indicadores com as somas em SQL
+         (hoje o front baixa as listas inteiras e soma no navegador).
 
-kNRizUaop8PgLm8q
+Front, deixado para depois na revisão visual:
+- [ ] Devolução de vários itens de uma vez (a API aceita um item por vez).
+- [ ] Botão "adicionar kit inteiro" na entrega.
+- [ ] Mostrar a ficha acima da assinatura.
+- [ ] CPF mascarado nas listas.
+- [ ] Botões da assinatura no celular em pé (hoje ficam girados).
+- [ ] Cor de estado igual entre card e linha.
+
+Ambiente / testes:
+- [ ] Banco local sem o super admin do seed (admin@radaptech.com.br): o login dá 500
+      "no rows in result set" e 6 testes e2e não passam. Rodar o seed.
+- [ ] App.test.js do front quebra com "TextEncoder is not defined" (jspdf no jsdom).

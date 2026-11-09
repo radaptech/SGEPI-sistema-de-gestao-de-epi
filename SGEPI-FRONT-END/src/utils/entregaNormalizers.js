@@ -1,7 +1,7 @@
 // Formatos de /funcionarios, /epis, /tamanhos-id-epi/:id e /entregas.
 
 export function normalizarFuncionarioEntrega(item) {
-  return { id: item.id, nome: item.nome, matricula: item.matricula, funcaoId: item.funcao?.id };
+  return { id: item.id, nome: item.nome, matricula: item.matricula, funcaoId: item.funcao?.id, unidadeId: item.unidade?.id };
 }
 
 export function normalizarEpiEntrega(item) {

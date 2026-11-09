@@ -2205,6 +2205,117 @@ const docTemplate = `{
                 }
             }
         },
+        "/gerencial/unidades": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Unidade"
+                ],
+                "summary": "Cadastra uma unidade",
+                "parameters": [
+                    {
+                        "description": "Nome da unidade",
+                        "name": "unidade",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UnidadeInserir"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/model.UnidadeDto"
+                        }
+                    }
+                }
+            }
+        },
+        "/gerencial/unidades/{id}": {
+            "delete": {
+                "description": "Recusa (409) a última unidade da empresa e a que ainda tem estoque ou funcionários ativos.",
+                "tags": [
+                    "Unidade"
+                ],
+                "summary": "Desativa uma unidade",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da unidade",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            },
+            "patch": {
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Unidade"
+                ],
+                "summary": "Renomeia uma unidade",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da unidade",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Novo nome",
+                        "name": "unidade",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UnidadeInserir"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/motivos": {
+            "get": {
+                "description": "Lista global e pronta, igual para todas as empresas. gera_descarte=true: o EPI não volta ao estoque.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Devolucao"
+                ],
+                "summary": "Lista os motivos de devolução",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.MotivoDevolucaoEpiDto"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/protecoes": {
             "get": {
                 "security": [
@@ -2282,6 +2393,29 @@ const docTemplate = `{
                         "description": "Erro interno",
                         "schema": {
                             "$ref": "#/definitions/helper.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/unidades": {
+            "get": {
+                "description": "Lojas, obras ou almoxarifados do tenant, com funcionários ativos e saldo de EPI em cada uma.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Unidade"
+                ],
+                "summary": "Lista as unidades da empresa",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.UnidadeDto"
+                            }
                         }
                     }
                 }
@@ -2721,6 +2855,11 @@ const docTemplate = `{
                 "data_emissao": {
                     "type": "string"
                 },
+                "id_unidade": {
+                    "description": "obrigatório com 2+ unidades",
+                    "type": "integer",
+                    "minimum": 1
+                },
                 "idfornecedor": {
                     "type": "integer"
                 },
@@ -2920,6 +3059,11 @@ const docTemplate = `{
                 "id_troca": {
                     "description": "Usei ponteiro para aceitar nulo",
                     "type": "integer"
+                },
+                "id_unidade": {
+                    "description": "sem ela, sai da unidade do funcionário",
+                    "type": "integer",
+                    "minimum": 1
                 },
                 "id_user": {
                     "type": "integer"
@@ -3259,6 +3403,9 @@ const docTemplate = `{
                 },
                 "nome": {
                     "type": "string"
+                },
+                "unidade": {
+                    "$ref": "#/definitions/model.UnidadeResumo"
                 }
             }
         },
@@ -3296,6 +3443,11 @@ const docTemplate = `{
                     "type": "integer",
                     "minimum": 1
                 },
+                "id_unidade": {
+                    "description": "sem ele, vai para a primeira unidade",
+                    "type": "integer",
+                    "minimum": 1
+                },
                 "nome": {
                     "type": "string",
                     "maxLength": 150,
@@ -3320,6 +3472,9 @@ const docTemplate = `{
                 },
                 "nome": {
                     "type": "string"
+                },
+                "unidade": {
+                    "$ref": "#/definitions/model.UnidadeResumo"
                 }
             }
         },
@@ -3394,6 +3549,21 @@ const docTemplate = `{
                 "quantidade": {
                     "type": "integer",
                     "minimum": 1
+                }
+            }
+        },
+        "model.MotivoDevolucaoEpiDto": {
+            "type": "object",
+            "properties": {
+                "gera_descarte": {
+                    "description": "true: o EPI devolvido não volta ao estoque",
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "motivo": {
+                    "type": "string"
                 }
             }
         },
@@ -3488,6 +3658,47 @@ const docTemplate = `{
                 }
             }
         },
+        "model.UnidadeDto": {
+            "type": "object",
+            "properties": {
+                "funcionarios": {
+                    "description": "ativos lotados nela",
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "nome": {
+                    "type": "string"
+                },
+                "saldo": {
+                    "description": "unidades de EPI em estoque nela",
+                    "type": "integer"
+                }
+            }
+        },
+        "model.UnidadeInserir": {
+            "type": "object",
+            "required": [
+                "nome"
+            ],
+            "properties": {
+                "nome": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.UnidadeResumo": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "nome": {
+                    "type": "string"
+                }
+            }
+        },
         "model.UpdateEpiInput": {
             "type": "object",
             "properties": {
@@ -3536,6 +3747,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "id_funcao": {
+                    "type": "integer"
+                },
+                "id_unidade": {
                     "type": "integer"
                 },
                 "nome": {

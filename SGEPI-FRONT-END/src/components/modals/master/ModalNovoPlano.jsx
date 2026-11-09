@@ -1,5 +1,6 @@
 import React, { useState, useId } from "react";
 import Dialogo from "../../Dialogo";
+import Selecao from "../../Selecao";
 
 const RECURSOS_PADRAO = [
   "Controle de funcionários",
@@ -273,7 +274,7 @@ function CampoSelect({ label, value, onChange, options }) {
         {label}
       </label>
 
-      <select id={idCampo}
+      <Selecao id={idCampo}
         value={value}
         onChange={onChange}
         className="w-full px-4 py-3 bg-sunken border border-line rounded-md focus:bg-surface focus:ring-1 focus:ring-ink focus:border-ink outline-none transition-all text-sm text-ink font-medium appearance-none cursor-pointer"
@@ -284,7 +285,7 @@ function CampoSelect({ label, value, onChange, options }) {
             {option}
           </option>
         ))}
-      </select>
+      </Selecao>
     </div>
   );
 }

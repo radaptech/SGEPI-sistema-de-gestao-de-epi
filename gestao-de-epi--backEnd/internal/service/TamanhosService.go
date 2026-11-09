@@ -10,6 +10,7 @@ import (
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type TamanhoRepository interface {
@@ -121,11 +122,13 @@ func (t *TamanhoService) CancelarTamanho(ctx context.Context, id int, tenantId i
 	return nil
 }
 
-func (t *TamanhoService) ListarTamanhoPorIdEpi(ctx context.Context, idEpi, tenantId int32) ([]model.TamanhoEntregaDto, error) {
+// idUnidade > 0 conta só o saldo daquela unidade; 0 soma todas
+func (t *TamanhoService) ListarTamanhoPorIdEpi(ctx context.Context, idEpi, idUnidade, tenantId int32) ([]model.TamanhoEntregaDto, error) {
 
 	tamanhos, err := t.repo.BuscarTamanhoPorIdePI(ctx, repository.BuscarTamanhosPorIdEpiParams{
-		IDEpi:    idEpi,
-		TenantID: tenantId,
+		IDEpi:     idEpi,
+		TenantID:  tenantId,
+		IDUnidade: pgtype.Int4{Int32: idUnidade, Valid: idUnidade > 0},
 	})
 
 	if err != nil {

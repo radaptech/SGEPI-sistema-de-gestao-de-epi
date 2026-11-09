@@ -13,7 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/radaptech/ginmw"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"golang.org/x/time/rate"
@@ -22,6 +21,7 @@ import (
 type Container struct {
 	Usuario         controller.LoginController
 	Departamento    controller.DepartamentoController
+	Unidade         controller.UnidadeController
 	Funcao          controller.FuncaoController
 	Funcionario     controller.FuncionarioController
 	Tamanho         controller.TamanhoController
@@ -41,6 +41,7 @@ func NewContainer(db *pgxpool.Pool) *Container {
 
 	repoUsuario := repository.NewUsuarioRepository(db)
 	repoDepartamento := repository.NewDepartamentoRepository(db)
+	repoUnidade := repository.NewUnidadeRepository(db)
 	repoFuncao := repository.NewFuncaoRepository(db)
 	repoFuncionario := repository.NewFuncionarioRepository(db)
 	repoTamanho := repository.NewTamanhoRepository(db)
@@ -58,6 +59,7 @@ func NewContainer(db *pgxpool.Pool) *Container {
 	ServiceEmail := service.NewEmail()
 	serviceUsuario := service.NewUsuarioService(repoUsuario, *ServiceEmail, db)
 	departamentoService := service.NewDepartamentoService(repoDepartamento)
+	unidadeService := service.NewUnidadeService(repoUnidade)
 	funcaoService := service.NewFuncaoService(repoFuncao)
 	FornecedorService := service.NewFornecedorService(repoFornecedor)
 	funcionarioService := service.NewFuncionarioService(repoFuncionario, repoEntrega, repoEpi, db)
@@ -75,6 +77,7 @@ func NewContainer(db *pgxpool.Pool) *Container {
 	return &Container{
 		Usuario:         *controller.NewLoginController(serviceUsuario),
 		Departamento:    *controller.NewDepartamentoController(departamentoService),
+		Unidade:         *controller.NewUnidadeController(unidadeService),
 		Funcao:          *controller.NewFuncaoController(funcaoService),
 		Funcionario:     *controller.NewFuncionarioController(funcionarioService),
 		Tamanho:         *controller.NewTamanhoControle(tamanhoService),
@@ -96,7 +99,7 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 
 	// Montados uma vez só, reaproveitados em todo Use() abaixo.
 	authSessao := middleware.Sessao(queries)
-	tenant := ginmw.Tenant(func(ctx context.Context, subdominio string) (int64, error) {
+	tenant := middleware.Tenant(func(ctx context.Context, subdominio string) (int64, error) {
 		empresa, err := queries.GetTenantBySubdomain(ctx, subdominio)
 		return int64(empresa.ID), err
 	}, pgx.ErrNoRows)
@@ -120,7 +123,7 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 	})
 	api := r.Group("/api")
 	painel := r.Group("/api/painel")
-	painel.Use(authSessao, ginmw.Require("super_admin"))
+	painel.Use(authSessao, middleware.Require("super_admin"))
 	{
 
 		//empresas
@@ -128,7 +131,7 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 	}
 
 	master := r.Group("/api/master")
-	master.Use(authSessao, ginmw.Require("super_admin"))
+	master.Use(authSessao, middleware.Require("super_admin"))
 	{
 		master.GET("/dashboard/resumo", c.Empresas.ResumoDashboard())
 		master.GET("/dashboard/empresas-recentes", c.Empresas.EmpresaRecentes())
@@ -150,11 +153,11 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 	{
 
 		// Rate limit: 5 tentativas de imediato, depois 1 nova a cada 12s por IP
-		api.POST("/login", ginmw.RateLimit(rate.Every(12*time.Second), 5), c.Usuario.Login())
+		api.POST("/login", middleware.RateLimit(rate.Every(12*time.Second), 5), c.Usuario.Login())
 
 		api.POST("/logout", c.Usuario.Logout())
 		// Rate limit: 3 tentativas de imediato, depois 1 nova por minuto por IP (evita spam de e-mail)
-		api.POST("/esqueci-minha-senha", ginmw.RateLimit(rate.Every(time.Minute), 3), c.Usuario.SalvarToken())
+		api.POST("/esqueci-minha-senha", middleware.RateLimit(rate.Every(time.Minute), 3), c.Usuario.SalvarToken())
 		api.POST("/redefinir-senha", c.Usuario.RedefinirSenha())
 	}
 
@@ -168,6 +171,8 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 		api.GET("/me", c.Usuario.VerPerfil())
 		//departamentos
 		api.GET("/departamentos", c.Departamento.ListarDepartamentos())
+		//unidades (lojas, obras, almoxarifados)
+		api.GET("/unidades", c.Unidade.Listar())
 
 		//quantidade de todos os epis cadastrados
 		api.GET("/quantidade-epi", c.Estoque.MostrarQuantidades())
@@ -219,12 +224,11 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 		api.GET("/devolucao", c.Devolucao.Listar())
 
 		//motivo da Motivo da Devolucao
-		api.POST("/cadastrar-motivo-devolucao", c.MotivoDevolucao.Salvar())
 		api.GET("/motivos", c.MotivoDevolucao.ListarMotivo())
 
 		//rotas que apenas o "admin" tem acesso
 		rotasAdm := api.Group("/gerencial")
-		rotasAdm.Use(ginmw.Require("admin"))
+		rotasAdm.Use(middleware.Require("admin"))
 		{
 
 			//departamentos
@@ -232,6 +236,11 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 			rotasAdm.PUT("/departamento/:id", c.Departamento.AtualizarDepartamento())
 			rotasAdm.POST("/cadastro-departamento", c.Departamento.RegistraDepartamento())
 			rotasAdm.POST("/importar-departamentos", c.Departamento.ImportDepartamentoXLSX())
+
+			//unidades
+			rotasAdm.POST("/unidades", c.Unidade.Criar())
+			rotasAdm.PATCH("/unidades/:id", c.Unidade.Renomear())
+			rotasAdm.DELETE("/unidades/:id", c.Unidade.Desativar())
 
 			//funçoes
 			rotasAdm.DELETE("/funcao/:id", c.Funcao.DeletarFuncao())

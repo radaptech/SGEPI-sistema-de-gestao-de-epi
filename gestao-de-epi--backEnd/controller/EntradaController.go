@@ -9,16 +9,16 @@ import (
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/service"
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/middleware"
 	"github.com/gin-gonic/gin"
-	"github.com/radaptech/ginmw"
 )
 
 type EntradaService interface {
 	Adicionar(ctx context.Context, model model.EntradaEpiInserir, tenantID int32) error
 	ListarEntradas(ctx context.Context, f service.FiltroEntradas, tenatId int32) (service.EntradaPaginada, error)
 	CancelarEntrada(ctx context.Context, id, idUser, tenantid int) error
-	EntradaDashbordBusca(ctx context.Context, tenantId int32) ([]model.EntradaDashbord, error)
-	BuscaEntradaEstoque(ctx context.Context, tenantId int32) ([]model.EntradaEstoqueDto, error)
+	EntradaDashbordBusca(ctx context.Context, tenantId, unidade int32) ([]model.EntradaDashbord, error)
+	BuscaEntradaEstoque(ctx context.Context, tenantId, unidade int32) ([]model.EntradaEstoqueDto, error)
 }
 
 type EntradaController struct {
@@ -63,7 +63,7 @@ func (e *EntradaController) AdicionarEntrada() gin.HandlerFunc {
 		// 1. Remove espaços extras no começo/fim
 		// 2. Transforma tudo em MAIÚSCULO para padronizar
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -72,7 +72,7 @@ func (e *EntradaController) AdicionarEntrada() gin.HandlerFunc {
 			return
 		}
 
-		userId, ok := ginmw.UserID(ctx)
+		userId, ok := middleware.UserID(ctx)
 		if !ok {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"erro": "erro au setar usuario",
@@ -128,6 +128,16 @@ func (e *EntradaController) AdicionarEntrada() gin.HandlerFunc {
 				})
 				return
 			}
+
+			if errors.Is(err, helper.ErrUnidadeObrigatoria) || errors.Is(err, helper.ErrUnidadeInvalida) {
+				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+				return
+			}
+
+			// antes, um erro não previsto caía no 200 "entrada cadastrada"
+			ctx.Error(err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro ao cadastrar entrada", "detalhes": err.Error()})
+			return
 		}
 
 		ctx.JSON(http.StatusOK, gin.H{
@@ -153,7 +163,7 @@ func (e *EntradaController) ListarEntradas() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		var filtro service.FiltroEntradas
+		filtro := service.FiltroEntradas{IdUnidade: unidadeEscolhida(ctx)}
 
 		if err := ctx.ShouldBindQuery(&filtro); err != nil {
 
@@ -165,7 +175,7 @@ func (e *EntradaController) ListarEntradas() gin.HandlerFunc {
 			return
 		}
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -220,14 +230,14 @@ func (e *EntradaController) CancelarEntrada() gin.HandlerFunc {
 			return
 		}
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
 			return
 		}
 
-		idUser, existe := ginmw.UserID(ctx)
+		idUser, existe := middleware.UserID(ctx)
 		if !existe {
 			ctx.JSON(http.StatusUnauthorized, gin.H{
 
@@ -276,14 +286,14 @@ func (e *EntradaController) BuscaEntradaDashbord() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
 			return
 		}
 
-		entradas, err := e.service.EntradaDashbordBusca(ctx, tenantId)
+		entradas, err := e.service.EntradaDashbordBusca(ctx, tenantId, unidadeEscolhida(ctx))
 		if err != nil {
 
 			ctx.Error(err)
@@ -311,14 +321,14 @@ func (e *EntradaController) BuscaEntradaEstoque() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
 			return
 		}
 
-		entradas, err := e.service.BuscaEntradaEstoque(ctx, tenantId)
+		entradas, err := e.service.BuscaEntradaEstoque(ctx, tenantId, unidadeEscolhida(ctx))
 		if err != nil {
 
 			ctx.Error(err)

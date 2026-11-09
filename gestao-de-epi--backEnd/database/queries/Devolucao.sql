@@ -7,8 +7,8 @@ INSERT INTO devolucao (
 -- name: AddTrocaEpi :one
 INSERT INTO devolucao (
     tenant_id, IdFuncionario, IdEpi, IdMotivo, data_devolucao, IdTamanho, 
-    quantidadeAdevolver, IdEpiNovo, IdTamanhoNovo, quantidadeNova, assinatura_digital,id_usuario_cancelamento, token_validacao, houve_troca, observacao
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+    quantidadeAdevolver, IdEpiNovo, IdTamanhoNovo, quantidadeNova, assinatura_digital,id_usuario_cancelamento, token_validacao, houve_troca, observacao, id_unidade
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 RETURNING id;
 
 -- name: AddEntregaVinculada :one
@@ -41,7 +41,8 @@ INNER JOIN tamanho t ON t.id = d.idtamanho
 INNER JOIN motivo_devolucao m ON m.id = d.idmotivo
 LEFT JOIN epi en ON en.id = d.idepinovo               
 LEFT JOIN tamanho tn ON tn.id = d.idtamanhonovo       
-WHERE d.tenant_id = $1 AND d.cancelada_em IS NULL
+WHERE d.tenant_id = sqlc.arg('tenant_id') AND d.cancelada_em IS NULL
+  AND (sqlc.narg('id_unidade')::int IS NULL OR d.id_unidade = sqlc.narg('id_unidade')::int)
 ORDER BY d.data_devolucao DESC;
 
 
@@ -92,6 +93,7 @@ FROM entrada_epi_item
 WHERE tenant_id = $1 
   AND id_epi = $2 
   AND id_tamanho = $3
+  AND id_unidade = $4
   AND ativo = TRUE
   AND quantidade_atual < quantidade
 ORDER BY id DESC; -- Pega do lote mais recente para o mais antigo

@@ -12,8 +12,8 @@ import (
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/service"
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/middleware"
 	"github.com/gin-gonic/gin"
-	"github.com/radaptech/ginmw"
 )
 
 type EntregasService interface {
@@ -21,11 +21,11 @@ type EntregasService interface {
 	ListaEntregas(ctx context.Context, f service.FiltroEntregas, tenantId int32) (service.EntregaPaginada, error)
 	CancelarEntrega(ctx context.Context, tenantId, id, iduser int) error
 	GerarDadosPdfService(ctx context.Context, matricula string, idEntrega, tenantId int32) (helper.DadosPdf, error)
-	BuscaEntregaDash(ctx context.Context, tenantId int32) ([]model.EntregaDashbord, error)
-	BuscaItemDash(ctx context.Context, tenantID int32) ([]model.EntregaItensDashBord, error)
+	BuscaEntregaDash(ctx context.Context, tenantId, unidade int32) ([]model.EntregaDashbord, error)
+	BuscaItemDash(ctx context.Context, tenantID, unidade int32) ([]model.EntregaItensDashBord, error)
 	TokenEntrega(ctx context.Context, tenantId, idFuncionario int32) (string, error)
-	ListarTrocasPendentes(ctx context.Context, tenantId int32, dias int) ([]model.TrocaPendenteDto, error)
-	ListarFaltasKit(ctx context.Context, tenantId int32) ([]model.FaltaKitDto, error)
+	ListarTrocasPendentes(ctx context.Context, tenantId, unidade int32, dias int) ([]model.TrocaPendenteDto, error)
+	ListarFaltasKit(ctx context.Context, tenantId, unidade int32) ([]model.FaltaKitDto, error)
 }
 
 type EntregaController struct {
@@ -64,14 +64,14 @@ func (e *EntregaController) Adicionar() gin.HandlerFunc {
 			return
 		}
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro interno de tenant"})
 			return
 		}
 
-		userId, ok := ginmw.UserID(ctx)
+		userId, ok := middleware.UserID(ctx)
 		if !ok {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"erro": "erro ao setar usuario",
@@ -114,6 +114,10 @@ func (e *EntregaController) Adicionar() gin.HandlerFunc {
 				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 				return
 			}
+			if errors.Is(err, helper.ErrUnidadeInvalida) {
+				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+				return
+			}
 			if strings.Contains(err.Error(), "estoque insuficiente") {
 				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 				return
@@ -144,7 +148,7 @@ func (e *EntregaController) ListarEntregas() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		var filtro service.FiltroEntregas
+		filtro := service.FiltroEntregas{IdUnidade: unidadeEscolhida(ctx)}
 
 		if err := ctx.ShouldBindQuery(&filtro); err != nil {
 
@@ -156,7 +160,7 @@ func (e *EntregaController) ListarEntregas() gin.HandlerFunc {
 			return
 		}
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -211,14 +215,14 @@ func (e *EntregaController) CancelarEntrega() gin.HandlerFunc {
 			return
 		}
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
 			return
 		}
 
-		idUser, existe := ginmw.UserID(ctx)
+		idUser, existe := middleware.UserID(ctx)
 		if !existe {
 			ctx.JSON(http.StatusUnauthorized, gin.H{
 
@@ -283,7 +287,7 @@ func (e *EntregaController) GerarFichaEpiPDF() gin.HandlerFunc {
 		if matricula == "" {
 			matricula = "0"
 		}
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -344,7 +348,7 @@ func (e *EntregaController) ListarTrocasPendentes() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		if !ok {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro interno de tenant"})
 			return
@@ -356,7 +360,7 @@ func (e *EntregaController) ListarTrocasPendentes() gin.HandlerFunc {
 			return
 		}
 
-		trocas, err := e.Service.ListarTrocasPendentes(ctx, int32(tenantId64), dias)
+		trocas, err := e.Service.ListarTrocasPendentes(ctx, int32(tenantId64), unidadeEscolhida(ctx), dias)
 		if err != nil {
 			ctx.Error(err)
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro ao listar trocas pendentes", "detalhes": err.Error()})
@@ -380,13 +384,13 @@ func (e *EntregaController) ListarFaltasKit() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		if !ok {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro interno de tenant"})
 			return
 		}
 
-		faltas, err := e.Service.ListarFaltasKit(ctx, int32(tenantId64))
+		faltas, err := e.Service.ListarFaltasKit(ctx, int32(tenantId64), unidadeEscolhida(ctx))
 		if err != nil {
 			ctx.Error(err)
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro ao listar faltas do kit", "detalhes": err.Error()})
@@ -410,7 +414,7 @@ func (e *EntregaController) BuscarEntregaDashbord() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -419,7 +423,7 @@ func (e *EntregaController) BuscarEntregaDashbord() gin.HandlerFunc {
 			return
 		}
 
-		entregas, err := e.Service.BuscaEntregaDash(ctx, tenantId)
+		entregas, err := e.Service.BuscaEntregaDash(ctx, tenantId, unidadeEscolhida(ctx))
 		if err != nil {
 
 			ctx.Error(err)
@@ -448,7 +452,7 @@ func (e *EntregaController) BuscarEntregaItenDashbord() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -457,7 +461,7 @@ func (e *EntregaController) BuscarEntregaItenDashbord() gin.HandlerFunc {
 			return
 		}
 
-		itens, err := e.Service.BuscaItemDash(ctx, tenantId)
+		itens, err := e.Service.BuscaItemDash(ctx, tenantId, unidadeEscolhida(ctx))
 		if err != nil {
 
 			ctx.Error(err)

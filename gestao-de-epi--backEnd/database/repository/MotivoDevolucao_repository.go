@@ -20,58 +20,27 @@ func NewMotivoDevolucaoRepository(pool *pgxpool.Pool) *MotivoDevolucaoRepository
 	}
 }
 
-func (m *MotivoDevolucaoRepository) Adicionar(ctx context.Context, arg AddMotivoDevolucaoParams) (AddMotivoDevolucaoRow, error) {
+// motivo_devolucao é global: não recebe tenant.
+func (m *MotivoDevolucaoRepository) ListarMotivos(ctx context.Context) ([]MotivoDevolucao, error) {
 
-	motivo, err := m.q.AddMotivoDevolucao(ctx, arg)
-	if err != nil {
-		return AddMotivoDevolucaoRow{}, helper.TraduzErroPostgres(err)
-	}
-
-	return motivo, nil
-}
-
-func (m *MotivoDevolucaoRepository) ListarMotivo(ctx context.Context, arg BuscaMotivoDevolucaoParams) (BuscaMotivoDevolucaoRow, error) {
-
-	motivo, err := m.q.BuscaMotivoDevolucao(ctx, arg)
+	motivos, err := m.q.BuscaTodosMotivosDevolucao(ctx)
 	if err != nil {
 
-		return BuscaMotivoDevolucaoRow{}, helper.TraduzErroPostgres(err)
+		return []MotivoDevolucao{}, helper.TraduzErroPostgres(err)
 	}
 
-	return motivo, err
+	return motivos, nil
 }
 
-func (m *MotivoDevolucaoRepository) ListarMotivos(ctx context.Context, tenantId int32) ([]BuscaTodosMotivosDevolucaoRow, error) {
+func (m *MotivoDevolucaoRepository) Descarte(ctx context.Context, id int32) (bool, error) {
 
-	motivos, err := m.q.BuscaTodosMotivosDevolucao(ctx, tenantId)
-	if err != nil {
-
-		return []BuscaTodosMotivosDevolucaoRow{}, helper.TraduzErroPostgres(err)
-	}
-
-	return motivos, err
-}
-
-func (m *MotivoDevolucaoRepository) CancelarMotivoDevolucao(ctx context.Context, arg DeleteMotivoDevolucaoParams) (int64, error) {
-
-	linhasAfetadas, err := m.q.DeleteMotivoDevolucao(ctx, arg)
-	if err != nil {
-
-		return 0, helper.TraduzErroPostgres(err)
-	}
-
-	return linhasAfetadas, nil
-}
-
-func (m *MotivoDevolucaoRepository) Descarte(ctx context.Context, arg EhDescarteParams) (bool, error) {
-
-	descarte, err := m.q.EhDescarte(ctx, arg)
+	descarte, err := m.q.EhDescarte(ctx, id)
 	if err != nil {
 
 		return false, helper.TraduzErroPostgres(err)
 	}
 
-	return descarte, err
+	return descarte, nil
 }
 
 func (m *MotivoDevolucaoRepository) ConsultaSaldo(ctx context.Context, arg ConsultarSaldoEpiFuncionarioParams) (int32, error) {

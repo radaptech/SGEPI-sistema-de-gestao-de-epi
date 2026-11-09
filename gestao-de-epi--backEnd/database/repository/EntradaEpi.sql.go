@@ -74,6 +74,7 @@ WHERE
     AND ($3::int IS NULL OR ei.id_epi = $3)
     AND ($4::date IS NULL OR nf.data_emissao >= $4)
     AND ($5::text IS NULL OR nf.nota_fiscal_numero ILIKE '%' || $5 || '%')
+    AND ($6::int IS NULL OR ei.id_unidade = $6::int)
 `
 
 type ContarEntradasFiltradasParams struct {
@@ -82,6 +83,7 @@ type ContarEntradasFiltradasParams struct {
 	IDEpi      pgtype.Int4
 	DataInicio pgtype.Date
 	NotaFiscal pgtype.Text
+	IDUnidade  pgtype.Int4
 }
 
 func (q *Queries) ContarEntradasFiltradas(ctx context.Context, arg ContarEntradasFiltradasParams) (int64, error) {
@@ -91,6 +93,7 @@ func (q *Queries) ContarEntradasFiltradas(ctx context.Context, arg ContarEntrada
 		arg.IDEpi,
 		arg.DataInicio,
 		arg.NotaFiscal,
+		arg.IDUnidade,
 	)
 	var count int64
 	err := row.Scan(&count)
@@ -120,8 +123,8 @@ func (q *Queries) ContarItensAtivosNF(ctx context.Context, arg ContarItensAtivos
 const createEntradaEpiItem = `-- name: CreateEntradaEpiItem :exec
 INSERT INTO entrada_epi_item (
     tenant_id, entrada_nf_id, id_epi, id_tamanho, quantidade, 
-    quantidade_atual, data_fabricacao, data_validade, lote, valor_unitario,id_usuario_criacao
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    quantidade_atual, data_fabricacao, data_validade, lote, valor_unitario,id_usuario_criacao, id_unidade
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::int)
 `
 
 type CreateEntradaEpiItemParams struct {
@@ -136,6 +139,7 @@ type CreateEntradaEpiItemParams struct {
 	Lote             string
 	ValorUnitario    pgtype.Numeric
 	IDUsuarioCriacao int32
+	IDUnidade        pgtype.Int4
 }
 
 func (q *Queries) CreateEntradaEpiItem(ctx context.Context, arg CreateEntradaEpiItemParams) error {
@@ -151,13 +155,14 @@ func (q *Queries) CreateEntradaEpiItem(ctx context.Context, arg CreateEntradaEpi
 		arg.Lote,
 		arg.ValorUnitario,
 		arg.IDUsuarioCriacao,
+		arg.IDUnidade,
 	)
 	return err
 }
 
 const createEntradaNF = `-- name: CreateEntradaNF :one
-INSERT INTO entrada_nf (tenant_id, nota_fiscal_numero, nota_fiscal_serie, data_emissao, id_usuario_criacao, Idfornecedor)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO entrada_nf (tenant_id, nota_fiscal_numero, nota_fiscal_serie, data_emissao, id_usuario_criacao, Idfornecedor, id_unidade)
+VALUES ($1, $2, $3, $4, $5, $6, $7::int)
 RETURNING id
 `
 
@@ -168,8 +173,10 @@ type CreateEntradaNFParams struct {
 	DataEmissao      pgtype.Date
 	IDUsuarioCriacao int32
 	Idfornecedor     int32
+	IDUnidade        pgtype.Int4
 }
 
+// id_unidade NULL = trigger preencher_unidade_padrao (empresa com uma unidade só)
 func (q *Queries) CreateEntradaNF(ctx context.Context, arg CreateEntradaNFParams) (int32, error) {
 	row := q.db.QueryRow(ctx, createEntradaNF,
 		arg.TenantID,
@@ -178,6 +185,7 @@ func (q *Queries) CreateEntradaNF(ctx context.Context, arg CreateEntradaNFParams
 		arg.DataEmissao,
 		arg.IDUsuarioCriacao,
 		arg.Idfornecedor,
+		arg.IDUnidade,
 	)
 	var id int32
 	err := row.Scan(&id)
@@ -191,8 +199,14 @@ SELECT
 FROM entrada_epi_item ei
 INNER JOIN entrada_nf nf ON ei.entrada_nf_id = nf.id
 WHERE ei.tenant_id = $1 AND ei.ativo = TRUE
+  AND ($2::int IS NULL OR ei.id_unidade = $2::int)
 ORDER BY nf.data_emissao DESC
 `
+
+type EntradaDashbordParams struct {
+	TenantID  int32
+	IDUnidade pgtype.Int4
+}
 
 type EntradaDashbordRow struct {
 	ID              int32
@@ -205,8 +219,8 @@ type EntradaDashbordRow struct {
 	Lote            string
 }
 
-func (q *Queries) EntradaDashbord(ctx context.Context, tenantID int32) ([]EntradaDashbordRow, error) {
-	rows, err := q.db.Query(ctx, entradaDashbord, tenantID)
+func (q *Queries) EntradaDashbord(ctx context.Context, arg EntradaDashbordParams) ([]EntradaDashbordRow, error) {
+	rows, err := q.db.Query(ctx, entradaDashbord, arg.TenantID, arg.IDUnidade)
 	if err != nil {
 		return nil, err
 	}
@@ -249,8 +263,14 @@ INNER JOIN epi e ON ei.id_epi = e.id
 INNER JOIN tipo_protecao tp ON e.idtipoprotecao = tp.id
 WHERE ei.tenant_id = $1
   AND ei.ativo = TRUE
+  AND ($2::int IS NULL OR ei.id_unidade = $2::int)
 ORDER BY nf.data_emissao ASC
 `
+
+type EntradaEpiEstoqueParams struct {
+	TenantID  int32
+	IDUnidade pgtype.Int4
+}
 
 type EntradaEpiEstoqueRow struct {
 	ID                int32
@@ -273,8 +293,8 @@ type EntradaEpiEstoqueRow struct {
 	DataEntrada       pgtype.Date
 }
 
-func (q *Queries) EntradaEpiEstoque(ctx context.Context, tenantID int32) ([]EntradaEpiEstoqueRow, error) {
-	rows, err := q.db.Query(ctx, entradaEpiEstoque, tenantID)
+func (q *Queries) EntradaEpiEstoque(ctx context.Context, arg EntradaEpiEstoqueParams) ([]EntradaEpiEstoqueRow, error) {
+	rows, err := q.db.Query(ctx, entradaEpiEstoque, arg.TenantID, arg.IDUnidade)
 	if err != nil {
 		return nil, err
 	}
@@ -357,8 +377,9 @@ WHERE
     AND ($5::date IS NULL OR nf.data_emissao >= $5)
     AND ($6::date IS NULL OR nf.data_emissao <= $6)
     AND ($7::text IS NULL OR nf.nota_fiscal_numero ILIKE '%' || $7 || '%')
+    AND ($8::int IS NULL OR ei.id_unidade = $8::int)
 ORDER BY nf.data_emissao ASC
-LIMIT $9 OFFSET $8
+LIMIT $10 OFFSET $9
 `
 
 type ListarEntradasParams struct {
@@ -369,6 +390,7 @@ type ListarEntradasParams struct {
 	DataInicio pgtype.Date
 	DataFim    pgtype.Date
 	NotaFiscal pgtype.Text
+	IDUnidade  pgtype.Int4
 	Offset     int32
 	Limit      int32
 }
@@ -410,6 +432,7 @@ func (q *Queries) ListarEntradas(ctx context.Context, arg ListarEntradasParams) 
 		arg.DataInicio,
 		arg.DataFim,
 		arg.NotaFiscal,
+		arg.IDUnidade,
 		arg.Offset,
 		arg.Limit,
 	)

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -99,16 +100,16 @@ func (e *EntradaRepository) TotalEntradas(ctx context.Context, args ContarEntrad
 	return total, nil
 }
 
-func (e *EntradaRepository) BuscaEntradaDashbord(ctx context.Context, tenant int32) ([]EntradaDashbordRow, error) {
-	entradas, err := e.q.EntradaDashbord(ctx, tenant)
+func (e *EntradaRepository) BuscaEntradaDashbord(ctx context.Context, tenant, unidade int32) ([]EntradaDashbordRow, error) {
+	entradas, err := e.q.EntradaDashbord(ctx, EntradaDashbordParams{TenantID: tenant, IDUnidade: pgtype.Int4{Int32: unidade, Valid: unidade > 0}})
 	if err != nil {
 		return nil, helper.TraduzErroPostgres(err)
 	}
 	return entradas, nil
 }
 
-func (e *EntradaRepository) EntradaEstoque(ctx context.Context, tenant int32) ([]EntradaEpiEstoqueRow, error) {
-	entradas, err := e.q.EntradaEpiEstoque(ctx, tenant)
+func (e *EntradaRepository) EntradaEstoque(ctx context.Context, tenant, unidade int32) ([]EntradaEpiEstoqueRow, error) {
+	entradas, err := e.q.EntradaEpiEstoque(ctx, EntradaEpiEstoqueParams{TenantID: tenant, IDUnidade: pgtype.Int4{Int32: unidade, Valid: unidade > 0}})
 	if err != nil {
 		return nil, helper.TraduzErroPostgres(err)
 	}

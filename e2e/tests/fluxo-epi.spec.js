@@ -19,6 +19,14 @@ let page;
 // listas da API às vezes vêm puras, às vezes embrulhadas num objeto
 const comoLista = (r) => (Array.isArray(r) ? r : Object.values(r || {}).find(Array.isArray) || []);
 
+// As listas são o componente Selecao (role="combobox"), não <select>: abre e clica na opção.
+// Número = posição na lista (o "Selecione..." não entra); texto = nome exato da opção.
+async function escolher(campo, opcao) {
+  await campo.click();
+  const alvo = typeof opcao === "number" ? page.getByRole("option").nth(opcao) : page.getByRole("option", { name: opcao, exact: true });
+  await alvo.click();
+}
+
 async function irPara(item) {
   const direto = page.getByRole("button", { name: item, exact: true });
   if (!(await direto.first().isVisible())) await page.getByRole("button", { name: "Mais" }).click();
@@ -83,7 +91,6 @@ test.beforeAll(async ({ browser }) => {
     cnpj: gerarCnpj(),
     inscricao_estadual: "123456",
   });
-  await chamarApi(page, "POST", "/cadastrar-motivo-devolucao", { motivo: "Desgaste", gera_descarte: false });
 
   await chamarApi(page, "POST", "/gerencial/cadastro-departamento", { departamento: "Produção" });
   const departamento = comoLista(await chamarApi(page, "GET", "/departamentos")).find((d) => d.departamento === "Produção");
@@ -108,7 +115,7 @@ test("cadastra EPI", async () => {
 
   const { cabecalho: titulo, modal } = modalPorTitulo("Cadastrar Novo EPI");
   await modal.getByPlaceholder("Ex: Capacete de segurança").fill(nomeEpi);
-  await modal.locator("select").first().selectOption({ label: "Proteção dos membros superiores" });
+  await escolher(modal.getByRole("combobox").first(), "Proteção dos membros superiores");
   await modal.getByPlaceholder("Ex: 3M").fill("3M");
   // CA fora da base do MTE (lá têm no máximo 5 dígitos): a consulta no blur não sobrescreve a validade
   await modal.getByPlaceholder("Apenas números").fill("999999");
@@ -126,11 +133,11 @@ test("dá entrada de 10 unidades no estoque", async () => {
   await page.getByRole("button", { name: "Nova Entrada" }).click();
 
   const { modal } = modalPorTitulo("Nova Entrada");
-  const selects = modal.locator("select");
-  await selects.nth(0).selectOption({ label: "Fornecedor E2E" });
+  const selects = modal.getByRole("combobox");
+  await escolher(selects.nth(0), "Fornecedor E2E");
   await modal.getByPlaceholder("Ex: 12345").fill(String(sufixo).slice(-6));
-  await selects.nth(1).selectOption({ label: nomeEpi });
-  await selects.nth(2).selectOption({ label: "M" });
+  await escolher(selects.nth(1), nomeEpi);
+  await escolher(selects.nth(2), "M");
   await modal.locator('input[type="number"]').first().fill("10");
   await modal.getByPlaceholder("0.00").fill("5.50");
   await modal.getByPlaceholder("Ex: L001").fill("L-E2E");
@@ -153,10 +160,9 @@ test("entrega 3 unidades com assinatura", async () => {
   await modal.getByPlaceholder("Buscar nome ou matrícula...").fill(nomeFuncionario);
   await modal.getByRole("button", { name: nomeFuncionario }).click();
 
-  const selects = modal.locator("select");
-  await selects.nth(0).selectOption({ label: nomeEpi });
-  await expect(selects.nth(1).locator("option", { hasText: "M" })).toHaveCount(1);
-  await selects.nth(1).selectOption({ index: 1 });
+  const selects = modal.getByRole("combobox");
+  await escolher(selects.nth(0), nomeEpi);
+  await escolher(selects.nth(1), "M");
   await modal.locator('input[type="number"]').fill("3");
   await modal.getByRole("button", { name: "Adicionar" }).click();
 
@@ -179,12 +185,11 @@ test("devolve 1 unidade com assinatura", async () => {
   await modal.getByPlaceholder("Buscar nome ou matrícula...").fill(nomeFuncionario);
   await modal.getByRole("button", { name: nomeFuncionario }).click();
 
-  const selects = modal.locator("select");
+  const selects = modal.getByRole("combobox");
   // a opção traz o saldo em posse: confirma as 3 unidades da entrega anterior
-  await expect(selects.nth(0).locator("option", { hasText: `${nomeEpi} (com ele: 3)` })).toHaveCount(1);
-  await selects.nth(0).selectOption({ index: 1 });
-  await selects.nth(1).selectOption({ index: 1 });
-  await selects.nth(2).selectOption({ label: "Desgaste" });
+  await escolher(selects.nth(0), `${nomeEpi} (com ele: 3)`);
+  await escolher(selects.nth(1), 0);
+  await escolher(selects.nth(2), "Tamanho inadequado"); // motivos são globais (migração 000041)
 
   await assinar("Assinar", "Concluir");
   await expect(modal.getByAltText("Comprovação da entrega")).toBeVisible();

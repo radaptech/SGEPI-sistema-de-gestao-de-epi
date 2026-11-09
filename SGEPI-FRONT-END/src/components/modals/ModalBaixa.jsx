@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
-import { Plus, X } from "lucide-react";
 import { api } from "../../services/api";
 import { formatarDataParaGo } from "../../utils/entradaHelpers";
 import { listar } from "../../services/listas";
@@ -18,18 +17,7 @@ import ListaFuncionarios from "./entregas/ListaFuncionarios";
 import AssinaturaPreview from "./entregas/AssinaturaPreview";
 import ModalAssinatura from "./entregas/ModalAssinatura";
 import ModalFoto from "./entregas/ModalFoto";
-
-const MOTIVOS_PADRAO = [
-  "Desgaste natural",
-  "Dano ou Quebra",
-  "Perda ou Roubo",
-  "Vencimento do EPI / CA",
-  "Desligamento da empresa",
-  "Troca de função",
-  "Tamanho Incorreto / Diferente",
-  "Defeito de Fabricação",
-  "Outros",
-];
+import Selecao from "../Selecao";
 
 // data local (não UTC): depois das 21h o toISOString já seria o dia seguinte
 function hojeLocal() {
@@ -47,10 +35,6 @@ function ModalBaixa({ onClose, onSalvar }) {
   const [fotoCapturada, setFotoCapturada] = useState(null);
   const confirmacao = fotoCapturada || sig.assinaturaPreview;
 
-  const [mostrandoAddMotivo, setMostrandoAddMotivo] = useState(false);
-  const [novoMotivoNome, setNovoMotivoNome] = useState("");
-  const [geraDescarteNovoMotivo, setGeraDescarteNovoMotivo] = useState(false);
-  const [salvandoNovoMotivo, setSalvandoNovoMotivo] = useState(false);
   const [funcionarios, setFuncionarios] = useState([]);
   const [episFuncionario, setEpisFuncionario] = useState([]);
   const [episEstoque, setEpisEstoque] = useState([]);
@@ -61,6 +45,7 @@ function ModalBaixa({ onClose, onSalvar }) {
   const [idTamanho, setIdTamanho] = useState("");
   const [quantidadeADevolver, setQuantidadeADevolver] = useState(1);
   const [idMotivo, setIdMotivo] = useState("");
+  const motivoSelecionado = motivos.find((m) => String(m.id) === String(idMotivo));
   const [dataDevolucao, setDataDevolucao] = useState(hojeLocal);
   const [observacao, setObservacao] = useState("");
   const [houveTroca, setHouveTroca] = useState(false);
@@ -127,28 +112,6 @@ function ModalBaixa({ onClose, onSalvar }) {
     setIdEpi("");
     setIdTamanho("");
     setQuantidadeADevolver(1);
-  }
-
-  async function handleAddNovoMotivo() {
-    if (!novoMotivoNome.trim()) return;
-    try {
-      setSalvandoNovoMotivo(true);
-      const response = await api.post("/cadastrar-motivo-devolucao", {
-        motivo: novoMotivoNome.trim(),
-        gera_descarte: geraDescarteNovoMotivo,
-      });
-      const novoItem = normalizarMotivo(response);
-      setMotivos((prev) => [...prev, novoItem]);
-      setIdMotivo(novoItem.id);
-      setNovoMotivoNome("");
-      setGeraDescarteNovoMotivo(false);
-      setMostrandoAddMotivo(false);
-      toast.success("Motivo cadastrado.");
-    } catch {
-      // o api.js já mostrou o erro do servidor
-    } finally {
-      setSalvandoNovoMotivo(false);
-    }
   }
 
   async function salvarBaixa() {
@@ -248,23 +211,23 @@ function ModalBaixa({ onClose, onSalvar }) {
               <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_100px] gap-4">
                 <div>
                   <label htmlFor="baixa-epi" className={labelClass}>EPI</label>
-                  <select id="baixa-epi" className={inputClass} value={idEpi} onChange={(e) => { setIdEpi(e.target.value); setIdTamanho(""); setQuantidadeADevolver(1); }} disabled={!idFuncionario}>
+                  <Selecao id="baixa-epi" className={inputClass} value={idEpi} onChange={(e) => { setIdEpi(e.target.value); setIdTamanho(""); setQuantidadeADevolver(1); }} disabled={!idFuncionario}>
                     <option value="">{idFuncionario ? "Selecione o EPI..." : "Selecione o funcionário primeiro"}</option>
                     {episFuncionario.map((e) => (
                       <option key={e.id} value={e.id}>
                         {e.nome} {e.saldo_atual > 0 ? `(com ele: ${e.saldo_atual})` : ""}
                       </option>
                     ))}
-                  </select>
+                  </Selecao>
                 </div>
                 <div>
                   <label htmlFor="baixa-tamanho" className={labelClass}>Tamanho</label>
-                  <select id="baixa-tamanho" className={inputClass} value={idTamanho} onChange={(e) => { setIdTamanho(e.target.value); setQuantidadeADevolver(1); }} disabled={!idEpi}>
+                  <Selecao id="baixa-tamanho" className={inputClass} value={idTamanho} onChange={(e) => { setIdTamanho(e.target.value); setQuantidadeADevolver(1); }} disabled={!idEpi}>
                     <option value="">{idEpi ? "Selecione..." : "Escolha o EPI"}</option>
                     {tamanhosFiltrados.map((t) => (
                       <option key={t.id} value={t.id}>{t.tamanho}</option>
                     ))}
-                  </select>
+                  </Selecao>
                 </div>
                 <div>
                   <label htmlFor="baixa-qtd" className={labelClass}>Qtd.</label>
@@ -284,57 +247,22 @@ function ModalBaixa({ onClose, onSalvar }) {
               </div>
 
               <div>
-                <div className="flex justify-between items-end mb-1.5">
-                  <label htmlFor={mostrandoAddMotivo ? "baixa-motivo-novo" : "baixa-motivo"} className={`${labelClass} mb-0`}>Motivo</label>
-                  <button
-                    type="button"
-                    onClick={() => { setMostrandoAddMotivo(!mostrandoAddMotivo); setGeraDescarteNovoMotivo(false); }}
-                    className="text-xs text-ink-2 font-bold hover:text-ink underline-offset-2 hover:underline flex items-center gap-1"
-                  >
-                    {mostrandoAddMotivo ? <><X className="w-3 h-3" /> Cancelar</> : <><Plus className="w-3 h-3" /> Cadastrar novo motivo</>}
-                  </button>
-                </div>
-
-                {!mostrandoAddMotivo ? (
-                  <select id="baixa-motivo" className={inputClass} value={idMotivo} onChange={(e) => setIdMotivo(e.target.value)}>
-                    <option value="">Selecione o motivo...</option>
-                    {motivos.map((m) => <option key={m.id} value={m.id}>{m.nome}</option>)}
-                  </select>
-                ) : (
-                  <div className="flex flex-col gap-3 bg-sunken p-4 rounded-md border border-line">
-                    <div className="flex gap-2">
-                      <input
-                        id="baixa-motivo-novo"
-                        autoFocus
-                        list="baixa-motivos-sugeridos"
-                        value={novoMotivoNome}
-                        onChange={(e) => setNovoMotivoNome(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleAddNovoMotivo()}
-                        placeholder="Digite ou escolha uma sugestão"
-                        className={inputClass}
-                      />
-                      <datalist id="baixa-motivos-sugeridos">
-                        {MOTIVOS_PADRAO.map((m) => <option key={m} value={m} />)}
-                      </datalist>
-                      <button
-                        type="button"
-                        onClick={handleAddNovoMotivo}
-                        disabled={salvandoNovoMotivo || !novoMotivoNome.trim()}
-                        className="px-5 h-[46px] bg-action hover:bg-action-hover text-on-action rounded-md font-bold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {salvandoNovoMotivo ? "Salvando..." : "Adicionar"}
-                      </button>
-                    </div>
-                    <label className="flex items-center gap-2 text-xs font-medium text-ink-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={geraDescarteNovoMotivo}
-                        onChange={(e) => setGeraDescarteNovoMotivo(e.target.checked)}
-                        className="rounded border-line-strong text-ink focus:ring-ink bg-surface"
-                      />
-                      Este motivo inutiliza o EPI (ele não volta para o estoque)
-                    </label>
-                  </div>
+                <label htmlFor="baixa-motivo" className={labelClass}>Motivo</label>
+                <Selecao id="baixa-motivo" className={inputClass} value={idMotivo} onChange={(e) => setIdMotivo(e.target.value)}>
+                  <option value="">Selecione o motivo...</option>
+                  <optgroup label="Volta para o estoque">
+                    {motivos.filter((m) => !m.descarte).map((m) => <option key={m.id} value={m.id}>{m.nome}</option>)}
+                  </optgroup>
+                  <optgroup label="Descarte (não volta para o estoque)">
+                    {motivos.filter((m) => m.descarte).map((m) => <option key={m.id} value={m.id}>{m.nome}</option>)}
+                  </optgroup>
+                </Selecao>
+                {motivoSelecionado && (
+                  <p className="mt-1.5 text-xs text-ink-3">
+                    {motivoSelecionado.descarte
+                      ? "O EPI devolvido será descartado e não volta para o estoque."
+                      : "O EPI devolvido volta para o estoque."}
+                  </p>
                 )}
               </div>
             </div>
@@ -349,21 +277,21 @@ function ModalBaixa({ onClose, onSalvar }) {
                 <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_100px] gap-4">
                   <div>
                     <label htmlFor="baixa-epi-novo" className={labelClass}>EPI novo</label>
-                    <select id="baixa-epi-novo" className={inputClass} value={idEpiNovo} onChange={(e) => { setIdEpiNovo(e.target.value); setIdTamanhoNovo(""); setQuantidadeNova(1); }}>
+                    <Selecao id="baixa-epi-novo" className={inputClass} value={idEpiNovo} onChange={(e) => { setIdEpiNovo(e.target.value); setIdTamanhoNovo(""); setQuantidadeNova(1); }}>
                       <option value="">Selecione...</option>
                       {episEstoque.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
-                    </select>
+                    </Selecao>
                   </div>
                   <div>
                     <label htmlFor="baixa-tamanho-novo" className={labelClass}>Tamanho</label>
-                    <select id="baixa-tamanho-novo" className={inputClass} value={idTamanhoNovo} onChange={(e) => { setIdTamanhoNovo(e.target.value); setQuantidadeNova(1); }} disabled={!idEpiNovo || carregandoTamanhosNovo}>
+                    <Selecao id="baixa-tamanho-novo" className={inputClass} value={idTamanhoNovo} onChange={(e) => { setIdTamanhoNovo(e.target.value); setQuantidadeNova(1); }} disabled={!idEpiNovo || carregandoTamanhosNovo}>
                       <option value="">{carregandoTamanhosNovo ? "Carregando..." : "Selecione..."}</option>
                       {tamanhosEstoqueNovo.map((t) => (
                         <option key={t.id} value={t.id}>
                           {t.tamanho} {t.saldo_atual !== undefined ? `(estoque: ${t.saldo_atual})` : ""}
                         </option>
                       ))}
-                    </select>
+                    </Selecao>
                   </div>
                   <div>
                     <label htmlFor="baixa-qtd-nova" className={labelClass}>Qtd.</label>

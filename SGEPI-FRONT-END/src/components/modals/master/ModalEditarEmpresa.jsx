@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useId } from "react";
 import formatarData from "../../../utils/DatasFormater";
 import Dialogo from "../../Dialogo";
+import Selecao from "../../Selecao";
 
 function ModalEditarEmpresa({ aberto, empresa, planos = [], onFechar, onSalvar, onExcluir }) {
   const [form, setForm] = useState({
@@ -279,7 +280,7 @@ function CampoSelect({ label, value, onChange, options }) {
       <label htmlFor={idCampo} className="block text-xs font-bold text-ink-2 uppercase tracking-wide mb-2">
         {label}
       </label>
-      <select id={idCampo}
+      <Selecao id={idCampo}
         value={value || ""} 
         onChange={onChange}
         className="w-full px-4 py-3 bg-sunken border border-line rounded-md focus:bg-surface focus:ring-1 focus:ring-ink focus:border-ink outline-none transition-all text-sm text-ink font-medium appearance-none cursor-pointer"
@@ -293,7 +294,7 @@ function CampoSelect({ label, value, onChange, options }) {
             {option.label}
           </option>
         ))}
-      </select>
+      </Selecao>
     </div>
   );
 }

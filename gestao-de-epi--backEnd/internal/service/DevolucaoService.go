@@ -21,7 +21,7 @@ import (
 type DevolucaoRepository interface {
 	AdicionarTroca(ctx context.Context, qtx *repository.Queries, arg repository.AddTrocaEpiParams) (int32, error)
 	Cancelar(ctx context.Context, qtx *repository.Queries, arg repository.CancelarDevolucaoParams) (int32, error)
-	Listar(ctx context.Context, tenantId int32) ([]repository.ListarDevolucoesRow, error)
+	Listar(ctx context.Context, tenantId, unidade int32) ([]repository.ListarDevolucoesRow, error)
 	DadosPdfDevolucao(ctx context.Context, arg repository.BuscarDadosPdfDevolucaoParams) (repository.BuscarDadosPdfDevolucaoRow, error)
 }
 
@@ -101,11 +101,16 @@ func (d *DevolucaoService) SalvarDevolucao(ctx context.Context, modelDevolucao m
 		idQuantidadeNova = pgtype.Int4{Int32: int32(*modelDevolucao.NovaQuantidade), Valid: true}
 	}
 
-	// Regra de Descarte: Motivos 1 (Desgaste), 2 (Dano) ou 3 (Vencimento) não voltam ao estoque
-	ehDescarte, err := d.MotivoDevolucao.Descarte(ctx, repository.EhDescarteParams{
-		ID:       int32(modelDevolucao.IdMotivo),
-		TenantID: tenantId,
-	})
+	// A devolução volta para a unidade do funcionário, e a troca sai dela também
+	// ponytail: funcionário transferido devolve na unidade nova; se ela nunca recebeu esse EPI,
+	// não há lote para repor e cai na "anomalia" abaixo. Resolver quando houver transferência (Fase 7).
+	unidade, err := unidadeDaOperacao(ctx, qtx, nil, int32(modelDevolucao.IdFuncionario), tenantId)
+	if err != nil {
+		return err
+	}
+
+	// Motivo com gera_descarte (desgaste, dano, validade...) não volta ao estoque
+	ehDescarte, err := d.MotivoDevolucao.Descarte(ctx, int32(modelDevolucao.IdMotivo))
 	if err != nil {
 
 		return err
@@ -120,6 +125,7 @@ func (d *DevolucaoService) SalvarDevolucao(ctx context.Context, modelDevolucao m
 			TenantID:  tenantId,
 			IDEpi:     int32(modelDevolucao.IdEpi),
 			IDTamanho: int32(modelDevolucao.IdTamanho),
+			IDUnidade: unidade,
 		})
 		if err != nil {
 			slog.ErrorContext(ctx, "buscar lotes para repor", "epi", modelDevolucao.IdEpi, "tamanho", modelDevolucao.IdTamanho, "tenant", tenantId, "err", err)
@@ -184,6 +190,7 @@ func (d *DevolucaoService) SalvarDevolucao(ctx context.Context, modelDevolucao m
 		TokenValidacao:        pgtype.Text{String: token, Valid: true},
 		HouveTroca:            pgtype.Bool{Bool: modelDevolucao.Troca, Valid: true},
 		Observacao:            pgtype.Text{String: observacao, Valid: observacao != ""},
+		IDUnidade:             unidade,
 	}
 
 	idDevolucao, err := d.repo.AdicionarTroca(ctx, qtx, arg)
@@ -207,6 +214,7 @@ func (d *DevolucaoService) SalvarDevolucao(ctx context.Context, modelDevolucao m
 			Id_user:            int32(modelDevolucao.Iduser),
 			Data_entrega:       modelDevolucao.DataDevolucao,
 			IdTroca:            &idTrocaInt,
+			IdUnidade:          &unidade,
 			Assinatura_Digital: arg.AssinaturaDigital,
 			Itens: []model.ItemParaInserir{
 				{
@@ -310,9 +318,9 @@ func (d *DevolucaoService) CancelarDevolucao(ctx context.Context, id, iduser, te
 }
 
 // ListarDevolucoes gerencia a busca paginada com filtros
-func (d *DevolucaoService) ListarDevolucoes(ctx context.Context, tenantId int32) ([]model.DevolucaoResponse, error) {
+func (d *DevolucaoService) ListarDevolucoes(ctx context.Context, tenantId, unidade int32) ([]model.DevolucaoResponse, error) {
 
-	devolucoes, err := d.repo.Listar(ctx, tenantId)
+	devolucoes, err := d.repo.Listar(ctx, tenantId, unidade)
 	if err != nil {
 		return []model.DevolucaoResponse{}, helper.TraduzErroPostgres(err)
 	}

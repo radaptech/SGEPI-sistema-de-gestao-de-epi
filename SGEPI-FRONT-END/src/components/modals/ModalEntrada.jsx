@@ -17,11 +17,16 @@ import { formatarDataParaGo } from "../../utils/entradaHelpers";
 
 import { X, Plus, Trash2, AlertCircle, CheckCircle2 } from "lucide-react";
 import Dialogo from "../Dialogo";
+import { listar } from "../../services/listas";
+import { api } from "../../services/api";
+import { unidadeAtual } from "../../services/unidadeAtual";
+import Selecao from "../Selecao";
 
 function ModalEntrada({ onClose, onSalvar }) {
   const [fornecedores, setFornecedores] = useState([]);
   const [epis, setEpis] = useState([]);
   const [tamanhos, setTamanhos] = useState([]);
+  const [entradasAnteriores, setEntradasAnteriores] = useState([]);
   const [carregandoDados, setCarregandoDados] = useState(true);
 
   useEffect(() => {
@@ -40,6 +45,10 @@ function ModalEntrada({ onClose, onSalvar }) {
   });
 
   const [fornecedorId, setFornecedorId] = useState("");
+  const [unidades, setUnidades] = useState([]);
+  const [unidadeId, setUnidadeId] = useState(unidadeAtual); // a loja escolhida no topo vem marcada
+  // com uma unidade só o campo não aparece e o servidor põe a única
+  const variasUnidades = unidades.length >= 2;
   const [notaFiscalNumero, setNotaFiscalNumero] = useState("");
   const [notaFiscalSerie, setNotaFiscalSerie] = useState("");
 
@@ -64,10 +73,14 @@ function ModalEntrada({ onClose, onSalvar }) {
       setCarregandoDados(true);
 
       try {
-        const [resFornecedores, resEpis, resTamanhos] = await Promise.all([
+        const [resFornecedores, resEpis, resTamanhos, resEntradas, resUnidades] = await Promise.all([
           listarFornecedores(),
           listarEpis(),
           listarTamanhos(),
+          // ponytail: últimas 1000 linhas de entrada bastam para saber o que já veio de cada fornecedor;
+          // se pesar, trocar por uma rota que devolva só os pares (fornecedor, epi) distintos.
+          listar("/entradas?quantidade=1000"),
+          api.get("/unidades"),
         ]);
 
         if (!ativo) return;
@@ -75,6 +88,8 @@ function ModalEntrada({ onClose, onSalvar }) {
         setFornecedores(resFornecedores.map(normalizarFornecedorEntrada));
         setEpis(resEpis.map(normalizarEpiEntrada));
         setTamanhos(resTamanhos.map(normalizarTamanhoEntrada));
+        setEntradasAnteriores(resEntradas);
+        setUnidades(resUnidades ?? []);
       } catch (erro) {
         console.error("❌ Erro ao carregar dados do Modal:", erro);
         toast.error("Erro ao carregar dados necessários do servidor.");
@@ -95,6 +110,18 @@ function ModalEntrada({ onClose, onSalvar }) {
     [epis, epiId]
   );
 
+  // O EPI não tem fornecedor fixo (o mesmo EPI pode vir de vários). Então os que já foram
+  // comprados do fornecedor escolhido aparecem primeiro, e os demais continuam disponíveis.
+  const [episDoFornecedor, outrosEpis] = useMemo(() => {
+    if (!fornecedorId) return [[], epis];
+    const comprados = new Set(
+      entradasAnteriores
+        .filter((e) => Number(e.id_fornecedor) === Number(fornecedorId))
+        .map((e) => Number(e.id_epi))
+    );
+    return [epis.filter((e) => comprados.has(Number(e.id))), epis.filter((e) => !comprados.has(Number(e.id)))];
+  }, [epis, entradasAnteriores, fornecedorId]);
+
   const tamanhoSelecionadoObj = useMemo(
     () => tamanhos.find((t) => Number(t.id) === Number(tamanhoTemp)) || null,
     [tamanhos, tamanhoTemp]
@@ -107,14 +134,14 @@ function ModalEntrada({ onClose, onSalvar }) {
 
   const campoNotaComErro = (campo) => {
     return errosNota[campo]
-      ? "border-erro-line bg-erro-soft focus:ring-erro "
-      : "border-line bg-surface focus:ring-ok focus:border-ok ";
+      ? "border border-erro-line bg-erro-soft focus:ring-1 focus:ring-erro "
+      : "border border-line-strong bg-surface focus:ring-1 focus:ring-ink focus:border-ink ";
   };
 
   const campoItemComErro = (campo) => {
     return errosItem[campo]
-      ? "border-erro-line bg-erro-soft focus:ring-erro "
-      : "border-line bg-surface focus:ring-ok focus:border-ok ";
+      ? "border border-erro-line bg-erro-soft focus:ring-1 focus:ring-erro "
+      : "border border-line-strong bg-surface focus:ring-1 focus:ring-ink focus:border-ink ";
   };
 
   const limparErroNota = (campo) => {
@@ -160,6 +187,7 @@ function ModalEntrada({ onClose, onSalvar }) {
 
   const validarNota = () => {
     const novosErros = {};
+    if (variasUnidades && !unidadeId) novosErros.unidadeId = "Escolha em qual unidade o material vai entrar.";
     if (!fornecedorId) novosErros.fornecedorId = "Selecione o fornecedor.";
     if (!dataEntrada) novosErros.dataEntrada = "Informe a data.";
     if (!notaFiscalNumero.trim()) novosErros.notaFiscalNumero = "Informe o número.";
@@ -213,6 +241,7 @@ function ModalEntrada({ onClose, onSalvar }) {
         nota_fiscal_numero: String(notaFiscalNumero).trim(),
         nota_fiscal_serie: String(notaFiscalSerie || "1").trim(),
         data_emissao: formatarDataParaGo(dataEntrada),
+        ...(variasUnidades && { id_unidade: Number(unidadeId) }),
         itens: itensEntrada.map((item) => ({
           id_epi: Number(item.idEpi),
           id_tamanho: Number(item.idTamanho),
@@ -272,11 +301,33 @@ function ModalEntrada({ onClose, onSalvar }) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+              {variasUnidades && (
+                <div className="md:col-span-6">
+                  <label htmlFor="entrada-unidade" className="block text-xs font-bold text-ink-2 uppercase tracking-wide mb-1.5">
+                    Unidade <span className="text-erro">*</span>
+                  </label>
+                  <Selecao id="entrada-unidade"
+                    className={`w-full px-4 py-2.5 rounded-md text-sm font-medium outline-none transition-all ${campoNotaComErro("unidadeId")}`}
+                    value={unidadeId}
+                    onChange={(e) => {
+                      setUnidadeId(e.target.value);
+                      limparErroNota("unidadeId");
+                    }}
+                  >
+                    <option value="">Onde o material vai ficar?</option>
+                    {unidades.map((u) => (
+                      <option key={u.id} value={u.id}>{u.nome}</option>
+                    ))}
+                  </Selecao>
+                  {errosNota.unidadeId && <p className="text-xs text-erro font-bold mt-1">{errosNota.unidadeId}</p>}
+                </div>
+              )}
+
               <div className="md:col-span-6">
                 <label htmlFor="entrada-1" className="block text-xs font-bold text-ink-2 uppercase tracking-wide mb-1.5">
                   Fornecedor <span className="text-erro">*</span>
                 </label>
-                <select id="entrada-1"
+                <Selecao id="entrada-1"
                   className={`w-full px-4 py-2.5 rounded-md text-sm font-medium outline-none transition-all ${campoNotaComErro("fornecedorId")} disabled:opacity-50`}
                   value={fornecedorId}
                   onChange={(e) => {
@@ -291,7 +342,7 @@ function ModalEntrada({ onClose, onSalvar }) {
                       {f.nome_fantasia || f.razao_social}
                     </option>
                   ))}
-                </select>
+                </Selecao>
                 {errosNota.fornecedorId && <p className="text-xs text-erro font-bold mt-1">{errosNota.fornecedorId}</p>}
               </div>
 
@@ -336,7 +387,7 @@ function ModalEntrada({ onClose, onSalvar }) {
                 <input id="entrada-4"
                   type="text"
                   inputMode="numeric"
-                  className="w-full px-4 py-2.5 rounded-md text-sm font-medium bg-surface border border-line outline-none focus:ring-1 focus:ring-ok focus:border-ok placeholder-ink-3 transition-all"
+                  className="w-full px-4 py-2.5 rounded-md text-sm font-medium bg-surface border border-line-strong outline-none focus:ring-1 focus:ring-ink focus:border-ink placeholder-ink-3 transition-all"
                   value={notaFiscalSerie}
                   onChange={(e) => setNotaFiscalSerie(e.target.value)}
                   placeholder="Padrão: 1"
@@ -357,7 +408,7 @@ function ModalEntrada({ onClose, onSalvar }) {
                 <label htmlFor="entrada-5" className="block text-xs font-bold text-ink-2 uppercase tracking-wide mb-1.5">
                   EPI <span className="text-erro">*</span>
                 </label>
-                <select id="entrada-5"
+                <Selecao id="entrada-5"
                   className={`w-full px-3 py-2.5 rounded-md text-sm font-medium outline-none transition-all disabled:opacity-50 ${campoItemComErro("epiId")}`}
                   value={epiId}
                   onChange={(e) => {
@@ -369,10 +420,27 @@ function ModalEntrada({ onClose, onSalvar }) {
                   disabled={carregandoDados}
                 >
                   <option value="">{carregandoDados ? "Carregando..." : "Selecione o EPI..."}</option>
-                  {epis.map((epi) => (
-                    <option key={epi.id} value={epi.id}>{epi.nome}</option>
-                  ))}
-                </select>
+                  {episDoFornecedor.length > 0 ? (
+                    <>
+                      <optgroup label="Já comprados deste fornecedor">
+                        {episDoFornecedor.map((epi) => (
+                          <option key={epi.id} value={epi.id}>{epi.nome}</option>
+                        ))}
+                      </optgroup>
+                      {outrosEpis.length > 0 && (
+                        <optgroup label="Outros EPIs">
+                          {outrosEpis.map((epi) => (
+                            <option key={epi.id} value={epi.id}>{epi.nome}</option>
+                          ))}
+                        </optgroup>
+                      )}
+                    </>
+                  ) : (
+                    outrosEpis.map((epi) => (
+                      <option key={epi.id} value={epi.id}>{epi.nome}</option>
+                    ))
+                  )}
+                </Selecao>
                 {errosItem.epiId && <p className="text-xs text-erro font-bold mt-1">{errosItem.epiId}</p>}
               </div>
 
@@ -380,7 +448,7 @@ function ModalEntrada({ onClose, onSalvar }) {
                 <label htmlFor="entrada-6" className="block text-xs font-bold text-ink-2 uppercase tracking-wide mb-1.5">
                   Tamanho <span className="text-erro">*</span>
                 </label>
-                <select id="entrada-6"
+                <Selecao id="entrada-6"
                   className={`w-full px-3 py-2.5 rounded-md text-sm font-medium outline-none transition-all disabled:opacity-50 ${campoItemComErro("tamanhoTemp")}`}
                   value={tamanhoTemp}
                   onChange={(e) => {
@@ -393,7 +461,7 @@ function ModalEntrada({ onClose, onSalvar }) {
                   {epiSelecionadoObj?.tamanhos?.map((t) => (
                     <option key={t.id} value={t.id}>{t.tamanho}</option>
                   ))}
-                </select>
+                </Selecao>
                 {errosItem.tamanhoTemp && <p className="text-xs text-erro font-bold mt-1">{errosItem.tamanhoTemp}</p>}
               </div>
 

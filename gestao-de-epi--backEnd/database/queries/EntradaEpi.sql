@@ -1,13 +1,14 @@
 -- name: CreateEntradaNF :one
-INSERT INTO entrada_nf (tenant_id, nota_fiscal_numero, nota_fiscal_serie, data_emissao, id_usuario_criacao, Idfornecedor)
-VALUES ($1, $2, $3, $4, $5, $6)
+-- id_unidade NULL = trigger preencher_unidade_padrao (empresa com uma unidade só)
+INSERT INTO entrada_nf (tenant_id, nota_fiscal_numero, nota_fiscal_serie, data_emissao, id_usuario_criacao, Idfornecedor, id_unidade)
+VALUES ($1, $2, $3, $4, $5, $6, sqlc.narg('id_unidade')::int)
 RETURNING id;
 
 -- name: CreateEntradaEpiItem :exec
 INSERT INTO entrada_epi_item (
     tenant_id, entrada_nf_id, id_epi, id_tamanho, quantidade, 
-    quantidade_atual, data_fabricacao, data_validade, lote, valor_unitario,id_usuario_criacao
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
+    quantidade_atual, data_fabricacao, data_validade, lote, valor_unitario,id_usuario_criacao, id_unidade
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, sqlc.narg('id_unidade')::int);
 
 -- name: ListarEntradas :many
 SELECT 
@@ -54,6 +55,7 @@ WHERE
     AND (sqlc.narg('data_inicio')::date IS NULL OR nf.data_emissao >= sqlc.narg('data_inicio'))
     AND (sqlc.narg('data_fim')::date IS NULL OR nf.data_emissao <= sqlc.narg('data_fim'))
     AND (sqlc.narg('nota_fiscal')::text IS NULL OR nf.nota_fiscal_numero ILIKE '%' || sqlc.narg('nota_fiscal') || '%')
+    AND (sqlc.narg('id_unidade')::int IS NULL OR ei.id_unidade = sqlc.narg('id_unidade')::int)
 ORDER BY nf.data_emissao ASC
 LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
@@ -98,7 +100,8 @@ WHERE
     )
     AND (sqlc.narg('id_epi')::int IS NULL OR ei.id_epi = sqlc.narg('id_epi'))
     AND (sqlc.narg('data_inicio')::date IS NULL OR nf.data_emissao >= sqlc.narg('data_inicio'))
-    AND (sqlc.narg('nota_fiscal')::text IS NULL OR nf.nota_fiscal_numero ILIKE '%' || sqlc.narg('nota_fiscal') || '%');
+    AND (sqlc.narg('nota_fiscal')::text IS NULL OR nf.nota_fiscal_numero ILIKE '%' || sqlc.narg('nota_fiscal') || '%')
+    AND (sqlc.narg('id_unidade')::int IS NULL OR ei.id_unidade = sqlc.narg('id_unidade')::int);
 
 -- name: EntradaDashbord :many
 SELECT
@@ -106,7 +109,8 @@ SELECT
     nf.data_emissao as data_entrada, ei.lote
 FROM entrada_epi_item ei
 INNER JOIN entrada_nf nf ON ei.entrada_nf_id = nf.id
-WHERE ei.tenant_id = $1 AND ei.ativo = TRUE
+WHERE ei.tenant_id = sqlc.arg('tenant_id') AND ei.ativo = TRUE
+  AND (sqlc.narg('id_unidade')::int IS NULL OR ei.id_unidade = sqlc.narg('id_unidade')::int)
 ORDER BY nf.data_emissao DESC;
 
 -- name: EntradaEpiEstoque :many
@@ -122,6 +126,7 @@ INNER JOIN entrada_nf nf ON ei.entrada_nf_id = nf.id
 INNER JOIN tamanho t ON ei.id_tamanho = t.id
 INNER JOIN epi e ON ei.id_epi = e.id
 INNER JOIN tipo_protecao tp ON e.idtipoprotecao = tp.id
-WHERE ei.tenant_id = $1
+WHERE ei.tenant_id = sqlc.arg('tenant_id')
   AND ei.ativo = TRUE
+  AND (sqlc.narg('id_unidade')::int IS NULL OR ei.id_unidade = sqlc.narg('id_unidade')::int)
 ORDER BY nf.data_emissao ASC;

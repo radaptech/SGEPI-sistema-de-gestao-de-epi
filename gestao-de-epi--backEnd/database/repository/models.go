@@ -44,6 +44,7 @@ type Devolucao struct {
 	TokenValidacao                 pgtype.Text
 	HouveTroca                     pgtype.Bool
 	Observacao                     pgtype.Text
+	IDUnidade                      int32
 }
 
 type DevolucaoLote struct {
@@ -86,6 +87,7 @@ type EntradaEpiItem struct {
 	Ativo                 bool
 	IDUsuarioCriacao      int32
 	IDUsuarioCancelamento pgtype.Int4
+	IDUnidade             int32
 }
 
 type EntradaNf struct {
@@ -100,6 +102,7 @@ type EntradaNf struct {
 	IDUsuarioCancelamento pgtype.Int4
 	CanceladaEm           pgtype.Timestamp
 	Idfornecedor          int32
+	IDUnidade             int32
 }
 
 type EntregaEpi struct {
@@ -114,6 +117,7 @@ type EntregaEpi struct {
 	TokenValidacao               pgtype.Text
 	IDUsuarioEntrega             pgtype.Int4
 	IDUsuarioEntregaCancelamento pgtype.Int4
+	IDUnidade                    int32
 }
 
 type Epi struct {
@@ -180,14 +184,12 @@ type Funcionario struct {
 	Ativo          bool
 	DeletadoEm     pgtype.Timestamp
 	Cpf            pgtype.Text
+	IDUnidade      int32
 }
 
 type MotivoDevolucao struct {
 	ID           int32
-	TenantID     int32
 	Motivo       string
-	Ativo        bool
-	DeletadoEm   pgtype.Timestamp
 	GeraDescarte bool
 }
 
@@ -233,6 +235,15 @@ type TipoProtecao struct {
 	Codigo string
 }
 
+type Unidade struct {
+	ID         int32
+	TenantID   int32
+	Nome       string
+	Ativo      bool
+	DeletadoEm pgtype.Timestamp
+	CriadoEm   pgtype.Timestamp
+}
+
 type Usuario struct {
 	ID                    int32
 	TenantID              pgtype.Int4
@@ -244,4 +255,10 @@ type Usuario struct {
 	TokenRecuperacaoSenha pgtype.Text
 	TokenExpiracao        pgtype.Timestamp
 	UltimoAcesso          pgtype.Timestamp
+}
+
+type UsuarioUnidade struct {
+	UsuarioID int32
+	IDUnidade int32
+	TenantID  int32
 }

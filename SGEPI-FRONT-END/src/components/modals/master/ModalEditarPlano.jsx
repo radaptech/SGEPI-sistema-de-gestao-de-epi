@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useId } from "react";
 import Dialogo from "../../Dialogo";
+import Selecao from "../../Selecao";
 
 const RECURSOS_PADRAO = [
   "Controle de funcionários",
@@ -281,7 +282,7 @@ function CampoSelect({ label, value, onChange, options, disabled = false }) {
         {label}
       </label>
 
-      <select id={idCampo}
+      <Selecao id={idCampo}
         value={value}
         onChange={onChange}
         disabled={disabled}
@@ -297,7 +298,7 @@ function CampoSelect({ label, value, onChange, options, disabled = false }) {
             {option}
           </option>
         ))}
-      </select>
+      </Selecao>
     </div>
   );
 }

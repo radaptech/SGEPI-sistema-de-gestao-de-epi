@@ -3,6 +3,7 @@ import { temPermissao } from "../utils/permissoes";
 import { useDepartamentos } from "../hooks/useDepartamentos";
 import { Briefcase, Plus, Search, Trash2, ChevronLeft, ChevronRight, X, AlertTriangle, Layers } from "lucide-react";
 import { toast } from "react-toastify";
+import Selecao from "../components/Selecao";
 
 const PaginacaoBotao = ({ atual, total, onChange }) => (
   <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4 w-full">
@@ -164,14 +165,14 @@ function Departamentos({ usuarioLogado }) {
                 <h3 className="text-sm font-bold text-ink tracking-wide uppercase transition-colors">Nova Função</h3>
               </div>
               <form onSubmit={handleAdicionarFuncao} className="flex flex-col sm:flex-row gap-3">
-                <select
+                <Selecao
                   value={formFuncao.departamentoId}
                   onChange={(e) => setFormFuncao({ ...formFuncao, departamentoId: e.target.value })}
                   className="sm:w-48 rounded-md border border-line-strong bg-surface px-4 py-3 text-sm font-semibold text-ink focus:ring-1 focus:ring-ink outline-none transition-colors appearance-none cursor-pointer"
                 >
                   <option value="">Selecione...</option>
                   {departamentos.map(d => <option key={d.id} value={d.id}>{d.nome}</option>)}
-                </select>
+                </Selecao>
                 <div className="flex flex-1 gap-3">
                   <input
                     type="text"

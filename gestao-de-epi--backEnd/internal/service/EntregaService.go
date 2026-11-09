@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math"
@@ -31,11 +32,11 @@ type EntregaRepository interface {
 	ListarEpisCaVencido(ctx context.Context, qtx *repository.Queries, args repository.ListarEpisCaVencidoParams) ([]repository.ListarEpisCaVencidoRow, error)
 	ListarEpisEntreguesCancelados(ctx context.Context, qtx *repository.Queries, arg repository.ListarItensEntregueCanceladosParams) ([]repository.ListarItensEntregueCanceladosRow, error)
 	ListasEntregasPorMatricula(ctx context.Context, args repository.ListarHistoricoEntregasPorMatriculaParams) ([]repository.ListarHistoricoEntregasPorMatriculaRow, error)
-	BuscaEntregaDashbord(ctx context.Context, tenant int32) ([]repository.EntregaDashbordRow, error)
-	BuscaEntregaItensDashbord(ctx context.Context, tenant int32) ([]repository.EntregaItensDashbordRow, error)
+	BuscaEntregaDashbord(ctx context.Context, tenant, unidade int32) ([]repository.EntregaDashbordRow, error)
+	BuscaEntregaItensDashbord(ctx context.Context, tenant, unidade int32) ([]repository.EntregaItensDashbordRow, error)
 	BuscaTodasEntregasDoTenant(ctx context.Context, tenantId int32) ([]repository.BuscaTodasEntregasDoTenantRow, error)
 	ListarTrocasPendentes(ctx context.Context, args repository.ListarTrocasPendentesParams) ([]repository.ListarTrocasPendentesRow, error)
-	ListarFaltasKit(ctx context.Context, tenantId int32) ([]repository.ListarFaltasKitRow, error)
+	ListarFaltasKit(ctx context.Context, tenantId, unidade int32) ([]repository.ListarFaltasKitRow, error)
 }
 
 type EntregaService struct {
@@ -117,8 +118,15 @@ func (e *EntregaService) RegistrarEntrega(ctx context.Context, qtx *repository.Q
 		return fmt.Errorf("%w: %s (CA %s, venceu em %s)", helper.ErrCaVencido, v.Nome, v.Ca, v.ValidadeCa.Time.Format("02/01/2006"))
 	}
 
+	// 0.1 De qual unidade sai o estoque (D2): a pedida ou a do funcionário
+	unidade, err := unidadeDaOperacao(ctx, qtx, model.IdUnidade, model.ID_funcionario, tenantId)
+	if err != nil {
+		return err
+	}
+
 	// 1. Salva Cabeçalho
 	identrega, err := e.repo.AdicionarEntrega(ctx, qtx, repository.AddEntregaEpiParams{
+		IDUnidade:        unidade,
 		Idfuncionario:    int32(model.ID_funcionario),
 		DataEntrega:      pgtype.Date{Time: model.Data_entrega.Time(), Valid: true},
 		Assinatura:       model.Assinatura_Digital,
@@ -140,16 +148,12 @@ func (e *EntregaService) RegistrarEntrega(ctx context.Context, qtx *repository.Q
 		lotes, err := e.repo.ListarEntregasDisponiveis(ctx, qtx, repository.ListarLotesParaConsumoParams{
 			IDEpi:     int32(item.ID_epi),
 			IDTamanho: int32(item.ID_tamanho),
+			IDUnidade: unidade,
 			TenantID:  tenantId,
 		})
 		if err != nil {
 			slog.ErrorContext(ctx, "buscar lotes para consumo", "entrega", identrega, "epi", item.ID_epi, "tamanho", item.ID_tamanho, "tenant", tenantId, "err", err)
 			return err
-		}
-
-		if len(lotes) == 0 {
-			// Essa é a mensagem que vai viajar até o React:
-			return fmt.Errorf("Não foi possível entregar. O estoque deste item está zerado ou com a validade vencida.")
 		}
 
 		for _, lote := range lotes {
@@ -188,7 +192,7 @@ func (e *EntregaService) RegistrarEntrega(ctx context.Context, qtx *repository.Q
 		}
 
 		if quantidadeNecessaria > 0 {
-			return fmt.Errorf("estoque insuficiente (faltam %d unidades)", quantidadeNecessaria)
+			return faltaNaUnidade(ctx, qtx, item, unidade, quantidadeNecessaria, tenantId)
 		}
 	}
 	return nil
@@ -199,6 +203,7 @@ type FiltroEntregas struct {
 	EpiID         int32          `form:"epiId"`
 	EntregaID     int32          `form:"entregaId"`
 	FuncionarioId int32          `form:"funcionarioId"`
+	IdUnidade     int32          `form:"id_unidade"`
 	DataInicio    configs.DataBr `form:"dataInicio"`
 	DataFim       configs.DataBr `form:"dataFim"`
 	Pagina        int32          `form:"pagina"`
@@ -230,6 +235,7 @@ func (e *EntregaService) ListaEntregas(ctx context.Context, f FiltroEntregas, te
 		Canceladas:    f.Canceladas,
 		IDEntrega:     pgtype.Int4{Int32: f.EntregaID, Valid: f.EntregaID > 0},
 		Idfuncionario: pgtype.Int4{Int32: f.FuncionarioId, Valid: f.FuncionarioId > 0},
+		IDUnidade:     pgtype.Int4{Int32: f.IdUnidade, Valid: f.IdUnidade > 0},
 		TenantID:      tenantId,
 	})
 	if err != nil {
@@ -388,10 +394,11 @@ func (e *EntregaService) GerarDadosPdfService(ctx context.Context, matricula str
 }
 
 // ListarTrocasPendentes: EPIs em posse com vida útil vencida ou vencendo nos próximos `dias` dias
-func (e *EntregaService) ListarTrocasPendentes(ctx context.Context, tenantId int32, dias int) ([]model.TrocaPendenteDto, error) {
+func (e *EntregaService) ListarTrocasPendentes(ctx context.Context, tenantId, unidade int32, dias int) ([]model.TrocaPendenteDto, error) {
 	trocas, err := e.repo.ListarTrocasPendentes(ctx, repository.ListarTrocasPendentesParams{
-		TenantID: tenantId,
-		Ate:      pgtype.Date{Time: time.Now().AddDate(0, 0, dias), Valid: true},
+		TenantID:  tenantId,
+		Ate:       pgtype.Date{Time: time.Now().AddDate(0, 0, dias), Valid: true},
+		IDUnidade: pgtype.Int4{Int32: unidade, Valid: unidade > 0},
 	})
 	if err != nil {
 		return nil, err
@@ -410,8 +417,8 @@ func (e *EntregaService) ListarTrocasPendentes(ctx context.Context, tenantId int
 }
 
 // ListarFaltasKit: funcionários com menos EPI em posse do que o kit da função exige
-func (e *EntregaService) ListarFaltasKit(ctx context.Context, tenantId int32) ([]model.FaltaKitDto, error) {
-	faltas, err := e.repo.ListarFaltasKit(ctx, tenantId)
+func (e *EntregaService) ListarFaltasKit(ctx context.Context, tenantId, unidade int32) ([]model.FaltaKitDto, error) {
+	faltas, err := e.repo.ListarFaltasKit(ctx, tenantId, unidade)
 	if err != nil {
 		return nil, err
 	}
@@ -427,8 +434,8 @@ func (e *EntregaService) ListarFaltasKit(ctx context.Context, tenantId int32) ([
 }
 
 // Funções de Dashboard
-func (e *EntregaService) BuscaEntregaDash(ctx context.Context, tenantId int32) ([]model.EntregaDashbord, error) {
-	entregas, err := e.repo.BuscaEntregaDashbord(ctx, tenantId)
+func (e *EntregaService) BuscaEntregaDash(ctx context.Context, tenantId, unidade int32) ([]model.EntregaDashbord, error) {
+	entregas, err := e.repo.BuscaEntregaDashbord(ctx, tenantId, unidade)
 	if err != nil {
 		return []model.EntregaDashbord{}, err
 	}
@@ -444,8 +451,8 @@ func (e *EntregaService) BuscaEntregaDash(ctx context.Context, tenantId int32) (
 	return dto, nil
 }
 
-func (e *EntregaService) BuscaItemDash(ctx context.Context, tenantID int32) ([]model.EntregaItensDashBord, error) {
-	itens, err := e.repo.BuscaEntregaItensDashbord(ctx, tenantID)
+func (e *EntregaService) BuscaItemDash(ctx context.Context, tenantID, unidade int32) ([]model.EntregaItensDashBord, error) {
+	itens, err := e.repo.BuscaEntregaItensDashbord(ctx, tenantID, unidade)
 	if err != nil {
 		return []model.EntregaItensDashBord{}, err
 	}
@@ -458,4 +465,36 @@ func (e *EntregaService) BuscaItemDash(ctx context.Context, tenantID int32) ([]m
 		})
 	}
 	return dto, nil
+}
+
+// unidadeDaOperacao decide de qual unidade sai (ou para qual volta) o estoque:
+// a pedida, se vier; senão, a do funcionário.
+func unidadeDaOperacao(ctx context.Context, qtx *repository.Queries, pedida *int32, idFuncionario, tenantId int32) (int32, error) {
+	if pedida != nil {
+		if err := unidadeAtiva(ctx, qtx, *pedida, tenantId); err != nil {
+			return 0, err
+		}
+		return *pedida, nil
+	}
+	unidade, err := qtx.UnidadeDoFuncionario(ctx, repository.UnidadeDoFuncionarioParams{ID: idFuncionario, TenantID: tenantId})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return 0, helper.ErrNaoEncontrado
+	}
+	return unidade, err
+}
+
+// faltaNaUnidade monta o erro de estoque insuficiente dizendo quanto há nas outras unidades,
+// para o balcão saber que dá para pedir transferência. O controller procura "estoque insuficiente".
+func faltaNaUnidade(ctx context.Context, qtx *repository.Queries, item model.ItemParaInserir, unidade, faltam, tenantId int32) error {
+	fora, err := qtx.SaldoForaDaUnidade(ctx, repository.SaldoForaDaUnidadeParams{
+		TenantID: tenantId, IDEpi: item.ID_epi, IDTamanho: item.ID_tamanho, IDUnidade: unidade,
+	})
+	if err != nil {
+		return err
+	}
+	msg := fmt.Sprintf("estoque insuficiente em %s: faltam %d unidade(s) dentro da validade", fora.Unidade, faltam)
+	if fora.SaldoFora > 0 {
+		msg += fmt.Sprintf("; há %d em outras unidades", fora.SaldoFora)
+	}
+	return errors.New(msg)
 }

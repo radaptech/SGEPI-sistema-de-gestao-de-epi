@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import SeletorUnidade from "./SeletorUnidade";
 
 function Header({ paginaAtual, setPagina, onLogout, usuario }) {
   const [menuAberto, setMenuAberto] = useState(false);
@@ -170,27 +171,34 @@ function Header({ paginaAtual, setPagina, onLogout, usuario }) {
     <header className="sticky top-0 z-50 bg-surface border-b border-line">
       <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-2 lg:py-0">
         <div className="hidden lg:grid grid-cols-[auto_1fr_auto] items-center gap-4 xl:gap-8">
-          <button
-            type="button"
-            onClick={irParaInicio}
-            title="Ir para o início"
-            className="flex items-center gap-3 shrink-0 text-left rounded-md -m-1 p-1 hover:bg-sunken transition-colors"
-          >
-            <span className="w-9 h-9 bg-action rounded flex items-center justify-center">
-              <svg className="w-5 h-5 text-on-action" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          {/* com 2+ unidades, o seletor de unidade toma o lugar do subtítulo: na barra não cabe mais nada */}
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={irParaInicio}
+              title="Ir para o início"
+              className="w-9 h-9 bg-action rounded flex items-center justify-center hover:opacity-90 transition-opacity"
+            >
+              <svg className="w-5 h-5 text-on-action" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-            </span>
-            <span className="flex flex-col">
-              <span className="text-lg font-bold tracking-tight text-ink leading-none">
+              <span className="sr-only">Ir para o início</span>
+            </button>
+            <div className="flex flex-col items-start">
+              <button
+                type="button"
+                onClick={irParaInicio}
+                className="text-lg font-bold tracking-tight text-ink leading-none hover:text-ink-2 transition-colors"
+              >
                 SGEPI
-              </span>
-              <span className="text-xs text-ink-3 mt-0.5">
-                {isSuperAdmin ? "Painel Master" : "Gestão de Estoque"}
-              </span>
-            </span>
-            <span className="sr-only">, ir para o início</span>
-          </button>
+              </button>
+              {isSuperAdmin ? (
+                <span className="text-xs text-ink-3 mt-0.5">Painel Master</span>
+              ) : (
+                <SeletorUnidade compacto semUnidades={<span className="text-xs text-ink-3 mt-0.5">Gestão de Estoque</span>} />
+              )}
+            </div>
+          </div>
 
           <div className="flex justify-center min-w-0">
             <nav className="flex items-center gap-1">
@@ -326,6 +334,7 @@ function Header({ paginaAtual, setPagina, onLogout, usuario }) {
               <p className="font-mono text-xs text-ink-3 mt-1">
                 {perfilNormalizado}
               </p>
+              {!isSuperAdmin && <SeletorUnidade id="seletor-unidade-mobile" className="mt-3" />}
             </div>
 
             <nav className="flex flex-col gap-1">

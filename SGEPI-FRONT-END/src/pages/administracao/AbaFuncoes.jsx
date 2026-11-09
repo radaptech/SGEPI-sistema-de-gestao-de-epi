@@ -17,6 +17,7 @@ import {
   SearchX,
   ShieldCheck
 } from "lucide-react";
+import Selecao from "../../components/Selecao";
 
 export default function AbaFuncoes() {
   const [funcoes, setFuncoes] = useState([]);
@@ -300,7 +301,7 @@ export default function AbaFuncoes() {
             <label htmlFor="abafuncoes-1" className={labelClass}>
               Departamento Vinculado <span className="text-erro">*</span>
             </label>
-            <select id="abafuncoes-1"
+            <Selecao id="abafuncoes-1"
               className={`${baseInputClass} ${campoComErro("id_departamento")}`}
               value={novaFuncao.id_departamento}
               onChange={(e) => atualizarCampo("id_departamento", e.target.value)}
@@ -311,7 +312,7 @@ export default function AbaFuncoes() {
                   {d.departamento}
                 </option>
               ))}
-            </select>
+            </Selecao>
             {erros.id_departamento && (
               <p className="text-xs font-medium text-erro mt-1.5">{erros.id_departamento}</p>
             )}

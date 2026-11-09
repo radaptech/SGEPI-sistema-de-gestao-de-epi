@@ -6,6 +6,7 @@ import ModalEditarUsuario from "../../components/modals/master/ModalEditarUsuari
 import ModalConfirmarBloqueioUsuario from "../../components/modals/master/ModalConfirmarBloqueioUsuario";
 
 import masterDashboardService from "../../services/masterDashboardService";
+import Selecao from "../../components/Selecao";
 
 function UsuariosMaster() {
   const [busca, setBusca] = useState("");
@@ -212,7 +213,7 @@ function UsuariosMaster() {
             </div>
 
             <div className="md:w-64 shrink-0">
-              <select
+              <Selecao
                 value={tipoFiltro}
                 onChange={(e) => setTipoFiltro(e.target.value)}
                 className="w-full px-4 py-2.5 bg-sunken border border-line rounded-md focus:bg-surface focus:ring-1 focus:ring-ink focus:border-ink outline-none transition-all text-sm text-ink font-medium appearance-none cursor-pointer"
@@ -222,7 +223,7 @@ function UsuariosMaster() {
                 <option value="super_admin">Master</option>
                 <option value="admin">Administrador</option>
                 <option value="colaborador">Colaborador</option>
-              </select>
+              </Selecao>
             </div>
           </div>
 

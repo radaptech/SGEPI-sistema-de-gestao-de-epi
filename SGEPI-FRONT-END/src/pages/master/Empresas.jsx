@@ -3,6 +3,7 @@ import ModalNovaEmpresa from "../../components/modals/master/ModalNovaEmpresa";
 import ModalVerEmpresa from "../../components/modals/master/ModalVerEmpresa";
 import ModalEditarEmpresa from "../../components/modals/master/ModalEditarEmpresa";
 import masterDashboardService from "../../services/masterDashboardService";
+import Selecao from "../../components/Selecao";
 
 function Empresas() {
   const [busca, setBusca] = useState("");
@@ -162,7 +163,7 @@ function Empresas() {
             </div>
 
             <div className="md:w-64 shrink-0">
-              <select
+              <Selecao
                 value={statusFiltro}
                 onChange={(e) => setStatusFiltro(e.target.value)}
                 className="w-full px-4 py-2.5 bg-sunken border border-line rounded-md focus:bg-surface focus:ring-1 focus:ring-ink focus:border-ink outline-none transition-all text-sm text-ink font-medium appearance-none cursor-pointer"
@@ -173,7 +174,7 @@ function Empresas() {
                 <option value="Atrasada">Atrasada</option>
                 <option value="Bloqueada">Bloqueada</option>
                 <option value="Em teste">Em teste</option>
-              </select>
+              </Selecao>
             </div>
           </div>
 

@@ -16,6 +16,7 @@ import {
   validarQuantidade,
 } from "../utils/entregaHelpers";
 import { toast } from "react-toastify";
+import { unidadeAtual } from "../services/unidadeAtual";
 
 export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
   const [funcionarios, setFuncionarios] = useState([]);
@@ -69,7 +70,12 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
     return () => { ativo = false; };
   }, []);
 
-  // 2. Tamanhos do EPI escolhido, com o saldo de cada um
+  // 2. Tamanhos do EPI escolhido, com o saldo de cada um na unidade do funcionário
+  // (é dela que a entrega sai; sem funcionário escolhido, soma todas)
+  // com uma loja escolhida no topo, a entrega sai dela; em "todas", da unidade do funcionário (D2)
+  const unidadeEscolhida = unidadeAtual();
+  const unidadeFuncionario =
+    unidadeEscolhida || funcionarios.find((item) => Number(item.id) === Number(funcionario))?.unidadeId;
   useEffect(() => {
     let ativo = true;
     async function buscarTamanhos() {
@@ -80,7 +86,8 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
 
       try {
         setCarregandoTamanhos(true);
-        const response = await api.get(`/tamanhos-id-epi/${idEpiTemp}`);
+        const filtro = unidadeFuncionario ? `?id_unidade=${unidadeFuncionario}` : "";
+        const response = await api.get(`/tamanhos-id-epi/${idEpiTemp}${filtro}`);
         
         if (!ativo) return;
         
@@ -96,7 +103,7 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
 
     buscarTamanhos();
     return () => { ativo = false; };
-  }, [idEpiTemp]);
+  }, [idEpiTemp, unidadeFuncionario]);
 
   // 3. Memos para performance e busca de objetos
   const funcionarioSelecionado = useMemo(() => {
@@ -204,6 +211,7 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
       id_funcionario: Number(funcionario),
       data_entrega: formatarData(dataEntrega),
       assinatura_digital: assinaturaPreview,
+      ...(unidadeEscolhida && { id_unidade: Number(unidadeEscolhida) }),
       itens: itensParaEntregar.map((item) => ({
         id_epi: Number(item.idEpi),
         id_tamanho: Number(item.idTamanho),

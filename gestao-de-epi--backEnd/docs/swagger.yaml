@@ -291,6 +291,10 @@ definitions:
     properties:
       data_emissao:
         type: string
+      id_unidade:
+        description: obrigatório com 2+ unidades
+        minimum: 1
+        type: integer
       idfornecedor:
         type: integer
       itens:
@@ -427,6 +431,10 @@ definitions:
         type: integer
       id_troca:
         description: Usei ponteiro para aceitar nulo
+        type: integer
+      id_unidade:
+        description: sem ela, sai da unidade do funcionário
+        minimum: 1
         type: integer
       id_user:
         type: integer
@@ -658,6 +666,8 @@ definitions:
         type: integer
       nome:
         type: string
+      unidade:
+        $ref: '#/definitions/model.UnidadeResumo'
     type: object
   model.FuncionarioCompletoDto:
     properties:
@@ -675,6 +685,8 @@ definitions:
         type: integer
       nome:
         type: string
+      unidade:
+        $ref: '#/definitions/model.UnidadeResumo'
     type: object
   model.FuncionarioDashbord:
     properties:
@@ -693,6 +705,10 @@ definitions:
         minimum: 1
         type: integer
       id_funcao:
+        minimum: 1
+        type: integer
+      id_unidade:
+        description: sem ele, vai para a primeira unidade
         minimum: 1
         type: integer
       nome:
@@ -755,6 +771,16 @@ definitions:
     - id_epi
     - quantidade
     type: object
+  model.MotivoDevolucaoEpiDto:
+    properties:
+      gera_descarte:
+        description: 'true: o EPI devolvido não volta ao estoque'
+        type: boolean
+      id:
+        type: integer
+      motivo:
+        type: string
+    type: object
   model.ResumoDashboard:
     properties:
       empresas_ativas:
@@ -814,6 +840,33 @@ definitions:
       vence_em:
         type: string
     type: object
+  model.UnidadeDto:
+    properties:
+      funcionarios:
+        description: ativos lotados nela
+        type: integer
+      id:
+        type: integer
+      nome:
+        type: string
+      saldo:
+        description: unidades de EPI em estoque nela
+        type: integer
+    type: object
+  model.UnidadeInserir:
+    properties:
+      nome:
+        type: string
+    required:
+    - nome
+    type: object
+  model.UnidadeResumo:
+    properties:
+      id:
+        type: integer
+      nome:
+        type: string
+    type: object
   model.UpdateEpiInput:
     properties:
       alerta_minimo:
@@ -847,6 +900,8 @@ definitions:
       id_departamento:
         type: integer
       id_funcao:
+        type: integer
+      id_unidade:
         type: integer
       nome:
         type: string
@@ -2311,6 +2366,80 @@ paths:
       summary: Consultar CA na base do MTE
       tags:
       - EPIs
+  /gerencial/unidades:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Nome da unidade
+        in: body
+        name: unidade
+        required: true
+        schema:
+          $ref: '#/definitions/model.UnidadeInserir'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.UnidadeDto'
+      summary: Cadastra uma unidade
+      tags:
+      - Unidade
+  /gerencial/unidades/{id}:
+    delete:
+      description: Recusa (409) a última unidade da empresa e a que ainda tem estoque
+        ou funcionários ativos.
+      parameters:
+      - description: ID da unidade
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+      summary: Desativa uma unidade
+      tags:
+      - Unidade
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID da unidade
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Novo nome
+        in: body
+        name: unidade
+        required: true
+        schema:
+          $ref: '#/definitions/model.UnidadeInserir'
+      responses:
+        "204":
+          description: No Content
+      summary: Renomeia uma unidade
+      tags:
+      - Unidade
+  /motivos:
+    get:
+      description: 'Lista global e pronta, igual para todas as empresas. gera_descarte=true:
+        o EPI não volta ao estoque.'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.MotivoDevolucaoEpiDto'
+            type: array
+      summary: Lista os motivos de devolução
+      tags:
+      - Devolucao
   /protecoes:
     get:
       description: Lista os 9 grupos de proteção do Anexo I da NR-6 (globais, iguais
@@ -2364,6 +2493,22 @@ paths:
       summary: Trocas periódicas pendentes
       tags:
       - Entregas
+  /unidades:
+    get:
+      description: Lojas, obras ou almoxarifados do tenant, com funcionários ativos
+        e saldo de EPI em cada uma.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.UnidadeDto'
+            type: array
+      summary: Lista as unidades da empresa
+      tags:
+      - Unidade
 securityDefinitions:
   BearerAuth:
     in: header
