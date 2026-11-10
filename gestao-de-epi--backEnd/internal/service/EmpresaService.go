@@ -17,6 +17,7 @@ type EmpresaRepository interface {
 	Salvar(ctx context.Context, arg repository.CriarEmpresaParams) error
 	ResumoDashboard(ctx context.Context) (repository.ResumoMasterRow, error)
 	Alertas(ctx context.Context) ([]repository.AlertasMasterRow, error)
+	Limites(ctx context.Context) ([]repository.LimitesMasterRow, error)
 	EmpresasRecentes(ctx context.Context) ([]repository.EmpresasRecentesRow, error)
 	DadosEmpresas(ctx context.Context) ([]repository.DadosEmpresasRow, error)
 	EditarEmpresa(ctx context.Context, arg repository.EditarEmpresaParams) error
@@ -89,7 +90,8 @@ func (e *EmpresaService) EmpresaDashboard(ctx context.Context) (model.ResumoDash
 // diasSemAcessoAlerta: a partir de quantos dias sem nenhum login a empresa aparece como "sem uso"
 const diasSemAcessoAlerta = 14
 
-// Alertas do painel master: vencimento passado (alto), vencimento em até 7 dias e empresa sem uso (medio).
+// Alertas do painel master: vencimento passado e limite do plano esgotado (alto); vencimento em até 7 dias,
+// limite do plano em 80% ou mais e empresa sem uso (medio).
 // Os mais graves primeiro; dentro do nível, o mais urgente primeiro.
 func (e *EmpresaService) Alertas(ctx context.Context) ([]model.AlertaMaster, error) {
 
@@ -128,6 +130,21 @@ func (e *EmpresaService) Alertas(ctx context.Context) ([]model.AlertaMaster, err
 				ID: fmt.Sprintf("uso-%d", l.ID), EmpresaID: l.ID, Tipo: "Sem uso", Nivel: "medio", Mensagem: msg,
 			}, urgencia: 1000 - l.DiasSemAcesso})
 		}
+	}
+
+	limites, err := e.repo.Limites(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, l := range limites {
+		a := alerta{AlertaMaster: model.AlertaMaster{
+			ID: fmt.Sprintf("lim-%d-%s", l.ID, l.Recurso), EmpresaID: l.ID, Tipo: "Limite do plano", Nivel: "medio",
+			Mensagem: fmt.Sprintf("%s: usando %d de %d %s do plano", l.NomeFantasia, l.Usado, l.Limite, l.Recurso),
+		}, urgencia: 200 - l.Usado*100/l.Limite} // depois dos vencimentos da semana, antes de sem uso
+		if l.Usado >= l.Limite {
+			a.Nivel, a.Mensagem = "alto", fmt.Sprintf("%s: chegou ao limite de %s do plano (%d de %d)", l.NomeFantasia, l.Recurso, l.Usado, l.Limite)
+		}
+		lista = append(lista, a)
 	}
 
 	sort.SliceStable(lista, func(i, j int) bool {

@@ -49,6 +49,15 @@ func (e *EmpresaRepository) Alertas(ctx context.Context) ([]AlertasMasterRow, er
 	return alertas, nil
 }
 
+func (e *EmpresaRepository) Limites(ctx context.Context) ([]LimitesMasterRow, error) {
+
+	limites, err := e.q.LimitesMaster(ctx)
+	if err != nil {
+		return nil, helper.TraduzErroPostgres(err)
+	}
+	return limites, nil
+}
+
 func (e *EmpresaRepository) EmpresasRecentes(ctx context.Context) ([]EmpresasRecentesRow, error) {
 
 	empresas, err := e.q.EmpresasRecentes(ctx)
