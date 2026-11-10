@@ -2,10 +2,12 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"strconv"
 
 	"net/http"
 
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
 	"github.com/gin-gonic/gin"
 )
@@ -56,6 +58,10 @@ func (e *EmpresaController) Salvar() gin.HandlerFunc {
 		}
 
 		err := e.service.Salvar(ctx, input)
+		if errors.Is(err, helper.ErrSubdominioInvalido) {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		if err != nil {
 
 			ctx.Error(err)

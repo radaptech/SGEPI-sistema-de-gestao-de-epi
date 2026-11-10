@@ -3,6 +3,8 @@ import ModalNovaEmpresa from "../../components/modals/master/ModalNovaEmpresa";
 import ModalVerEmpresa from "../../components/modals/master/ModalVerEmpresa";
 import ModalEditarEmpresa from "../../components/modals/master/ModalEditarEmpresa";
 import masterDashboardService from "../../services/masterDashboardService";
+import empresaService from "../../services/empresaService";
+import { toast } from "react-toastify";
 import Selecao from "../../components/Selecao";
 import Paginacao, { usePaginacao } from "../../components/Paginacao";
 
@@ -74,17 +76,16 @@ function Empresas() {
     setModalEditarAberto(false);
   };
 
-  const salvarNovaEmpresa = async (payloadApi) => {
-    const planoSelecionado = planosDisponiveis.find((p) => String(p.id) === String(payloadApi.planoId));
-
-    const empresaFormatada = {
-      ...payloadApi,
-      id: Date.now(),
-      plano: planoSelecionado ? planoSelecionado.nome : "Básico",
-    };
-
-    setEmpresas((prev) => [empresaFormatada, ...prev]);
-    setModalNovaEmpresaAberto(false);
+  // cria de verdade na API (antes só entrava na lista da tela) e recarrega a lista do servidor
+  const salvarNovaEmpresa = async (novaEmpresa) => {
+    try {
+      await empresaService.criar(novaEmpresa);
+      toast.success("Empresa cadastrada com sucesso!");
+      setEmpresas((await masterDashboardService.buscarEmpresas()) ?? []);
+      setModalNovaEmpresaAberto(false);
+    } catch {
+      // o api.js já mostrou o erro do servidor
+    }
   };
 
   const salvarEdicaoEmpresa = async (id, payloadApi, empresaAtualizadaParaTela) => {

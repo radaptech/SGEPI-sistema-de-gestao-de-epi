@@ -8,6 +8,7 @@ import (
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/configs"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/database/repository"
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
 	"github.com/gosimple/slug"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -36,6 +37,13 @@ func NewEmpresaService(repo EmpresaRepository, repoPlano PlanosRepository) *Empr
 	}
 }
 
+// subdominiosReservados: endereços *.radaptech.com.br que o sistema usa ou pode usar; nenhuma empresa fica com eles.
+var subdominiosReservados = map[string]bool{
+	"www": true, "api": true, "app": true, "admin": true, "painel": true, "homolog": true,
+	"homologacao": true, "staging": true, "dev": true, "status": true, "mail": true,
+	"email": true, "smtp": true, "suporte": true, "docs": true, "blog": true, "traefik": true,
+}
+
 func (e *EmpresaService) Salvar(ctx context.Context, model model.EmpresaInserir) error {
 
 	plano, err := e.repoPlano.BuscarPlanoPorNome(ctx, model.Plano)
@@ -44,6 +52,9 @@ func (e *EmpresaService) Salvar(ctx context.Context, model model.EmpresaInserir)
 	}
 
 	subdominio := slug.Make(model.NomeFantasia)
+	if subdominio == "" || subdominiosReservados[subdominio] {
+		return helper.ErrSubdominioInvalido
+	}
 
 	err = e.repo.Salvar(ctx, repository.CriarEmpresaParams{
 		NomeFantasia: model.NomeFantasia,

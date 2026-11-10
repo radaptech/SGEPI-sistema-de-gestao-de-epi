@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/database/repository"
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
 	"github.com/stretchr/testify/require"
 )
 
@@ -93,4 +95,26 @@ func TestPainelMaster(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, recentes, 5)
 	require.Equal(t, "Cheia", recentes[0].Nome, "a mais nova primeiro")
+}
+
+// O subdomínio sai do nome fantasia; nome que vira endereço do sistema (api, www...) ou vazio é recusado.
+func TestEmpresaSubdominioReservado(t *testing.T) {
+	ctx := context.Background()
+	db := SetupTestDB(t)
+	defer db.Close()
+
+	CreatePlanos(t, db) // "plano teste"
+	serv := NewEmpresaService(repository.NewEmpresaRepository(db), repository.NewPlanosRepository(db))
+	nova := func(nome, cnpj string) model.EmpresaInserir {
+		return model.EmpresaInserir{NomeFantasia: nome, Cnpj: cnpj, Plano: "plano teste", Status: "Ativa"}
+	}
+
+	require.ErrorIs(t, serv.Salvar(ctx, nova("API", "11222333000181")), helper.ErrSubdominioInvalido)
+	require.ErrorIs(t, serv.Salvar(ctx, nova("Painel", "11222333000181")), helper.ErrSubdominioInvalido)
+	require.ErrorIs(t, serv.Salvar(ctx, nova("!!!", "11222333000181")), helper.ErrSubdominioInvalido)
+
+	require.NoError(t, serv.Salvar(ctx, nova("Ótica Boa Vista", "11222333000181")))
+	var sub string
+	require.NoError(t, db.QueryRow(ctx, "SELECT subdominio FROM empresas WHERE cnpj = '11222333000181'").Scan(&sub))
+	require.Equal(t, "otica-boa-vista", sub)
 }
