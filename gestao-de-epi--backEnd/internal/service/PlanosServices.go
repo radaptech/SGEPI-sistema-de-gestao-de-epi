@@ -54,7 +54,6 @@ func (p *PlanosService) SalvarPlanos(ctx context.Context, model model.Plano) (in
 		Mensalidade:        mensalidadePg,
 		LimiteFuncionarios: toPgInt4(model.LimiteFuncionarios),
 		LimiteUsuarios:     toPgInt4(model.LimiteUsuarios),
-		LimiteEpis:         toPgInt4(model.LimiteEpis),
 		LimiteUnidades:     toPgInt4(model.LimiteUnidades),
 		Status:             pgtype.Text{String: model.Status, Valid: model.Status != ""},
 		Descricao:          model.Descricao,
@@ -99,7 +98,6 @@ func (p *PlanosService) MostrarPlanos(ctx context.Context) ([]model.Plano, error
 			Mensalidade:        valorDecimal,
 			LimiteFuncionarios: toPtr(plano.LimiteFuncionarios),
 			LimiteUsuarios:     toPtr(plano.LimiteUsuarios),
-			LimiteEpis:         toPtr(plano.LimiteEpis),
 			LimiteUnidades:     toPtr(plano.LimiteUnidades),
 			Status:             plano.Status.String,
 			Descricao:          plano.Descricao,
@@ -136,10 +134,6 @@ func (p *PlanosService) AtualizarPlano(ctx context.Context, input model.Atualiza
 
 	if input.LimiteUsuarios != nil {
 		params.LimiteUsuarios = pgtype.Int4{Int32: *input.LimiteUsuarios, Valid: true}
-	}
-
-	if input.LimiteEpis != nil {
-		params.LimiteEpis = pgtype.Int4{Int32: *input.LimiteEpis, Valid: true}
 	}
 
 	if input.LimiteUnidades != nil {

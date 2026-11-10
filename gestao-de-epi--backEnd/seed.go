@@ -28,10 +28,10 @@ func SeedEmpresaMatriz(db *pgxpool.Pool) error {
 			slog.Info("seed: criando plano matriz")
 
 			errPlano = db.QueryRow(ctx, `
-				INSERT INTO planos (nome, mensalidade, limite_funcionarios, limite_usuarios, limite_epis, status, descricao, criado_em)
-				VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+				INSERT INTO planos (nome, mensalidade, limite_funcionarios, limite_usuarios, status, descricao, criado_em)
+				VALUES ($1, $2, $3, $4, $5, $6, NOW())
 				RETURNING id;
-			`, "plano de testes", 1000.00, 10000, 10000, 1000, "Ativo", "plano de testes").Scan(&planoid)
+			`, "plano de testes", 1000.00, 10000, 10000, "Ativo", "plano de testes").Scan(&planoid)
 
 			if errPlano != nil {
 				return fmt.Errorf("falha ao criar plano matriz: %v", errPlano)

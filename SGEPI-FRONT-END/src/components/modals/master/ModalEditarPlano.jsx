@@ -27,7 +27,6 @@ function ModalEditarPlano({
     descricao: "",
     limite_funcionarios: "",
     limite_usuarios: "",
-    limite_epis: "",
     limite_unidades: "",
     status: "Ativo",
   });
@@ -45,7 +44,6 @@ function ModalEditarPlano({
         descricao: plano.descricao || "",
         limite_funcionarios: formatarLimiteParaExibicao(plano.limite_funcionarios),
         limite_usuarios: formatarLimiteParaExibicao(plano.limite_usuarios),
-        limite_epis: formatarLimiteParaExibicao(plano.limite_epis),
         limite_unidades: formatarLimiteParaExibicao(plano.limite_unidades),
         status: plano.status || "Ativo",
       });
@@ -92,7 +90,6 @@ function ModalEditarPlano({
       descricao: form.descricao.trim(),
       limite_funcionarios: limiteParaApi(form.limite_funcionarios),
       limite_usuarios: limiteParaApi(form.limite_usuarios),
-      limite_epis: limiteParaApi(form.limite_epis),
       limite_unidades: limiteParaApi(form.limite_unidades),
       status: form.status,
     };
@@ -171,11 +168,6 @@ function ModalEditarPlano({
                 onChange={(v) => alterarCampo("limite_usuarios", v)}
               />
 
-              <CampoLimite
-                label="Limite de EPIs"
-                value={form.limite_epis}
-                onChange={(v) => alterarCampo("limite_epis", v)}
-              />
 
               <CampoLimite
                 label="Limite de Unidades"
