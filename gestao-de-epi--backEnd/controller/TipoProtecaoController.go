@@ -33,8 +33,7 @@ func (t *TipoProtecaoController) ListarProtecoes() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		protecs, err := t.service.ListarProtecoes(ctx)
 		if err != nil {
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro ao listar as proteções", "detalhes": err.Error()})
+			responderErro(ctx, err, "erro ao listar as proteções")
 			return
 		}
 		ctx.JSON(http.StatusOK, protecs)

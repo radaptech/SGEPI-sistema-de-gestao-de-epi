@@ -302,17 +302,22 @@ listagem expõem um booleano `cancelados`/`canceladas` para consultar o oposto.
 `TraduzErroPostgres` converte `pgconn.PgError` por código (`23505` → `ErrDadoDuplicado`,
 `23503` → `ErrConflitoIntegridade`, `23502` → `ErrCampoObrigatorio`, …).
 
-Regra de ouro: **repository traduz, service propaga com `errors.Is`, controller decide o status**:
+Regra de ouro: **repository traduz, service propaga (`%w`), controller responde com `responderErro`**
+(`controller/erros.go`):
 
 ```go
-if errors.Is(err, helper.ErrDadoDuplicado) {
-    ctx.JSON(http.StatusConflict, gin.H{"error": "...", "detalhes": err.Error()})
+if err != nil {
+    responderErro(ctx, err, "erro ao salvar a entrega") // mensagem só para o caso não previsto
     return
 }
 ```
 
-Formato de resposta de erro em uso: `{"error": "<mensagem amigável>", "detalhes": "<err.Error()>"}`.
-(Existe `helper.HTTPError` para o Swagger, mas os handlers respondem com `gin.H`.)
+`statusDoErro` concentra o mapa erro → status: os `helper.Err*` (400/401/403/404/409/422), o
+`pgx.ErrNoRows` (404), os códigos do Postgres e `helper.ErroDeNegocio` (422, recusa de regra com
+mensagem própria, ex.: estoque insuficiente). Erro previsto responde `{"error": "<mensagem dele>"}`;
+o não previsto responde 500 com a mensagem padrão e o erro técnico vai **só para o log**
+(`ctx.Error`). Nunca mande `err.Error()` de erro não previsto ao cliente: o front mostra o
+`detalhes` na tela. Erro novo de domínio entra no mapa de `statusDoErro`, não num `if` no controller.
 
 ### Controllers
 

@@ -52,12 +52,7 @@ func (f *FuncaoController) ImportarFuncaoXLSX() gin.HandlerFunc {
 		file, err := fileHearder.Open()
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"erro":     "erro ao ler a planilha",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao ler a planilha")
 			return
 		}
 		defer file.Close()
@@ -93,11 +88,7 @@ func (f *FuncaoController) ImportarFuncaoXLSX() gin.HandlerFunc {
 
 		mapDep, err := f.service.BuscaDepartamentosParaFuncao(ctx, tenantID)
 		if err != nil {
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"message":  "Erro ao carregar departamentos para validação.",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "Erro ao carregar departamentos para validação.")
 			return
 		}
 
@@ -145,11 +136,7 @@ func (f *FuncaoController) ImportarFuncaoXLSX() gin.HandlerFunc {
 				}
 
 				// Qualquer outro erro de banco (ex: conexão, query quebrada) aborta a requisição
-				ctx.Error(err)
-				ctx.JSON(http.StatusInternalServerError, gin.H{
-					"message":  fmt.Sprintf("Erro interno ao salvar a função '%s' na linha %d.", colunaFuncao, indexLinha+1),
-					"detalhes": err.Error(),
-				})
+				responderErro(ctx, err, fmt.Sprintf("erro ao salvar a função '%s' na linha %d", colunaFuncao, indexLinha+1))
 				return
 			}
 
@@ -240,11 +227,7 @@ func (f *FuncaoController) RegistraFuncao() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -298,10 +281,7 @@ func (f *FuncaoController) ListarFuncoes() gin.HandlerFunc {
 		funcoes, err := f.service.ListasTodasFuncao(ctx, filtro, tenantID)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Erro interno ao listar funcoes",
-			})
+			responderErro(ctx, err, "Erro interno ao listar funcoes")
 			return
 		}
 
@@ -355,11 +335,7 @@ func (f *FuncaoController) DeletarFuncao() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -432,11 +408,7 @@ func (f *FuncaoController) AtualizarFuncao() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"erro": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 
 			return
 		}
@@ -475,8 +447,7 @@ func (f *FuncaoController) ListarKitFuncao() gin.HandlerFunc {
 
 		kit, err := f.service.ListarKit(ctx, id, int32(tenantID64))
 		if err != nil {
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Erro interno ao listar o kit", "detalhes": err.Error()})
+			responderErro(ctx, err, "Erro interno ao listar o kit")
 			return
 		}
 
@@ -527,8 +498,7 @@ func (f *FuncaoController) SalvarKitFuncao() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Erro interno ao salvar o kit", "detalhes": err.Error()})
+			responderErro(ctx, err, "Erro interno ao salvar o kit")
 			return
 		}
 

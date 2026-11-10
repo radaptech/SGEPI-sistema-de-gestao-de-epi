@@ -37,11 +37,7 @@ func (m *MotivoController) ListarMotivo() gin.HandlerFunc {
 		motivos, err := m.service.ListarMotivos(ctx)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error":    "erro ao mostrar os motivos da devolucao",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao mostrar os motivos da devolucao")
 			return
 		}
 

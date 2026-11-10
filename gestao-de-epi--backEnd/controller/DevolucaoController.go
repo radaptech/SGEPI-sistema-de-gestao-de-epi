@@ -76,18 +76,13 @@ func (d *DevolucaoController) Adicionar() gin.HandlerFunc {
 
 		token, err := d.service.TokenDevolucao(ctx, tenantId, int32(input.IdFuncionario))
 		if err != nil {
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro ao gerar token de auditoria"})
+			responderErro(ctx, err, "erro ao gerar token de auditoria")
 			return
 		}
 
 		urlAssinatura, err := helper.UploadAssinaturaSupabase(input.AssinaturaDigital, token, "devolucao")
 		if err != nil {
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error":    "falha ao salvar assinatura digital",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "falha ao salvar assinatura digital")
 			return
 		}
 
@@ -116,8 +111,7 @@ func (d *DevolucaoController) Adicionar() gin.HandlerFunc {
 				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 				return
 			}
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro ao salvar entrega", "detalhes": err.Error()})
+			responderErro(ctx, err, "erro ao salvar entrega")
 			return
 		}
 
@@ -152,12 +146,7 @@ func (d *DevolucaoController) Listar() gin.HandlerFunc {
 		devolucoes, err := d.service.ListarDevolucoes(ctx, tenantId, unidadeEscolhida(ctx))
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro ao realizar buscar das entregas de epi",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao realizar buscar das entregas de epi")
 			return
 		}
 
@@ -217,12 +206,7 @@ func (d *DevolucaoController) GerarFichaPDF() gin.HandlerFunc {
 		pdf, err := helper.CreatePdfDevolucao(devolucaoDados, auditoria, responsavel)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    err.Error(),
-				"detalhes": "erro na geração do pdf",
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 

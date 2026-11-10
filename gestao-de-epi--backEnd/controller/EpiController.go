@@ -112,11 +112,7 @@ func (e *EpiController) AdicionarEpi() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -169,10 +165,7 @@ func (e *EpiController) ListarEpis() gin.HandlerFunc {
 
 		epis, err := e.service.ListarEpis(ctx, filtro, tenantId)
 		if err != nil {
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -224,11 +217,7 @@ func (e *EpiController) ListarEpiPorId() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -260,8 +249,7 @@ func (e *EpiController) BuscarCaepi() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro ao consultar o CA", "detalhes": err.Error()})
+			responderErro(ctx, err, "erro ao consultar o CA")
 			return
 		}
 
@@ -311,11 +299,7 @@ func (e *EpiController) DeletarEpi() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 
 			return
 		}
@@ -415,12 +399,7 @@ func (e *EpiController) AtualizaEpi() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    err.Error(),
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -450,10 +429,7 @@ func (e *EpiController) ListarEpiDashborController() gin.HandlerFunc {
 
 		epis, err := e.service.ListarEpiDashbord(ctx, tenantId)
 		if err != nil {
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -494,10 +470,7 @@ func (e *EpiController) ListarEpiFuncionario() gin.HandlerFunc {
 		epis, err := e.service.BuscarEpiDoFuncionario(ctx, tenantId, int32(IdFuncionario))
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 

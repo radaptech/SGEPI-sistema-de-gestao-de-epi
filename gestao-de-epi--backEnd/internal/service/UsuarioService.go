@@ -212,8 +212,10 @@ func (u *UsuarioService) RecuperacaoSenha(ctx context.Context, rl model.Recupera
 		Email:    rl.Email,
 		TenantID: pgtype.Int4{Int32: int32(rl.TenantId), Valid: true},
 	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil // e-mail desconhecido responde igual ao conhecido: a rota não pode revelar quem tem cadastro
+	}
 	if err != nil {
-
 		return err
 	}
 

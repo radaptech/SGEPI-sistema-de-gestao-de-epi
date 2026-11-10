@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"math"
 	"strings"
@@ -45,7 +44,7 @@ func (e *EntradaService) Adicionar(ctx context.Context, input model.EntradaEpiIn
 	// 1. Validação de Datas
 	hoje := time.Now().Truncate(24 * time.Hour)
 	if input.Data_emissao.Time().After(hoje) {
-		return fmt.Errorf("data de emissão não pode ser futura")
+		return helper.ErroDeNegocio("data de emissão não pode ser futura")
 	}
 
 	// 2. Prepara os parâmetros da Nota Fiscal (Cabeçalho)

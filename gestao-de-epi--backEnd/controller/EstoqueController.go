@@ -56,11 +56,7 @@ func (e *EstoqueController) MostrarQuantidades() gin.HandlerFunc {
 		quantidades, err := e.service.MostrarQuantidadeTotais(ctx, filtro, tenantId)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -101,11 +97,7 @@ func (e *EstoqueController) MostrarSaldo() gin.HandlerFunc {
 		saldos, err := e.service.MostrarSaldoAtual(ctx, filtro, tenantId)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 

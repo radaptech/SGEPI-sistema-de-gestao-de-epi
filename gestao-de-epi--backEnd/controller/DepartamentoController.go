@@ -63,11 +63,7 @@ func (d *DepartamentoController) ImportDepartamentoXLSX() gin.HandlerFunc {
 		filer, err := fileHearder.Open()
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"erro":     "erro ao ler a planilha",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao ler a planilha")
 			return
 		}
 		defer filer.Close()
@@ -151,8 +147,7 @@ func (d *DepartamentoController) ImportDepartamentoXLSX() gin.HandlerFunc {
 					})
 					return
 				}
-				ctx.Error(err)
-				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Erro ao registrar os departamentos no banco de dados."})
+				responderErro(ctx, err, "Erro ao registrar os departamentos no banco de dados.")
 				return
 
 			}
@@ -213,11 +208,7 @@ func (d *DepartamentoController) RegistraDepartamento() gin.HandlerFunc {
 				})
 				return
 			}
-			c.Error(err)
-			c.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(c, err, "erro interno do servidor")
 			return
 		}
 
@@ -273,12 +264,7 @@ func (d *DepartamentoController) ListarDepartamentos() gin.HandlerFunc {
 		deps, err := d.service.ListarTodosDepartamentos(ctx, filtro, tenantID)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro ao realizar buscar dos departamentos",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao realizar buscar dos departamentos")
 			return
 
 		}
@@ -333,11 +319,7 @@ func (d *DepartamentoController) DeletarDepartamento() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -410,11 +392,7 @@ func (d *DepartamentoController) AtualizarDepartamento() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"erro": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 
 			return
 		}

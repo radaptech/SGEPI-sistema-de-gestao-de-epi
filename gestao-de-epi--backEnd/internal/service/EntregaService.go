@@ -509,5 +509,5 @@ func faltaNaUnidade(ctx context.Context, qtx *repository.Queries, item model.Ite
 	if fora.SaldoFora > 0 {
 		msg += fmt.Sprintf("; há %d em outras unidades", fora.SaldoFora)
 	}
-	return errors.New(msg)
+	return helper.ErroDeNegocio(msg)
 }

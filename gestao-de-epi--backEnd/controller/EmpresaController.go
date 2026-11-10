@@ -64,11 +64,7 @@ func (e *EmpresaController) Salvar() gin.HandlerFunc {
 		}
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error":    "Erro ao salvar empresa no banco de dados.",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "Erro ao salvar empresa no banco de dados.")
 			return
 		}
 
@@ -93,12 +89,7 @@ func (e *EmpresaController) ResumoDashboard() gin.HandlerFunc {
 
 		resumo, err := e.service.EmpresaDashboard(ctx)
 		if err != nil {
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro ao realizar buscar dos dados do Dashbord",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao realizar buscar dos dados do Dashbord")
 			return
 		}
 
@@ -119,8 +110,7 @@ func (e *EmpresaController) Alertas() gin.HandlerFunc {
 
 		alertas, err := e.service.Alertas(ctx)
 		if err != nil {
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro ao buscar os alertas", "detalhes": err.Error()})
+			responderErro(ctx, err, "erro ao buscar os alertas")
 			return
 		}
 
@@ -143,12 +133,7 @@ func (e *EmpresaController) EmpresaRecentes() gin.HandlerFunc {
 
 		empresa, err := e.service.EmpresaRecentes(ctx)
 		if err != nil {
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro ao realizar buscar dos dados das empresas",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao realizar buscar dos dados das empresas")
 			return
 		}
 
@@ -172,12 +157,7 @@ func (e *EmpresaController) DadosEmpresas() gin.HandlerFunc {
 
 		empresa, err := e.service.DadosEmpresas(ctx)
 		if err != nil {
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro ao realizar buscar dos dados das empresas",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao realizar buscar dos dados das empresas")
 			return
 		}
 
@@ -213,23 +193,14 @@ func (e *EmpresaController) EditarEmpresa() gin.HandlerFunc {
 
 		if err := ctx.ShouldBindJSON(&input); err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"erro": err.Error(),
-			})
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "dados inválidos", "detalhes": err.Error()})
 			return
 		}
 
 		err = e.service.EditarEmpresa(ctx, int32(id), input)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro ao editar empresa",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao editar empresa")
 			return
 		}
 

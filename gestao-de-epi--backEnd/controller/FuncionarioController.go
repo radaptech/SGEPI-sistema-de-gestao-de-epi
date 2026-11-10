@@ -109,11 +109,7 @@ func (f *FuncionarioController) Adicionar() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -168,10 +164,7 @@ func (f *FuncionarioController) ListarFuncionarios() gin.HandlerFunc {
 		funcs, err := f.Service.ListaTodosFuncionarios(ctx, filtro, tenantID)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Erro interno ao listar departamentos",
-			})
+			responderErro(ctx, err, "Erro interno ao listar departamentos")
 			return
 		}
 
@@ -215,11 +208,7 @@ func (f *FuncionarioController) ListarFuncionarioPorMatricula() gin.HandlerFunc 
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -273,11 +262,7 @@ func (f *FuncionarioController) DeletarFuncionaioId() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -366,11 +351,7 @@ func (f *FuncionarioController) AtualizaFuncionario() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 
 		}
@@ -403,12 +384,7 @@ func (f *FuncionarioController) BuscaFuncionarioDashbord() gin.HandlerFunc {
 		funcionarios, err := f.Service.FuncionariosDashbord(ctx, tenantID, unidadeEscolhida(ctx))
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro ao busca todos os funcionarios",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao busca todos os funcionarios")
 
 			return
 		}
@@ -440,12 +416,7 @@ func (f *FuncionarioController) FuncionarioCompleto() gin.HandlerFunc {
 		funcionarios, err := f.Service.FuncionarioCompleto(ctx, tenantID, unidadeEscolhida(ctx))
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro ao busca todos os funcionarios",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao busca todos os funcionarios")
 
 			return
 		}
