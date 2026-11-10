@@ -53,10 +53,15 @@ func TestPainelMaster(t *testing.T) {
 	cheia := empresaNoPlano(planoPequeno, "Cheia", "Ativa", 200, 1)
 	iddep = CreateDepartamento(t, db, cheia)
 	CreateFuncionario(t, db, iddep, CreateFuncao(t, db, iddep, cheia), cheia)
-	for range 4 {
+	for range 5 {
 		CreateUser(t, db, cheia)
 		time.Sleep(2 * time.Millisecond) // CreateUser gera e-mail pelo relógio
 	}
+	// desativados não contam: o 5º usuário e um 2º funcionário
+	_, err = db.Exec(ctx, "UPDATE usuarios SET ativo = FALSE WHERE id = (SELECT MAX(id) FROM usuarios WHERE tenant_id = $1)", cheia)
+	require.NoError(t, err)
+	_, err = db.Exec(ctx, "UPDATE funcionario SET ativo = FALSE WHERE id = $1", CreateFuncionario(t, db, iddep, CreateFuncao(t, db, iddep, cheia), cheia))
+	require.NoError(t, err)
 
 	serv := NewEmpresaService(repository.NewEmpresaRepository(db), repository.NewPlanosRepository(db))
 

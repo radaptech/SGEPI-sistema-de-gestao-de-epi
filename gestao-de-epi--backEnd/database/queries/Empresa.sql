@@ -79,13 +79,13 @@ ORDER BY nome_fantasia;
 
 -- name: LimitesMaster :many
 -- Empresas não bloqueadas usando 80% ou mais de algum limite do plano (NULL = ilimitado, fica de fora).
--- Conta igual à trava do cadastro: funcionários e usuários por linha do tenant, unidades não excluídas.
+-- Conta igual à trava do cadastro: funcionários e usuários ativos, unidades não excluídas.
 SELECT e.id, e.nome_fantasia, l.recurso::text AS recurso, l.usado::int AS usado, l.limite::int AS limite
 FROM empresas e
 JOIN planos p ON p.id = e.plano_id
 CROSS JOIN LATERAL (VALUES
-    ('funcionários', (SELECT COUNT(*) FROM funcionario f WHERE f.tenant_id = e.id), p.limite_funcionarios),
-    ('usuários', (SELECT COUNT(*) FROM usuarios u WHERE u.tenant_id = e.id), p.limite_usuarios),
+    ('funcionários', (SELECT COUNT(*) FROM funcionario f WHERE f.tenant_id = e.id AND f.ativo = TRUE), p.limite_funcionarios),
+    ('usuários', (SELECT COUNT(*) FROM usuarios u WHERE u.tenant_id = e.id AND u.ativo = TRUE), p.limite_usuarios),
     ('unidades', (SELECT COUNT(*) FROM unidade un WHERE un.tenant_id = e.id AND un.deletado_em IS NULL), p.limite_unidades)
 ) AS l(recurso, usado, limite)
 WHERE e.status <> 'Bloqueada'

@@ -208,8 +208,8 @@ func CreateFuncionario(t *testing.T, db *pgxpool.Pool, IdDepartamento, IdFuncao,
 		tenantID,
 		nome,
 		matriculo,
-		IdFuncao,
 		IdDepartamento,
+		IdFuncao,
 		cpf,
 	).Scan(&id)
 

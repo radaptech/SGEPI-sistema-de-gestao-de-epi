@@ -381,9 +381,10 @@ func (q *Queries) DeletarFuncionario(ctx context.Context, arg DeletarFuncionario
 }
 
 const totalDeFuncionarios = `-- name: TotalDeFuncionarios :one
-select count(id) from funcionario where tenant_id= $1
+select count(id) from funcionario where tenant_id= $1 and ativo = true
 `
 
+// conta para o limite do plano: desativado libera a vaga
 func (q *Queries) TotalDeFuncionarios(ctx context.Context, id int32) (int64, error) {
 	row := q.db.QueryRow(ctx, totalDeFuncionarios, id)
 	var count int64
