@@ -1,8 +1,8 @@
-import { render, screen } from '@testing-library/react';
-import App from './App';
+import { render, screen } from "@testing-library/react";
+import App from "./App";
 
-test('renders learn react link', () => {
+// fumaça: o app inteiro monta (rotas, providers, imports pesados como o jspdf) e cai no login sem sessão
+test("abre na tela de login sem sessão", async () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  expect(await screen.findByRole("button", { name: /entrar no sistema/i })).toBeInTheDocument();
 });

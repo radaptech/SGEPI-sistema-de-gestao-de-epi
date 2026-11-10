@@ -29,3 +29,6 @@ jobs:
       - name: build
         # CI=true (padrão do Actions): warning de lint quebra o build
         run: npm run build
+
+      - name: testes
+        run: npm test -- --watchAll=false
