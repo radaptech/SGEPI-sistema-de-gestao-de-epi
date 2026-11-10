@@ -4,6 +4,7 @@ import ModalVerEmpresa from "../../components/modals/master/ModalVerEmpresa";
 import ModalEditarEmpresa from "../../components/modals/master/ModalEditarEmpresa";
 import masterDashboardService from "../../services/masterDashboardService";
 import Selecao from "../../components/Selecao";
+import Paginacao, { usePaginacao } from "../../components/Paginacao";
 
 function Empresas() {
   const [busca, setBusca] = useState("");
@@ -54,6 +55,8 @@ function Empresas() {
       return combinaBusca && combinaStatus;
     });
   }, [empresas, busca, statusFiltro]);
+
+  const { itens: empresasDaPagina, ...paginacao } = usePaginacao(empresasFiltradas, 15);
 
   const abrirModalVer = (empresa) => {
     setEmpresaSelecionada(empresa);
@@ -156,7 +159,7 @@ function Empresas() {
               <input
                 type="text"
                 value={busca}
-                onChange={(e) => setBusca(e.target.value)}
+                onChange={(e) => { setBusca(e.target.value); paginacao.setPagina(1); }}
                 placeholder="Buscar por empresa, CNPJ, responsável ou e-mail..."
                 className="w-full pl-11 pr-4 py-2.5 bg-sunken border border-line rounded-md focus:bg-surface focus:ring-1 focus:ring-ink focus:border-ink outline-none transition-all text-sm text-ink placeholder:text-ink-3"
               />
@@ -165,7 +168,7 @@ function Empresas() {
             <div className="md:w-64 shrink-0">
               <Selecao
                 value={statusFiltro}
-                onChange={(e) => setStatusFiltro(e.target.value)}
+                onChange={(e) => { setStatusFiltro(e.target.value); paginacao.setPagina(1); }}
                 className="w-full px-4 py-2.5 bg-sunken border border-line rounded-md focus:bg-surface focus:ring-1 focus:ring-ink focus:border-ink outline-none transition-all text-sm text-ink font-medium appearance-none cursor-pointer"
                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748B'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: `right 1rem center`, backgroundRepeat: `no-repeat`, backgroundSize: `1.2em 1.2em` }}
               >
@@ -195,7 +198,7 @@ function Empresas() {
               </thead>
 
               <tbody className="divide-y divide-line">
-                {empresasFiltradas.map((empresa) => (
+                {empresasDaPagina.map((empresa) => (
                   <tr key={empresa.id} className="hover:bg-sunken transition-colors group">
                     <td className="px-4 py-4">
                       <p className="text-sm font-bold text-ink">{empresa.nome}</p>
@@ -291,6 +294,7 @@ function Empresas() {
               </tbody>
             </table>
           </div>
+          <Paginacao {...paginacao} />
         </div>
       </div>
 
