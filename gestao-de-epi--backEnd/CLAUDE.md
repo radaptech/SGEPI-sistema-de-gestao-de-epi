@@ -384,8 +384,10 @@ os metadados globais estão em `main.go`. Rode `swag init` após alterar rotas �
 
 - **Unitários**: `auth/hash_test.go` (argon2id) e `internal/helper/CNPJ_test.go` (table-driven com
   testify). Rápidos, sem dependências externas.
-- **Integração**: `internal/service/testeIntegracaoEntregaEpi_test.go` sobe um
-  **Postgres 15-alpine via testcontainers-go**, cria o schema com `criarTabelasPostgres`
+- **Integração**: `internal/service/*_test.go` usam um **Postgres 15-alpine via testcontainers-go**
+  só, que sobe uma vez por execução (`TestMain` + `SetupTestDB`): as migrations rodam uma vez num
+  banco modelo e cada teste ganha um banco copiado dele (`CREATE DATABASE ... TEMPLATE`), então os
+  testes seguem isolados e a suíte toda leva segundos. Schema via `criarTabelasPostgres`
   (`SetupTabelasTesteIntegracao.go`) e popula fixtures com os helpers `CreateEmpresa`,
   `CreateFuncionario`, `CreateEpi`, `CreateEntradaEpi`, … (`SetupDadosTesteIntegracao.go`).
   Cobrem entrega concorrente e consistência de estoque.

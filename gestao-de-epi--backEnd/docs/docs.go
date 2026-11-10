@@ -2374,6 +2374,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/master/dashboard/alertas": {
+            "get": {
+                "description": "Empresas com vencimento passado (nível alto), vencendo em até 7 dias ou sem nenhum acesso há 14 dias (nível medio).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Empresas"
+                ],
+                "summary": "Alertas do painel master",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.AlertaMaster"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/motivos": {
             "get": {
                 "description": "Lista global e pronta, igual para todas as empresas. gera_descarte=true: o EPI não volta ao estoque.",
@@ -2612,6 +2635,26 @@ const docTemplate = `{
                     "items": {
                         "type": "integer"
                     }
+                }
+            }
+        },
+        "model.AlertaMaster": {
+            "type": "object",
+            "properties": {
+                "empresa_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "mensagem": {
+                    "type": "string"
+                },
+                "nivel": {
+                    "type": "string"
+                },
+                "tipo": {
+                    "type": "string"
                 }
             }
         },
@@ -3774,6 +3817,10 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "empresas_em_teste": {
+                    "type": "integer"
+                },
+                "empresas_vencidas": {
+                    "description": "não bloqueadas com vencimento passado",
                     "type": "integer"
                 },
                 "receita_mensal": {

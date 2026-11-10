@@ -26,6 +26,16 @@ type ResumoDashboard struct {
 	TotalEpis          int     `json:"total_epis"`
 	TotalEntregas      int     `json:"total_entregas"`
 	ReceitaMensal      float64 `json:"receita_mensal"`
+	EmpresasVencidas   int     `json:"empresas_vencidas"` // não bloqueadas com vencimento passado
+}
+
+// AlertaMaster: aviso do painel master. nivel "alto" (vencida) ou "medio" (vence logo, sem uso).
+type AlertaMaster struct {
+	ID        string `json:"id"`
+	EmpresaID int32  `json:"empresa_id"`
+	Nivel     string `json:"nivel"`
+	Tipo      string `json:"tipo"`
+	Mensagem  string `json:"mensagem"`
 }
 
 type EmpresaRecente struct {

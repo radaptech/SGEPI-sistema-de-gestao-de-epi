@@ -1,6 +1,6 @@
 ---
 name: db-test-fixture
-description: Gera testes de integração em internal/service/ seguindo o padrão real deste projeto (testcontainers com Postgres real, migrations reais, helpers Create*, um container isolado por subteste). Use ao criar testes de integração para um service que ainda não tem (ex. EpiService, FuncionarioService, FornecedorService, EmpresaService), ou ao revisar/corrigir um teste de integração existente.
+description: Gera testes de integração em internal/service/ seguindo o padrão real deste projeto (testcontainers com Postgres real, migrations reais, helpers Create*, um banco isolado por subteste, copiado de um modelo). Use ao criar testes de integração para um service que ainda não tem (ex. EpiService, FuncionarioService, FornecedorService, EmpresaService), ou ao revisar/corrigir um teste de integração existente.
 tools: Read, Grep, Write, Edit, Bash
 ---
 
@@ -15,11 +15,13 @@ de helpers e construtores já disponíveis.
 
 ## Peças do padrão
 
-1. **`SetupTestDB(t) *pgxpool.Pool`** (`SetupTesteIntegracao_test.go`) — sobe
-   um container Postgres 15-alpine via testcontainers, aplica as migrations
-   REAIS de `database/migrate` (não um schema copiado à mão — isso já
-   causou drift no passado) e devolve o pool pronto. Registra
-   `t.Cleanup` para derrubar o container sozinho.
+1. **`SetupTestDB(t) *pgxpool.Pool`** (`SetupTesteIntegracao_test.go`) — na
+   primeira chamada sobe UM container Postgres 15-alpine via testcontainers e
+   aplica as migrations REAIS de `database/migrate` (não um schema copiado à
+   mão — isso já causou drift no passado) num banco "modelo". Cada chamada cria
+   um banco novo com `CREATE DATABASE ... TEMPLATE modelo` (~100ms) e devolve o
+   pool dele; o `t.Cleanup` apaga o banco e o `TestMain` derruba o container.
+   Não volte a subir container por teste: era ~7s por subteste.
 2. **Helpers `CreateX`** (`SetupDadosTesteIntegracao_test.go`) — inserem
    fixtures diretas (empresa, usuário, departamento, função, funcionário,
    proteção, tamanho, EPI, fornecedor, entrada de NF/lote). Ver referência.
