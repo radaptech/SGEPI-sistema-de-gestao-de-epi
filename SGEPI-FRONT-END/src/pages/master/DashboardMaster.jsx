@@ -49,8 +49,8 @@ function DashboardMaster({ usuarioLogado }) {
   const [resumo, setResumo] = useState({});
   const [empresasRecentes, setEmpresasRecentes] = useState([]);
   const [planosDisponiveis, setPlanosDisponiveis] = useState([]);
-  // ponytail: o back ainda não tem rota de alertas/atividades; os blocos mostram o estado vazio
-  const alertas = [];
+  const [alertas, setAlertas] = useState([]);
+  // ponytail: o back ainda não tem rota de atividades; o bloco mostra o estado vazio
   const atividadesRecentes = [];
 
   const [carregando, setCarregando] = useState(false);
@@ -65,13 +65,17 @@ function DashboardMaster({ usuarioLogado }) {
     try {
       setCarregando(true);
 
-      const resumoResposta = await masterDashboardService.buscarResumo();
-      const empresasResposta = await masterDashboardService.buscarEmpresasRecentes();
-      const planosResposta = await masterDashboardService.buscarPlanos();
+      const [resumoResposta, empresasResposta, planosResposta, alertasResposta] = await Promise.all([
+        masterDashboardService.buscarResumo(),
+        masterDashboardService.buscarEmpresasRecentes(),
+        masterDashboardService.buscarPlanos(),
+        masterDashboardService.buscarAlertas(),
+      ]);
 
       setResumo(resumoResposta);
       setEmpresasRecentes(empresasResposta ?? []);
       setPlanosDisponiveis(planosResposta ?? []);
+      setAlertas(alertasResposta ?? []);
 
       setPaginaAtual(1);
     } catch (error) {
@@ -136,8 +140,7 @@ function DashboardMaster({ usuarioLogado }) {
       totalFuncionarios: resumo?.total_funcionarios ?? 0,
       totalEpis: resumo?.total_epis ?? 0,
       totalEntregas: resumo?.total_entregas ?? 0,
-      mensalidadesPagas: resumo?.mensalidadesPagas ?? 0,
-      mensalidadesAtrasadas: resumo?.mensalidadesAtrasadas ?? 0,
+      empresasVencidas: resumo?.empresas_vencidas ?? 0,
       receitaMensal: resumo?.receita_mensal ?? 0,
     };
   }, [resumo]);
@@ -145,12 +148,6 @@ function DashboardMaster({ usuarioLogado }) {
   const percentualEmpresasAtivas = useMemo(() => {
     if (!resumoSeguro.totalEmpresas) return 0;
     return Math.round((resumoSeguro.empresasAtivas / resumoSeguro.totalEmpresas) * 100);
-  }, [resumoSeguro]);
-
-  const percentualInadimplencia = useMemo(() => {
-    const total = resumoSeguro.mensalidadesPagas + resumoSeguro.mensalidadesAtrasadas;
-    if (!total) return 0;
-    return Math.round((resumoSeguro.mensalidadesAtrasadas / total) * 100);
   }, [resumoSeguro]);
 
   const indiceUltimaEmpresa = paginaAtual * empresasPorPagina;
@@ -221,8 +218,8 @@ function DashboardMaster({ usuarioLogado }) {
           <CardResumo
             titulo="Receita Mensal"
             valor={formatarMoeda(resumoSeguro.receitaMensal)}
-            descricao="Previsão de mensalidades"
-            detalhe={`${percentualInadimplencia}% em atraso`}
+            descricao="Só empresas ativas"
+            detalhe={resumoSeguro.empresasVencidas ? `${resumoSeguro.empresasVencidas} vencida(s)` : "Nenhuma vencida"}
           />
         </section>
 
@@ -270,7 +267,7 @@ function DashboardMaster({ usuarioLogado }) {
 
           <div className="bg-surface rounded-md border border-line p-5 ">
             <TituloSecao titulo="Alertas importantes" />
-            <div className="space-y-3 mt-8">
+            <div className="space-y-3 mt-8 max-h-[220px] overflow-y-auto pr-2">
               {alertas.length === 0 ? (
                 <MensagemVazia texto="Nenhum alerta." />
               ) : (
@@ -421,9 +418,9 @@ function CardResumo({ titulo, valor, descricao, detalhe }) {
     <div className="bg-surface rounded-md border border-line p-5 transition-all">
       <p className="text-sm font-medium text-ink-2">{titulo}</p>
       <h3 className="text-3xl font-semibold text-ink mt-3">{valor}</h3>
-      <div className="flex items-center justify-between mt-4 pt-4 border-t border-line">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mt-4 pt-4 border-t border-line">
         <p className="text-xs text-ink-3">{descricao}</p>
-        <span className="text-xs font-medium text-ink-2">{detalhe}</span>
+        <span className="text-xs font-medium text-ink-2 whitespace-nowrap">{detalhe}</span>
       </div>
     </div>
   );

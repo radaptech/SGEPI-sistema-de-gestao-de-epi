@@ -11,6 +11,64 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const alertasMaster = `-- name: AlertasMaster :many
+WITH clientes AS (
+    SELECT e.id, e.nome_fantasia, e.vencimento, e.criado_em,
+        (SELECT MAX(u.ultimo_acesso) FROM usuarios u WHERE u.tenant_id = e.id AND u.ativo = TRUE) AS ultimo_acesso
+    FROM empresas e
+    WHERE e.status <> 'Bloqueada'
+      AND NOT EXISTS (SELECT 1 FROM usuarios u WHERE u.tenant_id = e.id AND u.role = 'super_admin')
+)
+SELECT
+    id, nome_fantasia,
+    COALESCE(vencimento - (now() AT TIME ZONE 'America/Sao_Paulo')::date, 0)::int AS dias_para_vencer,
+    (vencimento IS NOT NULL)::bool AS tem_vencimento,
+    ((now() AT TIME ZONE 'America/Sao_Paulo')::date - COALESCE(ultimo_acesso, criado_em)::date)::int AS dias_sem_acesso,
+    (ultimo_acesso IS NULL)::bool AS nunca_acessou
+FROM clientes
+WHERE vencimento <= (now() AT TIME ZONE 'America/Sao_Paulo')::date + 7
+   OR COALESCE(ultimo_acesso, criado_em) < (now() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '14 days'
+ORDER BY nome_fantasia
+`
+
+type AlertasMasterRow struct {
+	ID             int32
+	NomeFantasia   string
+	DiasParaVencer int32
+	TemVencimento  bool
+	DiasSemAcesso  int32
+	NuncaAcessou   bool
+}
+
+// Empresas não bloqueadas com vencimento passado ou em até 7 dias, ou sem nenhum acesso há 14 dias ou mais.
+// ultimo_acesso é gravado no horário de São Paulo; por isso a conta de dias usa o mesmo fuso.
+func (q *Queries) AlertasMaster(ctx context.Context) ([]AlertasMasterRow, error) {
+	rows, err := q.db.Query(ctx, alertasMaster)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AlertasMasterRow
+	for rows.Next() {
+		var i AlertasMasterRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.NomeFantasia,
+			&i.DiasParaVencer,
+			&i.TemVencimento,
+			&i.DiasSemAcesso,
+			&i.NuncaAcessou,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const criarEmpresa = `-- name: CriarEmpresa :exec
 INSERT INTO empresas (
     nome_fantasia,
@@ -192,39 +250,6 @@ func (q *Queries) EditarEmpresa(ctx context.Context, arg EditarEmpresaParams) er
 	return err
 }
 
-const empresaEmTeste = `-- name: EmpresaEmTeste :one
-select count(*) from empresas where status = 'Em teste'
-`
-
-func (q *Queries) EmpresaEmTeste(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, empresaEmTeste)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
-const empresasAtivas = `-- name: EmpresasAtivas :one
-select count(*) from empresas where status = 'Ativa'
-`
-
-func (q *Queries) EmpresasAtivas(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, empresasAtivas)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
-const empresasBloqueadas = `-- name: EmpresasBloqueadas :one
-select count(*) from empresas where status = 'Bloqueada'
-`
-
-func (q *Queries) EmpresasBloqueadas(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, empresasBloqueadas)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
 const empresasRecentes = `-- name: EmpresasRecentes :many
 SELECT 
     e.id, 
@@ -239,6 +264,8 @@ SELECT
     (SELECT COUNT(*)::int FROM epi ep WHERE ep.tenant_id = e.id) AS epis
 FROM empresas e
 INNER JOIN planos p ON e.plano_id = p.id
+WHERE NOT EXISTS (SELECT 1 FROM usuarios u WHERE u.tenant_id = e.id AND u.role = 'super_admin')
+ORDER BY e.criado_em DESC, e.id DESC
 `
 
 type EmpresasRecentesRow struct {
@@ -302,48 +329,57 @@ func (q *Queries) GetTenantBySubdomain(ctx context.Context, subdominio string) (
 	return i, err
 }
 
-const receitaMensal = `-- name: ReceitaMensal :one
-SELECT COALESCE(SUM(mensalidade), 0)::float8 FROM planos
+const resumoMaster = `-- name: ResumoMaster :one
+
+WITH clientes AS (
+    SELECT e.id, e.status, e.vencimento, p.mensalidade
+    FROM empresas e
+    LEFT JOIN planos p ON p.id = e.plano_id
+    WHERE NOT EXISTS (SELECT 1 FROM usuarios u WHERE u.tenant_id = e.id AND u.role = 'super_admin')
+)
+SELECT
+    (COUNT(*) FILTER (WHERE status = 'Ativa'))::int AS empresas_ativas,
+    (COUNT(*) FILTER (WHERE status = 'Bloqueada'))::int AS empresas_bloqueadas,
+    (COUNT(*) FILTER (WHERE status = 'Em teste'))::int AS empresas_em_teste,
+    COUNT(*)::int AS total_empresas,
+    (COUNT(*) FILTER (WHERE status <> 'Bloqueada' AND vencimento < CURRENT_DATE))::int AS empresas_vencidas,
+    -- receita: o plano de cada empresa ativa (em teste e bloqueada não pagam)
+    COALESCE(SUM(mensalidade) FILTER (WHERE status = 'Ativa'), 0)::float8 AS receita_mensal,
+    (SELECT COUNT(*) FROM funcionario f WHERE f.ativo = TRUE AND f.tenant_id IN (SELECT id FROM clientes))::int AS total_funcionarios,
+    (SELECT COUNT(*) FROM epi ep WHERE ep.ativo = TRUE AND ep.tenant_id IN (SELECT id FROM clientes))::int AS total_epis,
+    (SELECT COUNT(*) FROM entrega_epi en WHERE en.ativo = TRUE AND en.tenant_id IN (SELECT id FROM clientes))::int AS total_entregas
+FROM clientes
 `
 
-func (q *Queries) ReceitaMensal(ctx context.Context) (float64, error) {
-	row := q.db.QueryRow(ctx, receitaMensal)
-	var column_1 float64
-	err := row.Scan(&column_1)
-	return column_1, err
+type ResumoMasterRow struct {
+	EmpresasAtivas     int32
+	EmpresasBloqueadas int32
+	EmpresasEmTeste    int32
+	TotalEmpresas      int32
+	EmpresasVencidas   int32
+	ReceitaMensal      float64
+	TotalFuncionarios  int32
+	TotalEpis          int32
+	TotalEntregas      int32
 }
 
-const totalEntregas = `-- name: TotalEntregas :one
-SELECT COUNT(*) FROM entrega_epi
-`
-
-func (q *Queries) TotalEntregas(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, totalEntregas)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
-const totalEpis = `-- name: TotalEpis :one
-SELECT COUNT(*) FROM epi
-`
-
-func (q *Queries) TotalEpis(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, totalEpis)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
-const totalFuncionarios = `-- name: TotalFuncionarios :one
-SELECT COUNT(*) FROM funcionario
-`
-
-func (q *Queries) TotalFuncionarios(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, totalFuncionarios)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
+// Painel master: os números somam todas as empresas clientes (é a única área sem filtro de tenant, de
+// propósito). "Cliente" = toda empresa menos a matriz, que é a do super_admin.
+func (q *Queries) ResumoMaster(ctx context.Context) (ResumoMasterRow, error) {
+	row := q.db.QueryRow(ctx, resumoMaster)
+	var i ResumoMasterRow
+	err := row.Scan(
+		&i.EmpresasAtivas,
+		&i.EmpresasBloqueadas,
+		&i.EmpresasEmTeste,
+		&i.TotalEmpresas,
+		&i.EmpresasVencidas,
+		&i.ReceitaMensal,
+		&i.TotalFuncionarios,
+		&i.TotalEpis,
+		&i.TotalEntregas,
+	)
+	return i, err
 }
 
 const validaTotalFuncionarios = `-- name: ValidaTotalFuncionarios :one

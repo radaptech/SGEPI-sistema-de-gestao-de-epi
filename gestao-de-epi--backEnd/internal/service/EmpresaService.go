@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"sort"
 	"time"
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/configs"
@@ -13,7 +15,8 @@ import (
 
 type EmpresaRepository interface {
 	Salvar(ctx context.Context, arg repository.CriarEmpresaParams) error
-	ResumoDashboard(ctx context.Context) (int64, int64, int64, int64, int64, int64, int64, float64, error)
+	ResumoDashboard(ctx context.Context) (repository.ResumoMasterRow, error)
+	Alertas(ctx context.Context) ([]repository.AlertasMasterRow, error)
 	EmpresasRecentes(ctx context.Context) ([]repository.EmpresasRecentesRow, error)
 	DadosEmpresas(ctx context.Context) ([]repository.DadosEmpresasRow, error)
 	EditarEmpresa(ctx context.Context, arg repository.EditarEmpresaParams) error
@@ -65,23 +68,80 @@ func (e *EmpresaService) Salvar(ctx context.Context, model model.EmpresaInserir)
 
 func (e *EmpresaService) EmpresaDashboard(ctx context.Context) (model.ResumoDashboard, error) {
 
-	empresaA, empresaB, empresaT, Te, Tf, tep, tee, RM, err := e.repo.ResumoDashboard(ctx)
-
+	r, err := e.repo.ResumoDashboard(ctx)
 	if err != nil {
-
 		return model.ResumoDashboard{}, err
 	}
 
 	return model.ResumoDashboard{
-		EmpresasAtivas:     int(empresaA),
-		EmpresasBloqueadas: int(empresaB),
-		EmpresasEmTeste:    int(empresaT),
-		TotalEmpresas:      int(Te),
-		TotalFuncionarios:  int(Tf),
-		TotalEpis:          int(tep),
-		TotalEntregas:      int(tee),
-		ReceitaMensal:      RM,
+		EmpresasAtivas:     int(r.EmpresasAtivas),
+		EmpresasBloqueadas: int(r.EmpresasBloqueadas),
+		EmpresasEmTeste:    int(r.EmpresasEmTeste),
+		TotalEmpresas:      int(r.TotalEmpresas),
+		TotalFuncionarios:  int(r.TotalFuncionarios),
+		TotalEpis:          int(r.TotalEpis),
+		TotalEntregas:      int(r.TotalEntregas),
+		ReceitaMensal:      r.ReceitaMensal,
+		EmpresasVencidas:   int(r.EmpresasVencidas),
 	}, nil
+}
+
+// diasSemAcessoAlerta: a partir de quantos dias sem nenhum login a empresa aparece como "sem uso"
+const diasSemAcessoAlerta = 14
+
+// Alertas do painel master: vencimento passado (alto), vencimento em até 7 dias e empresa sem uso (medio).
+// Os mais graves primeiro; dentro do nível, o mais urgente primeiro.
+func (e *EmpresaService) Alertas(ctx context.Context) ([]model.AlertaMaster, error) {
+
+	linhas, err := e.repo.Alertas(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	type alerta struct {
+		model.AlertaMaster
+		urgencia int32 // menor = mais urgente
+	}
+	lista := make([]alerta, 0, len(linhas))
+	for _, l := range linhas {
+		if l.TemVencimento && l.DiasParaVencer <= 7 {
+			a := alerta{AlertaMaster: model.AlertaMaster{
+				ID: fmt.Sprintf("venc-%d", l.ID), EmpresaID: l.ID, Tipo: "Vencimento", Nivel: "medio",
+			}, urgencia: l.DiasParaVencer}
+			switch {
+			case l.DiasParaVencer < 0:
+				a.Nivel, a.Mensagem = "alto", fmt.Sprintf("%s: venceu há %d dia(s)", l.NomeFantasia, -l.DiasParaVencer)
+			case l.DiasParaVencer == 0:
+				a.Mensagem = l.NomeFantasia + ": vence hoje"
+			default:
+				a.Mensagem = fmt.Sprintf("%s: vence em %d dia(s)", l.NomeFantasia, l.DiasParaVencer)
+			}
+			lista = append(lista, a)
+		}
+		if l.DiasSemAcesso >= diasSemAcessoAlerta {
+			msg := fmt.Sprintf("%s: ninguém acessa há %d dias", l.NomeFantasia, l.DiasSemAcesso)
+			if l.NuncaAcessou {
+				msg = fmt.Sprintf("%s: cadastrada há %d dias e nunca acessou", l.NomeFantasia, l.DiasSemAcesso)
+			}
+			// sem uso vem depois dos vencimentos da semana
+			lista = append(lista, alerta{AlertaMaster: model.AlertaMaster{
+				ID: fmt.Sprintf("uso-%d", l.ID), EmpresaID: l.ID, Tipo: "Sem uso", Nivel: "medio", Mensagem: msg,
+			}, urgencia: 1000 - l.DiasSemAcesso})
+		}
+	}
+
+	sort.SliceStable(lista, func(i, j int) bool {
+		if (lista[i].Nivel == "alto") != (lista[j].Nivel == "alto") {
+			return lista[i].Nivel == "alto"
+		}
+		return lista[i].urgencia < lista[j].urgencia
+	})
+
+	dto := make([]model.AlertaMaster, len(lista))
+	for i, a := range lista {
+		dto[i] = a.AlertaMaster
+	}
+	return dto, nil
 }
 
 func (e *EmpresaService) EmpresaRecentes(ctx context.Context) ([]model.EmpresaRecente, error) {

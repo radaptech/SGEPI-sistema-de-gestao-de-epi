@@ -29,6 +29,19 @@ definitions:
           type: integer
         type: array
     type: object
+  model.AlertaMaster:
+    properties:
+      empresa_id:
+        type: integer
+      id:
+        type: string
+      mensagem:
+        type: string
+      nivel:
+        type: string
+      tipo:
+        type: string
+    type: object
   model.CaepiDto:
     properties:
       ca:
@@ -821,6 +834,9 @@ definitions:
       empresas_bloqueadas:
         type: integer
       empresas_em_teste:
+        type: integer
+      empresas_vencidas:
+        description: não bloqueadas com vencimento passado
         type: integer
       receita_mensal:
         type: number
@@ -2568,6 +2584,22 @@ paths:
       summary: Limita o usuário a algumas unidades
       tags:
       - Unidade
+  /master/dashboard/alertas:
+    get:
+      description: Empresas com vencimento passado (nível alto), vencendo em até 7
+        dias ou sem nenhum acesso há 14 dias (nível medio).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.AlertaMaster'
+            type: array
+      summary: Alertas do painel master
+      tags:
+      - Empresas
   /motivos:
     get:
       description: 'Lista global e pronta, igual para todas as empresas. gera_descarte=true:

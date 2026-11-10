@@ -14,6 +14,7 @@ type EmpresaService interface {
 	Salvar(ctx context.Context, model model.EmpresaInserir) error
 	EmpresaDashboard(ctx context.Context) (model.ResumoDashboard, error)
 	EmpresaRecentes(ctx context.Context) ([]model.EmpresaRecente, error)
+	Alertas(ctx context.Context) ([]model.AlertaMaster, error)
 	DadosEmpresas(ctx context.Context) ([]model.Empresa, error)
 	EditarEmpresa(ctx context.Context, id int32, model model.EditarEmpresaRequest) error
 }
@@ -96,6 +97,28 @@ func (e *EmpresaController) ResumoDashboard() gin.HandlerFunc {
 		}
 
 		ctx.JSON(http.StatusOK, resumo)
+	}
+}
+
+// AlertasMaster godoc
+// @Summary      Alertas do painel master
+// @Description  Empresas com vencimento passado (nível alto), vencendo em até 7 dias ou sem nenhum acesso há 14 dias (nível medio).
+// @Tags         Empresas
+// @Produce      json
+// @Success      200  {array}   model.AlertaMaster
+// @Router       /master/dashboard/alertas [get]
+func (e *EmpresaController) Alertas() gin.HandlerFunc {
+
+	return func(ctx *gin.Context) {
+
+		alertas, err := e.service.Alertas(ctx)
+		if err != nil {
+			ctx.Error(err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro ao buscar os alertas", "detalhes": err.Error()})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, alertas)
 	}
 }
 

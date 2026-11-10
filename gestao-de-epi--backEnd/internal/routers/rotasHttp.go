@@ -137,6 +137,7 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 	{
 		master.GET("/dashboard/resumo", c.Empresas.ResumoDashboard())
 		master.GET("/dashboard/empresas-recentes", c.Empresas.EmpresaRecentes())
+		master.GET("/dashboard/alertas", c.Empresas.Alertas())
 		master.GET("/dashboard/dados-empresas", c.Empresas.DadosEmpresas())
 		master.GET("/dashboard/dados-usuarios", c.Usuario.MostrarUsuariosPainel())
 		master.POST("/dashboard/salvar-usuarios", c.Usuario.Registrar())
