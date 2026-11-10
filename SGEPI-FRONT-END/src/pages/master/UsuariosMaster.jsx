@@ -7,6 +7,7 @@ import ModalConfirmarBloqueioUsuario from "../../components/modals/master/ModalC
 
 import masterDashboardService from "../../services/masterDashboardService";
 import Selecao from "../../components/Selecao";
+import Paginacao, { usePaginacao } from "../../components/Paginacao";
 
 function UsuariosMaster() {
   const [busca, setBusca] = useState("");
@@ -56,6 +57,8 @@ function UsuariosMaster() {
       return combinaBusca && combinaTipo;
     });
   }, [usuarios, busca, tipoFiltro]);
+
+  const { itens: usuariosDaPagina, ...paginacao } = usePaginacao(usuariosFiltrados, 15);
 
   const abrirEditar = (usuario) => {
     setUsuarioSelecionado(usuario);
@@ -206,7 +209,7 @@ function UsuariosMaster() {
               <input
                 type="text"
                 value={busca}
-                onChange={(e) => setBusca(e.target.value)}
+                onChange={(e) => { setBusca(e.target.value); paginacao.setPagina(1); }}
                 placeholder="Buscar por nome, e-mail ou empresa..."
                 className="w-full pl-11 pr-4 py-2.5 bg-sunken border border-line rounded-md focus:bg-surface focus:ring-1 focus:ring-ink focus:border-ink outline-none transition-all text-sm text-ink placeholder:text-ink-3"
               />
@@ -215,7 +218,7 @@ function UsuariosMaster() {
             <div className="md:w-64 shrink-0">
               <Selecao
                 value={tipoFiltro}
-                onChange={(e) => setTipoFiltro(e.target.value)}
+                onChange={(e) => { setTipoFiltro(e.target.value); paginacao.setPagina(1); }}
                 className="w-full px-4 py-2.5 bg-sunken border border-line rounded-md focus:bg-surface focus:ring-1 focus:ring-ink focus:border-ink outline-none transition-all text-sm text-ink font-medium appearance-none cursor-pointer"
                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748B'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: `right 1rem center`, backgroundRepeat: `no-repeat`, backgroundSize: `1.2em 1.2em` }}
               >
@@ -241,7 +244,7 @@ function UsuariosMaster() {
               </thead>
 
               <tbody className="divide-y divide-line">
-                {usuariosFiltrados.map((usuario) => {
+                {usuariosDaPagina.map((usuario) => {
                   const bloqueado = usuario.status === false;
 
                   return (
@@ -319,6 +322,7 @@ function UsuariosMaster() {
               </tbody>
             </table>
           </div>
+          <Paginacao {...paginacao} />
         </div>
       </div>
 
