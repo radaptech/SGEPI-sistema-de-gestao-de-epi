@@ -15,7 +15,7 @@ import (
 // e as unidades permitidas (lidas com Unidades; ausente = todas).
 func Sessao(q *repository.Queries) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		token, err := c.Cookie(auth.CookieSessao)
+		token, err := c.Cookie(auth.CookieSessao(c.GetHeader("X-Tenant-ID")))
 		if err != nil || token == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Acesso negado, sessão ausente"})
 			return
@@ -29,6 +29,12 @@ func Sessao(q *repository.Queries) gin.HandlerFunc {
 			}
 			c.Error(err)
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro interno ao validar sessão"})
+			return
+		}
+
+		// Nas rotas de empresa o Tenant já resolveu o subdomínio: a sessão tem que ser dessa empresa
+		if tenant, ok := TenantIDFromHeader(c); ok && tenant != int64(usuario.TenantID.Int32) {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Sessão de outra empresa"})
 			return
 		}
 

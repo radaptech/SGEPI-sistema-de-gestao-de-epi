@@ -52,7 +52,7 @@ async function assinar(botaoAbrir, botaoConcluir) {
 }
 
 test.beforeAll(async ({ browser }) => {
-  page = await browser.newPage();
+  page = await (await browser.newContext()).newPage(); // contexto próprio: o teste abre uma 2ª aba nele
 
   // super admin cria o tenant e o admin dele
   await page.goto("/");
@@ -76,13 +76,19 @@ test.beforeAll(async ({ browser }) => {
     role: "admin",
     empresa_id: empresa.id,
   });
-  // o cookie de sessão vale para qualquer subdomínio: sem logout o tenant abriria logado como super admin
-  await chamarApi(page, "POST", "/logout");
+  // a sessão é por subdomínio: com o painel logado, a empresa abre no login (antes abria o painel)
+  await page.goto(`http://${subdominio}.localhost/`);
+  await expect(page.getByRole("button", { name: "Entrar no Sistema" })).toBeVisible();
 
   // admin do tenant: cadastros de apoio via API, o foco é o fluxo do estoque
-  await page.goto(`http://${subdominio}.localhost/`);
   await entrar(page, admin.email, admin.senha);
   await expect(page.getByRole("button", { name: "Estoque" }).first()).toBeVisible();
+
+  // e entrar na empresa não derruba o painel aberto em outra aba
+  const abaPainel = await page.context().newPage();
+  await abaPainel.goto("/");
+  await expect(abaPainel.getByRole("heading", { name: "Gestão da Plataforma" })).toBeVisible();
+  await abaPainel.close();
 
   await chamarApi(page, "POST", "/gerencial/cadastro-tamanho", { tamanho: "M" });
   await chamarApi(page, "POST", "/gerencial/cadastro-fornecedores", {
@@ -105,7 +111,7 @@ test.beforeAll(async ({ browser }) => {
 });
 
 test.afterAll(async () => {
-  await page.close();
+  await page.context().close();
 });
 
 test("cadastra EPI", async () => {

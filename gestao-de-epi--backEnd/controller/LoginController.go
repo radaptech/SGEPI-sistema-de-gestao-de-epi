@@ -144,7 +144,7 @@ func (l *LoginController) Login() gin.HandlerFunc {
 
 		c.SetSameSite(http.SameSiteNoneMode)
 		c.SetCookie(
-			auth.CookieSessao,
+			auth.CookieSessao(c.GetHeader("X-Tenant-ID")),
 			token,
 			int(auth.DuracaoSessao.Seconds()),
 			"/",
@@ -168,7 +168,7 @@ func (l *LoginController) Logout() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		if token, err := ctx.Cookie(auth.CookieSessao); err == nil && token != "" {
+		if token, err := ctx.Cookie(auth.CookieSessao(ctx.GetHeader("X-Tenant-ID"))); err == nil && token != "" {
 			if err := l.service.Logout(ctx, token); err != nil {
 				responderErro(ctx, err, "Erro interno ao realizar logout")
 				return
@@ -178,7 +178,7 @@ func (l *LoginController) Logout() gin.HandlerFunc {
 		// mesmos atributos do login, senão o navegador não sobrescreve o cookie
 		ctx.SetSameSite(http.SameSiteNoneMode)
 		ctx.SetCookie(
-			auth.CookieSessao,
+			auth.CookieSessao(ctx.GetHeader("X-Tenant-ID")),
 			"",
 			-1,
 			"/",
