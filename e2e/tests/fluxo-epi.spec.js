@@ -162,7 +162,8 @@ test("entrega 3 unidades com assinatura", async () => {
 
   const selects = modal.getByRole("combobox");
   await escolher(selects.nth(0), nomeEpi);
-  await escolher(selects.nth(1), "M");
+  // a opção traz o saldo: confirma as 10 unidades da entrada anterior
+  await escolher(selects.nth(1), "M (Estoque: 10)");
   await modal.locator('input[type="number"]').fill("3");
   await modal.getByRole("button", { name: "Adicionar" }).click();
 
