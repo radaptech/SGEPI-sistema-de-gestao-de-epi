@@ -96,13 +96,13 @@ func (f *FuncionarioService) SalvarFuncionario(ctx context.Context, model model.
 
 		if errors.Is(err, helper.ErrConflitoIntegridade) {
 
-			return fmt.Errorf("departamento ou função nao encontrado")
+			return helper.ErroDeNegocio("departamento ou função não encontrado")
 
 		}
 
 		if errors.Is(err, helper.ErrDadoDuplicado) {
 
-			return fmt.Errorf("matricula ja cadastrada")
+			return fmt.Errorf("matrícula já cadastrada: %w", helper.ErrDadoDuplicado)
 		}
 
 		return err

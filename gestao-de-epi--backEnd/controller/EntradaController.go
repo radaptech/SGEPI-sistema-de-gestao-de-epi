@@ -135,8 +135,7 @@ func (e *EntradaController) AdicionarEntrada() gin.HandlerFunc {
 			}
 
 			// antes, um erro não previsto caía no 200 "entrada cadastrada"
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro ao cadastrar entrada", "detalhes": err.Error()})
+			responderErro(ctx, err, "erro ao cadastrar entrada")
 			return
 		}
 
@@ -194,11 +193,7 @@ func (e *EntradaController) ListarEntradas() gin.HandlerFunc {
 		entradas, err := e.service.ListarEntradas(ctx, filtro, tenantId)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": "erro ao realizar buscar das entradas de epi",
-			})
+			responderErro(ctx, err, "erro ao realizar buscar das entradas de epi")
 			return
 		}
 
@@ -260,12 +255,7 @@ func (e *EntradaController) CancelarEntrada() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    err.Error(),
-				"detalhes": "erro ao tentar cancelar uma entrada",
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -296,11 +286,7 @@ func (e *EntradaController) BuscaEntradaDashbord() gin.HandlerFunc {
 		entradas, err := e.service.EntradaDashbordBusca(ctx, tenantId, unidadeEscolhida(ctx))
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -331,11 +317,7 @@ func (e *EntradaController) BuscaEntradaEstoque() gin.HandlerFunc {
 		entradas, err := e.service.BuscaEntradaEstoque(ctx, tenantId, unidadeEscolhida(ctx))
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 

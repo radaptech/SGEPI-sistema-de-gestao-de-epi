@@ -49,12 +49,7 @@ func (f *FornecedorController) ImportFornecedor() gin.HandlerFunc {
 
 		file, err := fileHearder.Open()
 		if err != nil {
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"erro":     "erro ao ler a planilha",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao ler a planilha")
 			return
 		}
 
@@ -131,11 +126,7 @@ func (f *FornecedorController) ImportFornecedor() gin.HandlerFunc {
 					continue
 				}
 
-				ctx.Error(err)
-				ctx.JSON(http.StatusInternalServerError, gin.H{
-					"message":  fmt.Sprintf("Erro ao salvar o fornecedor '%s'.", razaoSocial),
-					"detalhes": err.Error(),
-				})
+				responderErro(ctx, err, fmt.Sprintf("erro ao salvar o fornecedor '%s'", razaoSocial))
 				return
 			}
 
@@ -185,11 +176,7 @@ func (f *FornecedorController) Adicionar() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -235,11 +222,7 @@ func (f *FornecedorController) ListarFornecedores() gin.HandlerFunc {
 		fornecedores, err := f.service.ListarFornecedor(ctx, filtro, tenantId)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error":    "erro ao realizar busca em fornecedores",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao realizar busca em fornecedores")
 			return
 		}
 
@@ -280,11 +263,7 @@ func (f *FornecedorController) CancelarFornecedor() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -338,12 +317,7 @@ func (f *FornecedorController) AtualizaFornecedor() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro interno no servidor",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno no servidor")
 			return
 		}
 

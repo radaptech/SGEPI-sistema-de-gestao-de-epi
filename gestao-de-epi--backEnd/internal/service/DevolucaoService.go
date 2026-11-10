@@ -88,13 +88,13 @@ func (d *DevolucaoService) SalvarDevolucao(ctx context.Context, modelDevolucao m
 	}
 
 	if int32(modelDevolucao.QuantidadeADevolver) > saldoAtual {
-		return fmt.Errorf("operação bloqueada: o funcionário possui apenas %d unidade(s) deste EPI em mãos, mas tentou devolver %d", saldoAtual, modelDevolucao.QuantidadeADevolver)
+		return helper.ErroDeNegocio(fmt.Sprintf("operação bloqueada: o funcionário possui apenas %d unidade(s) deste EPI em mãos, mas tentou devolver %d", saldoAtual, modelDevolucao.QuantidadeADevolver))
 	}
 	// Prepara variáveis para caso de troca (EPI novo)
 	var idEpiNovo, idTamanhoNovo, idQuantidadeNova pgtype.Int4
 	if modelDevolucao.Troca {
 		if modelDevolucao.IdEpiNovo == nil {
-			return fmt.Errorf("id do novo epi é obrigatório para trocas")
+			return helper.ErroDeNegocio("id do novo epi é obrigatório para trocas")
 		}
 		idEpiNovo = pgtype.Int4{Int32: int32(*modelDevolucao.IdEpiNovo), Valid: true}
 		idTamanhoNovo = pgtype.Int4{Int32: int32(*modelDevolucao.IdTamanhoNovo), Valid: true}
@@ -183,7 +183,7 @@ func (d *DevolucaoService) SalvarDevolucao(ctx context.Context, modelDevolucao m
 		}
 
 		if qtdRestanteParaDevolver > 0 {
-			return fmt.Errorf("anomalia de estoque: impossível repor %d itens. A quantidade devolvida excede o total comprado na história deste EPI", qtdRestanteParaDevolver)
+			return helper.ErroDeNegocio(fmt.Sprintf("anomalia de estoque: impossível repor %d itens. A quantidade devolvida excede o total comprado na história deste EPI", qtdRestanteParaDevolver))
 		}
 
 	}

@@ -69,5 +69,11 @@ func TraduzErroPostgres(err error) error {
 			return fmt.Errorf("o sistema está ocupado, tente novamente em instantes")
 		}
 	}
-	return fmt.Errorf("%v", err)
+	return err // sem embrulhar: quem chama ainda consegue errors.Is(err, pgx.ErrNoRows)
 }
+
+// ErroDeNegocio é uma recusa por regra do negócio com mensagem própria (ex.: devolver mais do que o
+// funcionário tem). O controller responde 422 com o texto como está.
+type ErroDeNegocio string
+
+func (e ErroDeNegocio) Error() string { return string(e) }

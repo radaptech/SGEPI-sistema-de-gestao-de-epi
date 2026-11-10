@@ -84,11 +84,7 @@ func (l *LoginController) Registrar() gin.HandlerFunc {
 				})
 				return
 			}
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 
 			return
 		}
@@ -134,23 +130,14 @@ func (l *LoginController) Login() gin.HandlerFunc {
 				return
 			}
 
-			c.Error(err)
-			c.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": "Erro interno ao realizar login",
-			})
+			responderErro(c, err, "Erro interno ao realizar login")
 			return
 		}
 
 		err = l.service.UltimoAcesso(c, user.ID, tenantID)
 		if err != nil {
 
-			c.Error(err)
-			c.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "Erro interno ao realizar login",
-				"detalhes": err.Error(),
-			})
+			responderErro(c, err, "Erro interno ao realizar login")
 			return
 
 		}
@@ -183,8 +170,7 @@ func (l *LoginController) Logout() gin.HandlerFunc {
 
 		if token, err := ctx.Cookie(auth.CookieSessao); err == nil && token != "" {
 			if err := l.service.Logout(ctx, token); err != nil {
-				ctx.Error(err)
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Erro interno ao realizar logout"})
+				responderErro(ctx, err, "Erro interno ao realizar logout")
 				return
 			}
 		}
@@ -260,12 +246,7 @@ func (l *LoginController) ListarUsuario() gin.HandlerFunc {
 		users, err := l.service.ListarUsuario(ctx, tenantID)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro interno do servidor",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -300,11 +281,7 @@ func (l *LoginController) SalvarToken() gin.HandlerFunc {
 		err := l.service.RecuperacaoSenha(ctx, input)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": "erro interno do servidor",
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -343,8 +320,7 @@ func (l *LoginController) RedefinirSenha() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Erro interno ao redefinir senha."})
+			responderErro(ctx, err, "Erro interno ao redefinir senha.")
 			return
 		}
 
@@ -361,12 +337,7 @@ func (l *LoginController) MostrarUsuariosPainel() gin.HandlerFunc {
 		users, err := l.service.MostrarUsuariosPainel(ctx)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro interno do servidor",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -400,12 +371,7 @@ func (l *LoginController) EditarUsuario() gin.HandlerFunc {
 		err = l.service.EditarUsuario(ctx, int32(idUsuario), input)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro ao atualizar usuario",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao atualizar usuario")
 			return
 		}
 
@@ -439,12 +405,7 @@ func (l *LoginController) EditarStatusUsuario() gin.HandlerFunc {
 		err = l.service.EditarStatusUsuario(ctx, int32(idUsuario), input)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro ao atualizar usuario",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao atualizar usuario")
 			return
 		}
 
