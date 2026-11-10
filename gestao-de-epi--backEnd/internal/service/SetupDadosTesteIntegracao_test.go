@@ -36,20 +36,19 @@ func randomCNPJ() string {
 func CreatePlanos(t *testing.T, db *pgxpool.Pool) int64 {
 
 	var id int64
-	query := `INSERT INTO planos (nome, mensalidade, limite_funcionarios, limite_usuarios, limite_epis, status, descricao)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
+	query := `INSERT INTO planos (nome, mensalidade, limite_funcionarios, limite_usuarios, status, descricao)
+    VALUES ($1, $2, $3, $4, $5, $6)
     RETURNING id;`
 
 	nome := "plano teste"
 	mensalidade := 1000
 	limite_funcionarios := 1000
 	limite_usuarios := 1000
-	limite_epis := 1000
 	status := "Ativo"
 	descricao := "teste descricao"
 
 	err := db.QueryRow(context.Background(), query,
-		nome, mensalidade, limite_funcionarios, limite_usuarios, limite_epis, status, descricao).Scan(&id)
+		nome, mensalidade, limite_funcionarios, limite_usuarios, status, descricao).Scan(&id)
 	if err != nil {
 		t.Fatalf("erro ao criar plano de teste: %v", err)
 
@@ -209,8 +208,8 @@ func CreateFuncionario(t *testing.T, db *pgxpool.Pool, IdDepartamento, IdFuncao,
 		tenantID,
 		nome,
 		matriculo,
-		IdFuncao,
 		IdDepartamento,
+		IdFuncao,
 		cpf,
 	).Scan(&id)
 

@@ -26,7 +26,6 @@ function ModalNovoPlano({
     descricao: "",
     limite_funcionarios: "",
     limite_usuarios: "",
-    limite_epis: "",
     limite_unidades: "",
     status: "Ativo",
   });
@@ -47,7 +46,6 @@ function ModalNovoPlano({
       descricao: "",
       limite_funcionarios: "",
       limite_usuarios: "",
-      limite_epis: "",
       limite_unidades: "",
       status: "Ativo",
     });
@@ -89,7 +87,6 @@ function ModalNovoPlano({
       descricao: form.descricao.trim(),
       limite_funcionarios: limiteParaApi(form.limite_funcionarios),
       limite_usuarios: limiteParaApi(form.limite_usuarios),
-      limite_epis: limiteParaApi(form.limite_epis),
       limite_unidades: limiteParaApi(form.limite_unidades),
       status: form.status,
     };
@@ -172,12 +169,6 @@ function ModalNovoPlano({
                 placeholder="Ex: 10"
               />
 
-              <CampoLimite
-                label="Limite de EPIs"
-                value={form.limite_epis}
-                onChange={(v) => alterarCampo("limite_epis", v)}
-                placeholder="Ex: 1000"
-              />
 
               <CampoLimite
                 label="Limite de Unidades"

@@ -147,7 +147,8 @@ WHERE fn.tenant_id = sqlc.arg('tenant_id')
   AND (sqlc.narg('id_unidade')::int IS NULL OR fn.id_unidade = sqlc.narg('id_unidade')::int);
 
 -- name: TotalDeFuncionarios :one
-select count(id) from funcionario where tenant_id= @id;
+-- conta para o limite do plano: desativado libera a vaga
+select count(id) from funcionario where tenant_id= @id and ativo = true;
 
 -- name: UnidadeDoFuncionario :one
 SELECT id_unidade FROM funcionario WHERE id = $1 AND tenant_id = $2;

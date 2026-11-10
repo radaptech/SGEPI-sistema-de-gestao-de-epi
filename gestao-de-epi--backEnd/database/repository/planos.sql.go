@@ -12,8 +12,8 @@ import (
 )
 
 const addPlano = `-- name: AddPlano :one
-INSERT INTO planos (nome, mensalidade, limite_funcionarios, limite_usuarios, limite_epis, status, descricao, limite_unidades)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO planos (nome, mensalidade, limite_funcionarios, limite_usuarios, status, descricao, limite_unidades)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
     RETURNING id
 `
 
@@ -22,7 +22,6 @@ type AddPlanoParams struct {
 	Mensalidade        pgtype.Numeric
 	LimiteFuncionarios pgtype.Int4
 	LimiteUsuarios     pgtype.Int4
-	LimiteEpis         pgtype.Int4
 	Status             pgtype.Text
 	Descricao          string
 	LimiteUnidades     pgtype.Int4
@@ -34,7 +33,6 @@ func (q *Queries) AddPlano(ctx context.Context, arg AddPlanoParams) (int32, erro
 		arg.Mensalidade,
 		arg.LimiteFuncionarios,
 		arg.LimiteUsuarios,
-		arg.LimiteEpis,
 		arg.Status,
 		arg.Descricao,
 		arg.LimiteUnidades,
@@ -52,10 +50,9 @@ SET
   descricao = COALESCE($3, descricao),
   limite_funcionarios = $4,
   limite_usuarios = $5,
-  limite_epis = $6,
-  limite_unidades = $7,
-  status = COALESCE($8, status)
-WHERE id = $9
+  limite_unidades = $6,
+  status = COALESCE($7, status)
+WHERE id = $8
 `
 
 type AtualizarPlanoParams struct {
@@ -64,7 +61,6 @@ type AtualizarPlanoParams struct {
 	Descricao          pgtype.Text
 	LimiteFuncionarios pgtype.Int4
 	LimiteUsuarios     pgtype.Int4
-	LimiteEpis         pgtype.Int4
 	LimiteUnidades     pgtype.Int4
 	Status             pgtype.Text
 	ID                 int32
@@ -78,7 +74,6 @@ func (q *Queries) AtualizarPlano(ctx context.Context, arg AtualizarPlanoParams) 
 		arg.Descricao,
 		arg.LimiteFuncionarios,
 		arg.LimiteUsuarios,
-		arg.LimiteEpis,
 		arg.LimiteUnidades,
 		arg.Status,
 		arg.ID,
@@ -103,7 +98,7 @@ func (q *Queries) AtualizarStatusPlano(ctx context.Context, arg AtualizarStatusP
 }
 
 const buscaPlanos = `-- name: BuscaPlanos :many
-SELECT id, nome, mensalidade, limite_funcionarios, limite_usuarios, limite_epis, status, descricao, limite_unidades
+SELECT id, nome, mensalidade, limite_funcionarios, limite_usuarios, status, descricao, limite_unidades
 FROM planos
 WHERE status = 'Ativo'
 ORDER BY nome ASC
@@ -115,7 +110,6 @@ type BuscaPlanosRow struct {
 	Mensalidade        pgtype.Numeric
 	LimiteFuncionarios pgtype.Int4
 	LimiteUsuarios     pgtype.Int4
-	LimiteEpis         pgtype.Int4
 	Status             pgtype.Text
 	Descricao          string
 	LimiteUnidades     pgtype.Int4
@@ -136,7 +130,6 @@ func (q *Queries) BuscaPlanos(ctx context.Context) ([]BuscaPlanosRow, error) {
 			&i.Mensalidade,
 			&i.LimiteFuncionarios,
 			&i.LimiteUsuarios,
-			&i.LimiteEpis,
 			&i.Status,
 			&i.Descricao,
 			&i.LimiteUnidades,

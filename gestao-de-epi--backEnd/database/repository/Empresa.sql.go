@@ -329,6 +329,58 @@ func (q *Queries) GetTenantBySubdomain(ctx context.Context, subdominio string) (
 	return i, err
 }
 
+const limitesMaster = `-- name: LimitesMaster :many
+SELECT e.id, e.nome_fantasia, l.recurso::text AS recurso, l.usado::int AS usado, l.limite::int AS limite
+FROM empresas e
+JOIN planos p ON p.id = e.plano_id
+CROSS JOIN LATERAL (VALUES
+    ('funcionários', (SELECT COUNT(*) FROM funcionario f WHERE f.tenant_id = e.id AND f.ativo = TRUE), p.limite_funcionarios),
+    ('usuários', (SELECT COUNT(*) FROM usuarios u WHERE u.tenant_id = e.id AND u.ativo = TRUE), p.limite_usuarios),
+    ('unidades', (SELECT COUNT(*) FROM unidade un WHERE un.tenant_id = e.id AND un.deletado_em IS NULL), p.limite_unidades)
+) AS l(recurso, usado, limite)
+WHERE e.status <> 'Bloqueada'
+  AND NOT EXISTS (SELECT 1 FROM usuarios u WHERE u.tenant_id = e.id AND u.role = 'super_admin')
+  AND l.limite > 0 -- NULL (ilimitado) também fica de fora
+  AND l.usado * 10 >= l.limite * 8
+ORDER BY e.nome_fantasia, l.recurso
+`
+
+type LimitesMasterRow struct {
+	ID           int32
+	NomeFantasia string
+	Recurso      string
+	Usado        int32
+	Limite       int32
+}
+
+// Empresas não bloqueadas usando 80% ou mais de algum limite do plano (NULL = ilimitado, fica de fora).
+// Conta igual à trava do cadastro: funcionários e usuários ativos, unidades não excluídas.
+func (q *Queries) LimitesMaster(ctx context.Context) ([]LimitesMasterRow, error) {
+	rows, err := q.db.Query(ctx, limitesMaster)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LimitesMasterRow
+	for rows.Next() {
+		var i LimitesMasterRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.NomeFantasia,
+			&i.Recurso,
+			&i.Usado,
+			&i.Limite,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const resumoMaster = `-- name: ResumoMaster :one
 
 WITH clientes AS (

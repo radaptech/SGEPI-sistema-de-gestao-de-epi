@@ -8,7 +8,6 @@ type Plano struct {
 	Mensalidade        decimal.Decimal `json:"mensalidade" binding:"required"`
 	LimiteFuncionarios *int32          `json:"limite_funcionarios"`
 	LimiteUsuarios     *int32          `json:"limite_usuarios"`
-	LimiteEpis         *int32          `json:"limite_epis"`
 	LimiteUnidades     *int32          `json:"limite_unidades" binding:"omitempty,min=1"`
 	Status             string          `json:"status" binding:"required"`
 	Descricao          string          `json:"descricao" binding:"required"`
@@ -20,7 +19,6 @@ type AtualizarPlanoParams struct {
 	Descricao          *string          `json:"descricao"`
 	LimiteFuncionarios *int32           `json:"limite_funcionarios"`
 	LimiteUsuarios     *int32           `json:"limite_usuarios"`
-	LimiteEpis         *int32           `json:"limite_epis"`
 	LimiteUnidades     *int32           `json:"limite_unidades" binding:"omitempty,min=1"`
 	Status             *string          `json:"status"`
 	ID                 int32            `json:"id"`

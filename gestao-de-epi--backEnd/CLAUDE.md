@@ -179,7 +179,7 @@ empresas (tenant) ──┬── usuarios (role, ultimo_acesso, token_recuperac
                     ├── entrega_epi ── epis_entregues    (aponta para o lote de origem)
                     ├── motivo_devolucao (eh_descarte)
                     ├── devolucao (opcionalmente com troca: epi/tamanho/quantidade novos)
-                    └── planos (limite_funcionarios / limite_usuarios / limite_epis, mensalidade)
+                    └── planos (limite_funcionarios / limite_usuarios / limite_unidades, mensalidade)
 ```
 
 ### Estoque: controle por lote, FEFO

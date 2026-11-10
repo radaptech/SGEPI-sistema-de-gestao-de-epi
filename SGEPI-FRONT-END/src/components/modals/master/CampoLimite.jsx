@@ -1,6 +1,6 @@
 import { useId } from "react";
 
-// Limite do plano (funcionários, usuários, EPIs, unidades). value: null = ilimitado; "" ou número = limite.
+// Limite do plano (funcionários, usuários, unidades). value: null = ilimitado; "" ou número = limite.
 // Usado pelos modais de novo plano e de edição.
 export default function CampoLimite({ label, value, onChange, placeholder }) {
   const id = useId();
@@ -54,7 +54,6 @@ export function erroLimites(form, campos) {
 export const CAMPOS_LIMITE = [
   ["limite_funcionarios", "funcionários"],
   ["limite_usuarios", "usuários"],
-  ["limite_epis", "EPIs"],
   ["limite_unidades", "unidades"],
 ];
 

@@ -223,7 +223,6 @@ function Planos() {
                 <div className="grid grid-cols-2 gap-3 mt-8">
                   <InfoPlano label="Usuários" valor={exibirLimite(plano.limite_usuarios)} />
                   <InfoPlano label="Funcionários" valor={exibirLimite(plano.limite_funcionarios)} />
-                  <InfoPlano label="EPIs" valor={exibirLimite(plano.limite_epis)} />
                   <InfoPlano label="Unidades" valor={exibirLimite(plano.limite_unidades ?? null)} />
                 </div>
 

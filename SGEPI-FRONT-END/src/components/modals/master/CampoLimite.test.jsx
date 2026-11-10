@@ -4,12 +4,12 @@ import CampoLimite, { CAMPOS_LIMITE, erroLimites, limiteParaApi } from "./CampoL
 
 function Campo({ inicial }) {
   const [v, setV] = useState(inicial);
-  return <CampoLimite label="Limite de EPIs" value={v} onChange={setV} />;
+  return <CampoLimite label="Limite de Unidades" value={v} onChange={setV} />;
 }
 
 test("marcar Ilimitado desabilita e limpa o número; desmarcar volta a pedir o número", () => {
   render(<Campo inicial="10" />);
-  const numero = screen.getByLabelText("Limite de EPIs");
+  const numero = screen.getByLabelText("Limite de Unidades");
   expect(numero).toHaveValue(10);
 
   fireEvent.click(screen.getByLabelText("Ilimitado"));
@@ -23,7 +23,7 @@ test("marcar Ilimitado desabilita e limpa o número; desmarcar volta a pedir o n
 });
 
 test("cada limite precisa de um número >= 1 ou Ilimitado", () => {
-  const ok = { limite_funcionarios: null, limite_usuarios: "5", limite_epis: null, limite_unidades: "1" };
+  const ok = { limite_funcionarios: null, limite_usuarios: "5", limite_unidades: "1" };
   expect(erroLimites(ok, CAMPOS_LIMITE)).toBe("");
   expect(erroLimites({ ...ok, limite_usuarios: "" }, CAMPOS_LIMITE)).toMatch(/usuários/);
   expect(erroLimites({ ...ok, limite_unidades: "0" }, CAMPOS_LIMITE)).toMatch(/unidades/);

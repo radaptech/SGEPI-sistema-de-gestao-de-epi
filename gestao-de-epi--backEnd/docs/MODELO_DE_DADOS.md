@@ -214,7 +214,7 @@ DEFAULT false`. `UNIQUE(motivo, tenant_id)`.
 ### `planos`
 
 `id`, `nome`, `mensalidade DECIMAL(10,2) NOT NULL`, `limite_funcionarios`, `limite_usuarios`,
-`limite_epis` (INT, `NULL` = ilimitado), `status VARCHAR(20) DEFAULT 'Ativo'`, `descricao`,
+`limite_unidades` (INT, `NULL` = ilimitado; `limite_epis` saiu na migração 46), `status VARCHAR(20) DEFAULT 'Ativo'`, `descricao`,
 `criado_em`.
 
 ---

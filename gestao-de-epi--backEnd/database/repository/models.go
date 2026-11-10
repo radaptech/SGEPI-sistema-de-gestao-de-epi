@@ -201,7 +201,6 @@ type Plano struct {
 	Mensalidade        pgtype.Numeric
 	LimiteFuncionarios pgtype.Int4
 	LimiteUsuarios     pgtype.Int4
-	LimiteEpis         pgtype.Int4
 	Status             pgtype.Text
 	Descricao          string
 	CriadoEm           pgtype.Timestamp

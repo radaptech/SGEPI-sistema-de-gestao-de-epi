@@ -320,9 +320,10 @@ func (q *Queries) SalvarTokenRecuperacao(ctx context.Context, arg SalvarTokenRec
 }
 
 const totalDeUsuario = `-- name: TotalDeUsuario :one
-select count(id) from usuarios where tenant_id = $1::int
+select count(id) from usuarios where tenant_id = $1::int and ativo = true
 `
 
+// conta para o limite do plano: desativado libera a vaga
 func (q *Queries) TotalDeUsuario(ctx context.Context, id int32) (int64, error) {
 	row := q.db.QueryRow(ctx, totalDeUsuario, id)
 	var count int64
