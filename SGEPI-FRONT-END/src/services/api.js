@@ -183,10 +183,15 @@ async function request(
             : JSON.stringify(dados);
     }
 
-    const resposta = await fetch(
-        url,
-        opcoes
-    );
+    // erro HTTP e de rede sempre viram aviso aqui: quem chama não precisa repetir o toast
+    let resposta;
+    try {
+        resposta = await fetch(url, opcoes);
+    } catch {
+        const mensagem = "Sem conexão com o servidor. Verifique a internet e tente de novo.";
+        toast.error(mensagem);
+        throw new Error(mensagem);
+    }
 
     return await tratarResposta(
         resposta,

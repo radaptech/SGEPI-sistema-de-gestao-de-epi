@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 import { Loader2, Save, ShieldCheck, X } from "lucide-react";
 import { api } from "../../services/api";
 import { listarEpisEntrega } from "../../services/entregaService";
@@ -6,7 +7,7 @@ import { normalizarEpiEntrega } from "../../utils/entregaNormalizers";
 import Dialogo from "../Dialogo";
 
 // Monta o kit de EPI da função: marca os EPIs e a quantidade de cada um.
-export default function ModalKitFuncao({ funcao, onClose, mostrarToast }) {
+export default function ModalKitFuncao({ funcao, onClose }) {
   const [epis, setEpis] = useState([]);
   const [kit, setKit] = useState({}); // { [idEpi]: quantidade }
   const [carregando, setCarregando] = useState(true);
@@ -41,11 +42,10 @@ export default function ModalKitFuncao({ funcao, onClose, mostrarToast }) {
     try {
       const itens = Object.entries(kit).map(([id, qtd]) => ({ id_epi: Number(id), quantidade: Number(qtd) }));
       await api.put(`/gerencial/funcao/${funcao.id}/kit`, { itens });
-      mostrarToast("Kit da função salvo!", "sucesso");
+      toast.success("Kit da função salvo!");
       onClose();
-    } catch (erro) {
-      console.error("Erro ao salvar kit:", erro);
-      mostrarToast("Não foi possível salvar o kit.", "erro");
+    } catch {
+      // o api.js já mostrou o erro
     } finally {
       setSalvando(false);
     }

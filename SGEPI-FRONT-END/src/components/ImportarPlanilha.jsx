@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { toast } from "react-toastify";
 import { api } from "../services/api";
 import { Download, Upload, Loader2 } from "lucide-react";
 
@@ -8,7 +9,6 @@ export default function ImportarPlanilha({
   rota,
   onBaixarModelo,
   onSucesso,
-  mostrarToast,
 }) {
   const [arquivo, setArquivo] = useState(null);
   const [enviando, setEnviando] = useState(false);
@@ -23,13 +23,12 @@ export default function ImportarPlanilha({
       formData.append("file", arquivo);
       const resposta = await api.post(rota, formData);
 
-      mostrarToast(resposta?.message || "Planilha importada com sucesso!", "sucesso");
+      toast.success(resposta?.message || "Planilha importada com sucesso!");
       setArquivo(null);
       if (inputRef.current) inputRef.current.value = "";
       await onSucesso?.();
-    } catch (erro) {
-      console.error("Erro ao importar planilha:", erro);
-      mostrarToast(erro?.message || "Erro ao importar planilha.", "erro");
+    } catch {
+      // o api.js já mostrou o erro
     } finally {
       setEnviando(false);
     }
