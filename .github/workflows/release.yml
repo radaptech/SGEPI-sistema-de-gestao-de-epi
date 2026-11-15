@@ -1,9 +1,10 @@
 name: Release
 
 # Produção: só a main gera imagem.
-# testes (back, front, e2e) → versão nova → imagem no Docker Hub → tag vX.Y.Z + GitHub Release.
+# testes (back, front, e2e) → versão nova → imagem no Docker Hub → tag vX.Y.Z + GitHub Release → Railway.
 # Uma imagem só (Dockerfile da raiz): o Go serve a API em /api e o front no resto.
-# O deploy no Railway é manual: troca a tag da imagem no serviço (ver "Deploy" no README).
+# Depois o job "deploy" põe a versão no ar no Railway: grava as variáveis do secret ENV_PRODUCAO,
+# troca a imagem dos serviços para a versão nova e faz o deploy (ver "Deploy" no README).
 #
 # Versão: a primeira é 1.0.0; depois cada push na main sobe o patch (1.0.1, 1.0.2...).
 # Um commit com #minor ou #major no texto, desde a última tag, sobe a parte correspondente.
@@ -29,6 +30,8 @@ jobs:
     needs: [back-end, front-end, e2e]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    outputs:
+      versao: ${{ steps.versao.outputs.versao }}
     permissions:
       contents: write # criar a tag e o release
     env:
@@ -105,3 +108,73 @@ jobs:
           fi
           gh release view "v$VERSAO" >/dev/null 2>&1 || gh release create "v$VERSAO" --title "v$VERSAO" --generate-notes \
             --notes "Imagem: \`$IMAGEM:$VERSAO\`"
+
+  # Variáveis: o GitHub é a fonte da verdade. O Railway guarda uma cópia porque é lá que o
+  # container roda, mas só este job mexe nelas; não edite variável pelo painel do Railway.
+  deploy:
+    needs: publicar
+    runs-on: ubuntu-latest
+    environment: producao # aparece em Deployments no GitHub; dá para exigir aprovação em Settings > Environments
+    env:
+      RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+      ENV_PRODUCAO: ${{ secrets.ENV_PRODUCAO }}
+      PROJETO: ${{ vars.RAILWAY_PROJECT_ID }}
+      AMBIENTE: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
+      SERVICOS: ${{ vars.RAILWAY_SERVICOS }} # IDs separados por espaço: o web e os crons (mesma imagem)
+      IMAGEM: ${{ vars.DOCKERHUB_USUARIO }}/sgepi:${{ needs.publicar.outputs.versao }}
+    steps:
+      - name: Confere a configuração
+        run: |
+          faltando=""
+          for nome in RAILWAY_API_TOKEN ENV_PRODUCAO PROJETO AMBIENTE SERVICOS; do
+            [ -n "${!nome}" ] || faltando="$faltando $nome"
+          done
+          if [ -n "$faltando" ]; then
+            echo "::error::Falta configurar no GitHub (ver Deploy no README):$faltando"
+            exit 1
+          fi
+
+      - name: Variáveis, imagem e deploy no Railway
+        run: |
+          set -euo pipefail
+
+          # chamada à API GraphQL do Railway; erro na resposta derruba o job
+          gql() {
+            local resposta
+            resposta=$(curl -sS https://backboard.railway.com/graphql/v2 \
+              -H "Authorization: Bearer $RAILWAY_API_TOKEN" -H "Content-Type: application/json" \
+              -d "$(jq -n --arg q "$1" --argjson v "$2" '{query: $q, variables: $v}')")
+            if jq -e '.errors // empty' >/dev/null <<< "$resposta"; then
+              echo "::error::Railway: $(jq -c '[.errors[].message]' <<< "$resposta")"
+              exit 1
+            fi
+          }
+
+          # ENV_PRODUCAO tem o .env de produção inteiro (KEY=VALOR por linha) → objeto JSON
+          variaveis=$(printf '%s\n' "$ENV_PRODUCAO" | jq -Rn '
+            [inputs
+             | sub("\r$"; "")
+             | select(test("^\\s*(export\\s+)?[A-Za-z_][A-Za-z0-9_]*="))
+             | capture("^\\s*(export\\s+)?(?<k>[A-Za-z_][A-Za-z0-9_]*)=(?<v>.*)$")
+             | {(.k): (.v | if test("^\".*\"$") or test("^'.*'$") then .[1:-1] else . end)}
+            ] | add // {}')
+          [ "$(jq 'length' <<< "$variaveis")" -gt 0 ] || { echo "::error::ENV_PRODUCAO sem nenhuma linha KEY=VALOR"; exit 1; }
+          echo "Variáveis: $(jq -r 'keys | join(", ")' <<< "$variaveis")" >> "$GITHUB_STEP_SUMMARY"
+
+          for servico in $SERVICOS; do
+            # replace=false: variável que só existe no Railway (ex.: referência ao Postgres de lá) fica
+            # skipDeploys: o deploy é um só, no fim, já com a imagem nova
+            gql 'mutation($input: VariableCollectionUpsertInput!) { variableCollectionUpsert(input: $input) }' \
+              "$(jq -n --arg p "$PROJETO" --arg e "$AMBIENTE" --arg s "$servico" --argjson v "$variaveis" \
+                 '{input: {projectId: $p, environmentId: $e, serviceId: $s, variables: $v, skipDeploys: true}}')"
+
+            gql 'mutation($serviceId: String!, $environmentId: String!, $input: ServiceInstanceUpdateInput!) { serviceInstanceUpdate(serviceId: $serviceId, environmentId: $environmentId, input: $input) }' \
+              "$(jq -n --arg e "$AMBIENTE" --arg s "$servico" --arg i "$IMAGEM" \
+                 '{serviceId: $s, environmentId: $e, input: {source: {image: $i}}}')"
+
+            # DeployV2 sobe a imagem recém-configurada (o redeploy repetiria a tag antiga)
+            gql 'mutation($serviceId: String!, $environmentId: String!) { serviceInstanceDeployV2(serviceId: $serviceId, environmentId: $environmentId) }' \
+              "$(jq -n --arg e "$AMBIENTE" --arg s "$servico" '{serviceId: $s, environmentId: $e}')"
+
+            echo "- serviço $servico → $IMAGEM" >> "$GITHUB_STEP_SUMMARY"
+          done

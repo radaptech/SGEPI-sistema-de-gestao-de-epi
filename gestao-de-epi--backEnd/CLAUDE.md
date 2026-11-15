@@ -413,14 +413,15 @@ os metadados globais estão em `main.go`. Rode `swag init` após alterar rotas �
   `seed.go`). O `/login` tem rate limit: rodar a suíte várias vezes seguidas dá 429.
 - CI (`.github/workflows/back-end.yml`, na raiz do monorepo): gofmt, vet e `go test -v ./... -p 1` nos
   pushes para `dev`/`homologacao` e em PRs, com a versão do Go lida do `go.mod`. Na `main` ele roda dentro
-  do `release.yml`, que só gera as imagens do Docker Hub e a tag `vX.Y.Z` se back, front e e2e passarem
+  do `release.yml`, que só gera a imagem do Docker Hub, a tag `vX.Y.Z` e o deploy no Railway se back, front e e2e passarem
   (ver "Deploy" no README da raiz). Ao subir a linha `go` do `go.mod`, atualize o `FROM golang:` do `Dockerfile` da raiz e do `Dockerfile.dev`.
 
 ---
 
 ## Variáveis de ambiente
 
-Copie `.env-example` para `.env` (o `.env` está no `.gitignore`).
+Copie `.env-example` para `.env` (o `.env` está no `.gitignore`). Em produção as variáveis ficam no
+secret `ENV_PRODUCAO` do GitHub, e o `release.yml` as grava no Railway a cada deploy.
 
 | Variável | Uso |
 |---|---|
