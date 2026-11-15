@@ -11,11 +11,12 @@ async function entrar(page, email, senha) {
 }
 
 // Chama a API de dentro da página: usa o mesmo cookie de sessão e o mesmo
-// X-Tenant-ID (subdomínio) que o front usaria.
+// X-Tenant-ID (subdomínio) que o front usaria. "/api" relativo funciona no dev (o Traefik
+// manda /api de qualquer host para a API) e na imagem única de produção.
 async function chamarApi(page, metodo, rota, corpo) {
   const { status, dados } = await page.evaluate(
     async ({ metodo, rota, corpo }) => {
-      const r = await fetch(`http://api.localhost/api${rota}`, {
+      const r = await fetch(`/api${rota}`, {
         method: metodo,
         credentials: "include",
         headers: {
@@ -45,4 +46,12 @@ function gerarCnpj() {
   return n.join("");
 }
 
-module.exports = { SUPER_EMAIL, SUPER_SENHA, entrar, chamarApi, gerarCnpj };
+// Endereço da empresa: mesmo esquema e porta da página atual, trocando só o subdomínio.
+function urlDaEmpresa(page, subdominio) {
+  const url = new URL(page.url());
+  url.hostname = `${subdominio}.localhost`;
+  url.pathname = "/";
+  return url.toString();
+}
+
+module.exports = { SUPER_EMAIL, SUPER_SENHA, entrar, chamarApi, gerarCnpj, urlDaEmpresa };

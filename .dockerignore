@@ -1,0 +1,10 @@
+# só as duas pastas entram no build; o resto (e2e, .git, node_modules, .env) fica de fora
+*
+!SGEPI-FRONT-END
+!gestao-de-epi--backEnd
+**/node_modules
+**/.env
+SGEPI-FRONT-END/build
+SGEPI-FRONT-END/.impeccable
+gestao-de-epi--backEnd/main
+gestao-de-epi--backEnd/tmp

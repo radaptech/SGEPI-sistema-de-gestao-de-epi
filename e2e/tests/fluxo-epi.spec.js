@@ -1,5 +1,5 @@
 const { test, expect } = require("@playwright/test");
-const { SUPER_EMAIL, SUPER_SENHA, entrar, chamarApi, gerarCnpj } = require("./apoio");
+const { SUPER_EMAIL, SUPER_SENHA, entrar, chamarApi, gerarCnpj, urlDaEmpresa } = require("./apoio");
 
 // Fluxo completo de um tenant novo: EPI → entrada → entrega → devolução.
 // Os testes dependem um do outro (o estoque da entrada é o que se entrega),
@@ -77,7 +77,7 @@ test.beforeAll(async ({ browser }) => {
     empresa_id: empresa.id,
   });
   // a sessão é por subdomínio: com o painel logado, a empresa abre no login (antes abria o painel)
-  await page.goto(`http://${subdominio}.localhost/`);
+  await page.goto(urlDaEmpresa(page, subdominio));
   await expect(page.getByRole("button", { name: "Entrar no Sistema" })).toBeVisible();
 
   // admin do tenant: cadastros de apoio via API, o foco é o fluxo do estoque

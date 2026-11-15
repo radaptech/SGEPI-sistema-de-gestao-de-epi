@@ -1,11 +1,11 @@
 import { toast } from "react-toastify";
 import { unidadeAtual } from "./unidadeAtual";
 
-const DEFAULT_BASE_URL = "https://homolog.radaptech.com.br/api";
+// Em produção o front e a API saem da mesma imagem e do mesmo endereço: "/api" relativo.
+// REACT_APP_API_URL só é usada em dev, onde o Vite e a API rodam separados.
+let envUrl = import.meta.env.REACT_APP_API_URL || "/api";
 
-let envUrl = import.meta.env.REACT_APP_API_URL || DEFAULT_BASE_URL;
-
-if (envUrl && !envUrl.startsWith("http")) {
+if (!envUrl.startsWith("http") && !envUrl.startsWith("/")) {
     envUrl = `https://${envUrl}`;
 }
 

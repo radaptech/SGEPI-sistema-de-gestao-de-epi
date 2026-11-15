@@ -1,7 +1,8 @@
 name: Release
 
 # Produção: só a main gera imagem.
-# testes (back, front, e2e) → versão nova → imagens no Docker Hub → tag vX.Y.Z + GitHub Release.
+# testes (back, front, e2e) → versão nova → imagem no Docker Hub → tag vX.Y.Z + GitHub Release.
+# Uma imagem só (Dockerfile da raiz): o Go serve a API em /api e o front no resto.
 # O deploy no Railway é manual: troca a tag da imagem no serviço (ver "Deploy" no README).
 #
 # Versão: a primeira é 1.0.0; depois cada push na main sobe o patch (1.0.1, 1.0.2...).
@@ -31,8 +32,7 @@ jobs:
     permissions:
       contents: write # criar a tag e o release
     env:
-      API: ${{ vars.DOCKERHUB_USUARIO }}/sgepi-api
-      FRONT: ${{ vars.DOCKERHUB_USUARIO }}/sgepi-front
+      IMAGEM: ${{ vars.DOCKERHUB_USUARIO }}/sgepi
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,7 +42,6 @@ jobs:
         run: |
           faltando=""
           [ -n "${{ vars.DOCKERHUB_USUARIO }}" ] || faltando="$faltando variável DOCKERHUB_USUARIO;"
-          [ -n "${{ vars.REACT_APP_API_URL }}" ] || faltando="$faltando variável REACT_APP_API_URL;"
           [ -n "${{ secrets.DOCKERHUB_TOKEN }}" ] || faltando="$faltando secret DOCKERHUB_TOKEN;"
           if [ -n "$faltando" ]; then
             echo "::error::Configure em Settings > Secrets and variables > Actions:$faltando"
@@ -81,33 +80,20 @@ jobs:
           username: ${{ vars.DOCKERHUB_USUARIO }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Imagem da API
+      - name: Imagem
         uses: docker/build-push-action@v6
         with:
-          context: gestao-de-epi--backEnd
+          context: .
           platforms: linux/amd64
           push: true
           build-args: VERSAO=${{ steps.versao.outputs.versao }}
           tags: |
-            ${{ env.API }}:${{ steps.versao.outputs.versao }}
-            ${{ env.API }}:latest
-          cache-from: type=gha,scope=api
-          cache-to: type=gha,scope=api,mode=max
+            ${{ env.IMAGEM }}:${{ steps.versao.outputs.versao }}
+            ${{ env.IMAGEM }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Imagem do front
-        uses: docker/build-push-action@v6
-        with:
-          context: SGEPI-FRONT-END
-          platforms: linux/amd64
-          push: true
-          build-args: REACT_APP_API_URL=${{ vars.REACT_APP_API_URL }}
-          tags: |
-            ${{ env.FRONT }}:${{ steps.versao.outputs.versao }}
-            ${{ env.FRONT }}:latest
-          cache-from: type=gha,scope=front
-          cache-to: type=gha,scope=front,mode=max
-
-      # a tag só existe depois que as duas imagens subiram: toda tag tem imagem
+      # a tag só existe depois que a imagem subiu: toda tag tem imagem
       - name: Tag e release no GitHub
         env:
           GH_TOKEN: ${{ github.token }}
@@ -118,4 +104,4 @@ jobs:
             git push origin "v$VERSAO"
           fi
           gh release view "v$VERSAO" >/dev/null 2>&1 || gh release create "v$VERSAO" --title "v$VERSAO" --generate-notes \
-            --notes "Imagens: \`$API:$VERSAO\` e \`$FRONT:$VERSAO\`"
+            --notes "Imagem: \`$IMAGEM:$VERSAO\`"

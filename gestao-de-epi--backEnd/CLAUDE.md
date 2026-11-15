@@ -56,7 +56,9 @@ docker compose -f docker-compose.dev.yml --env-file gestao-de-epi--backEnd/.env 
 Sobe Traefik (roteia por subdomínio `*.localhost`), Postgres 16, pgAdmin (`:5050`),
 Mailpit (`:8025`), a API (`Dockerfile.dev`, hot-reload via CompileDaemon) e o front React.
 
-A API sozinha escuta em `:8080`. Via Traefik: `http://api.localhost` ou qualquer host com `/api`.
+A API sozinha escuta em `:8080` (ou no `PORT`, quando definido). Em produção é uma imagem só
+(`Dockerfile` da raiz): com `FRONT_DIR` apontando para o build do Vite, o Go também entrega o front
+(`internal/routers/front.go`: fallback do SPA, cache dos assets e uma CSP própria do front). Via Traefik: `http://api.localhost` ou qualquer host com `/api`.
 
 ---
 
@@ -245,12 +247,13 @@ e **encerra sem subir a API**; sem argumento, sobe a API normalmente. O fluxo é
 `configs.NewVariaveisAmbiente()`** (que é quem chama o `godotenv.Load`) — invertendo a ordem, a chave
 vem vazia e o R2 devolve 401.
 
-O `pg_dump` vem do pacote `postgresql17-client` instalado no `Dockerfile` de produção; na máquina de
+O `pg_dump` vem do pacote `postgresql17-client` instalado no `Dockerfile` de produção (raiz do monorepo); na máquina de
 dev ele normalmente não existe, então teste pela imagem:
 
 ```bash
-docker build -t sgeepi-backup-test .
-docker run --rm --network sgeepi-infra_default --env-file .env sgeepi-backup-test ./main backup-banco
+# na raiz do monorepo (o Dockerfile de produção fica lá); pesado: pare a stack de dev antes
+docker build -t sgepi-backup-test .
+docker run --rm --network sgepi-sistema-de-getao-de-epi_default --env-file gestao-de-epi--backEnd/.env sgepi-backup-test ./main backup-banco
 ```
 
 Nada no código agenda o backup — quem chama `./main backup-banco` é o cron do Railway. Retenção dos dumps
@@ -411,7 +414,7 @@ os metadados globais estão em `main.go`. Rode `swag init` após alterar rotas �
 - CI (`.github/workflows/back-end.yml`, na raiz do monorepo): gofmt, vet e `go test -v ./... -p 1` nos
   pushes para `dev`/`homologacao` e em PRs, com a versão do Go lida do `go.mod`. Na `main` ele roda dentro
   do `release.yml`, que só gera as imagens do Docker Hub e a tag `vX.Y.Z` se back, front e e2e passarem
-  (ver "Deploy" no README da raiz). Ao subir a linha `go` do `go.mod`, atualize o `FROM golang:` dos Dockerfiles.
+  (ver "Deploy" no README da raiz). Ao subir a linha `go` do `go.mod`, atualize o `FROM golang:` do `Dockerfile` da raiz e do `Dockerfile.dev`.
 
 ---
 
@@ -472,7 +475,7 @@ validadores entram no mesmo bloco.
 - **O `FROM golang:` dos Dockerfiles precisa acompanhar a linha `go` do `go.mod`.** Com `go 1.26.5`
   no `go.mod` e uma imagem `1.26.1`, o `go mod download` falha no build (`GOTOOLCHAIN=local`).
 - **`golang-migrate` procura `file://database/migrate` relativo ao working dir.** Rodar o binário de
-  outra pasta quebra o boot (por isso o `Dockerfile` copia `database/migrate` para junto dele).
+  outra pasta quebra o boot (por isso o `Dockerfile` da raiz copia `database/migrate` para junto dele).
 - **`repository.Queries` não tem `sqlc.embed` nem RLS**: repetir `tenant_id` em cada query é
   responsabilidade sua.
 - **Logs são `log/slog` em JSON** (`middleware/logs.go`). `middleware.LogRequest` escreve uma linha por

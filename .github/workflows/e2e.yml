@@ -21,7 +21,8 @@ jobs:
         run: |
           cp gestao-de-epi--backEnd/.env-example gestao-de-epi--backEnd/.env
           sed -i '/^SUPER_ADMIN_/d' gestao-de-epi--backEnd/.env
-          echo 'REACT_APP_API_URL=http://api.localhost/api' > SGEPI-FRONT-END/.env
+          # vazio: o front chama /api no mesmo endereço, como na imagem de produção
+          touch SGEPI-FRONT-END/.env
 
       - name: Sobe o ambiente
         run: docker compose -f docker-compose.dev.yml up -d --build postgres mailpit traefik api front

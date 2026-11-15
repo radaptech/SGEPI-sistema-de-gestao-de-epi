@@ -98,7 +98,12 @@ func main() {
 
 	routers.ConfigurarRotas(router, container, db)
 
-	if err := router.Run(":8080"); err != nil {
+	// o Railway diz a porta em PORT; fora dele, 8080
+	porta := os.Getenv("PORT")
+	if porta == "" {
+		porta = "8080"
+	}
+	if err := router.Run(":" + porta); err != nil {
 		fatal("subir servidor", err)
 	}
 }

@@ -3,6 +3,7 @@ package routers
 import (
 	"context"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/controller"
@@ -115,13 +116,16 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 	// Qualquer um acessa sem sessão
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	r.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status":  "online",
-			"message": "Bem-vindo à API do Sistema de Gestão de EPIs - Radaptech",
-			"version": Versao,
+	// Na imagem única "/" é o front; só a API sozinha responde a mensagem de boas-vindas.
+	if !servirFront(r, os.Getenv("FRONT_DIR")) {
+		r.GET("/", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{
+				"status":  "online",
+				"message": "Bem-vindo à API do Sistema de Gestão de EPIs - Radaptech",
+				"version": Versao,
+			})
 		})
-	})
+	}
 	r.GET("/api", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "online",
