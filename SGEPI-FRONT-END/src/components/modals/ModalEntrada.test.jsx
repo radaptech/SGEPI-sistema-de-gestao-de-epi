@@ -13,7 +13,7 @@ vi.mock("../../services/entradaService", () => ({
   criarEntrada: vi.fn(),
 }));
 
-// o CRA zera os mocks entre os testes (resetMocks), então os retornos vão aqui
+// os retornos vão no beforeEach para cada teste começar do mesmo jeito
 beforeEach(() => {
   Element.prototype.scrollIntoView = () => {};
   listar.mockResolvedValue([]);
