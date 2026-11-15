@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, Fragment } from "react";
+import Paginacao from "../Paginacao";
 import {
-  X, Search, FilterX, ChevronDown, ChevronUp,
-  ChevronLeft, ChevronRight, Inbox
+  X, Search, FilterX, ChevronDown, ChevronUp, Inbox
 } from "lucide-react";
 import Dialogo from "../Dialogo";
 
@@ -359,29 +359,7 @@ function ModalDetalhesDashboard({
               Mostrando <b className="text-ink ">{dadosPaginados.length}</b> de <b className="text-ink ">{dadosFiltrados.length}</b> registros
             </div>
 
-            {totalPaginas > 1 && (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  disabled={paginaAtual === 1}
-                  onClick={() => setPaginaAtual((p) => p - 1)}
-                  className="p-2 text-ink-2 bg-surface border border-line rounded-md hover:bg-sunken disabled:opacity-50 disabled:cursor-not-allowed transition-colors "
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <span className="text-sm font-bold text-ink-2 px-3">
-                  {paginaAtual} <span className="text-ink-3 font-medium">/ {totalPaginas}</span>
-                </span>
-                <button
-                  type="button"
-                  disabled={paginaAtual === totalPaginas}
-                  onClick={() => setPaginaAtual((p) => p + 1)}
-                  className="p-2 text-ink-2 bg-surface border border-line rounded-md hover:bg-sunken disabled:opacity-50 disabled:cursor-not-allowed transition-colors "
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-            )}
+            <Paginacao pagina={paginaAtual} totalPaginas={totalPaginas} setPagina={setPaginaAtual} className="flex items-center gap-3" />
           </div>
         )}
       </div>

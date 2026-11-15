@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import Paginacao from "../components/Paginacao";
 import { toast } from "react-toastify";
 import { temPermissao } from "../utils/permissoes";
 import { listarFornecedores } from "../services/fornecedorService";
@@ -6,7 +7,7 @@ import { normalizarFornecedor } from "../utils/fornecedorNormalizer";
 import ModalCriarFornecedor from "../components/modals/ModalCriarFornecedor";
 import ModalDetalhesFornecedor from "../components/modals/ModalDetalhesFornecedor";
 
-import { AlertTriangle, Plus, Search, X, Eye, ChevronLeft, ChevronRight, Building2, Hash, Receipt } from "lucide-react";
+import { AlertTriangle, Plus, Search, X, Eye, Building2, Hash, Receipt } from "lucide-react";
 
 function Fornecedores({ usuarioLogado }) {
   const [fornecedores, setFornecedores] = useState([]);
@@ -318,39 +319,7 @@ function Fornecedores({ usuarioLogado }) {
               )}
             </div>
 
-            {totalPaginas > 1 && (
-              <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
-                <button
-                  onClick={() => setPaginaAtual((prev) => Math.max(prev - 1, 1))}
-                  disabled={paginaAtual === 1}
-                  className={`px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-1 ${
-                    paginaAtual === 1
-                      ? "bg-sunken text-ink-3 cursor-not-allowed"
-                      : "bg-surface text-ink border border-line hover:bg-sunken hover:border-line "
-                  }`}
-                >
-                  <ChevronLeft className="w-4 h-4" /> Anterior
-                </button>
-
-                <span className="text-xs font-bold text-ink-2 uppercase tracking-wide bg-sunken px-4 py-2 rounded-md border border-line transition-colors">
-                  Página <span className="text-ink ">{paginaAtual}</span> de {totalPaginas}
-                </span>
-
-                <button
-                  onClick={() =>
-                    setPaginaAtual((prev) => Math.min(prev + 1, totalPaginas))
-                  }
-                  disabled={paginaAtual === totalPaginas}
-                  className={`px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-1 ${
-                    paginaAtual === totalPaginas
-                      ? "bg-sunken text-ink-3 cursor-not-allowed"
-                      : "bg-surface text-ink border border-line hover:bg-sunken hover:border-line "
-                  }`}
-                >
-                  Próxima <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            )}
+            <Paginacao pagina={paginaAtual} totalPaginas={totalPaginas} setPagina={setPaginaAtual} className="mt-6 flex items-center justify-between" />
           </>
         )}
       </div>

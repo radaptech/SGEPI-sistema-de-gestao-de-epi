@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import Paginacao from "../components/Paginacao";
 import { toast } from "react-toastify";
 import { api } from "../services/api";
 
@@ -8,7 +9,7 @@ import { useDevolucoes } from "../hooks/useDevolucoes";
 import { temPermissao } from "../utils/permissoes";
 import { formatarData } from "../utils/devolucoes";
 
-import { AlertTriangle, Plus, Search, X, ChevronLeft, ChevronRight, FileDown, RefreshCw, XCircle } from "lucide-react";
+import { AlertTriangle, Plus, Search, X, FileDown, RefreshCw, XCircle } from "lucide-react";
 
 function Devolucoes({ usuarioLogado }) {
   const {
@@ -434,37 +435,7 @@ function Devolucoes({ usuarioLogado }) {
               ))}
             </div>
 
-            {totalPaginas > 1 && (
-              <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
-                <button
-                  onClick={() => setPaginaAtual((p) => Math.max(p - 1, 1))}
-                  disabled={paginaAtual === 1}
-                  className={`px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-1 ${
-                    paginaAtual === 1
-                      ? "bg-sunken text-ink-3 cursor-not-allowed"
-                      : "bg-surface text-ink border border-line hover:bg-sunken "
-                  }`}
-                >
-                  <ChevronLeft className="w-4 h-4" /> Anterior
-                </button>
-
-                <span className="text-xs font-bold text-ink-2 uppercase tracking-wide bg-sunken px-4 py-2 rounded-md border border-line transition-colors">
-                  Página <span className="text-ink ">{paginaAtual}</span> de {totalPaginas}
-                </span>
-
-                <button
-                  onClick={() => setPaginaAtual((p) => Math.min(p + 1, totalPaginas))}
-                  disabled={paginaAtual === totalPaginas}
-                  className={`px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-1 ${
-                    paginaAtual === totalPaginas
-                      ? "bg-sunken text-ink-3 cursor-not-allowed"
-                      : "bg-surface text-ink border border-line hover:bg-sunken "
-                  }`}
-                >
-                  Próxima <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            )}
+            <Paginacao pagina={paginaAtual} totalPaginas={totalPaginas} setPagina={setPaginaAtual} className="mt-6 flex items-center justify-between" />
           </>
         )}
       </div>
