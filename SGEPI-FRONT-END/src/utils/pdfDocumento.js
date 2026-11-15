@@ -6,8 +6,26 @@ const CINZA = [105, 112, 120];
 const FUNDO = [238, 240, 243];
 const TEXTO = 25;
 
+// Símbolo da RadapTech para o rodapé (só o "D" azul: o texto da logo é branco e some no papel).
+// Sem conseguir baixar, o PDF sai sem ele.
+let simbolo;
+async function carregarSimbolo() {
+  try {
+    const blob = await (await fetch(`${import.meta.env.BASE_URL}radaptech-simbolo.png`)).blob();
+    return await new Promise((ok, erro) => {
+      const leitor = new FileReader();
+      leitor.onload = () => ok(leitor.result);
+      leitor.onerror = erro;
+      leitor.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 export async function novoPdf(titulo) {
   const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
+  simbolo ??= await carregarSimbolo();
   const doc = new jsPDF();
   doc.setProperties({ title: titulo });
   return { doc, autoTable };
@@ -83,7 +101,8 @@ export function rodape(doc, geradoPor) {
   const largura = doc.internal.pageSize.getWidth();
   const altura = doc.internal.pageSize.getHeight();
   const quando = new Date().toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
-  const texto = `Gerado em ${quando}${geradoPor ? ` por ${geradoPor}` : ""} · SGEPI`;
+  const texto = `Gerado em ${quando}${geradoPor ? ` por ${geradoPor}` : ""} · Emitido pelo SGEPI · RadapTech`;
+  const recuo = simbolo ? 7 : 0;
   const total = doc.getNumberOfPages();
 
   for (let p = 1; p <= total; p++) {
@@ -94,7 +113,8 @@ export function rodape(doc, geradoPor) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5);
     doc.setTextColor(...CINZA);
-    doc.text(texto, MARGEM, altura - 9);
+    if (simbolo) doc.addImage(simbolo, "PNG", MARGEM, altura - 11.6, 5, 4.25); // 160x136 px
+    doc.text(texto, MARGEM + recuo, altura - 9);
     doc.text(`Página ${p} de ${total}`, largura - MARGEM, altura - 9, { align: "right" });
   }
 }

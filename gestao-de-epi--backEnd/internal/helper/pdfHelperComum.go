@@ -1,18 +1,21 @@
 package helper
 
 import (
+	_ "embed"
 	"fmt"
 	"strings"
 
 	"github.com/johnfercher/maroto/v2"
 	"github.com/johnfercher/maroto/v2/pkg/components/code"
 	"github.com/johnfercher/maroto/v2/pkg/components/col"
+	"github.com/johnfercher/maroto/v2/pkg/components/image"
 	"github.com/johnfercher/maroto/v2/pkg/components/line"
 	"github.com/johnfercher/maroto/v2/pkg/components/row"
 	"github.com/johnfercher/maroto/v2/pkg/components/text"
 	"github.com/johnfercher/maroto/v2/pkg/config"
 	"github.com/johnfercher/maroto/v2/pkg/consts/align"
 	"github.com/johnfercher/maroto/v2/pkg/consts/border"
+	"github.com/johnfercher/maroto/v2/pkg/consts/extension"
 	"github.com/johnfercher/maroto/v2/pkg/consts/fontstyle"
 	"github.com/johnfercher/maroto/v2/pkg/core"
 	"github.com/johnfercher/maroto/v2/pkg/props"
@@ -42,6 +45,11 @@ var (
 	corBorda  = &props.Color{Red: 185, Green: 190, Blue: 196}
 	corAlerta = &props.Color{Red: 176, Green: 32, Blue: 24}
 )
+
+// Símbolo da RadapTech (só o "D" azul: o texto da logo é branco e some no papel).
+//
+//go:embed assets/radaptech-simbolo.png
+var simboloRadaptech []byte
 
 type campoPdf struct {
 	tam           int
@@ -136,18 +144,20 @@ func rodape(m core.Maroto, tipo string, f FichaPdf, data string, auditoria Audit
 	qr := fmt.Sprintf("SGEPI | %s nº %d | Código %s | %s | Matrícula %s | %s",
 		tipo, f.Numero, valorOuTraco(f.Token), f.NomeFuncionario, f.Matricula, data)
 
-	info := col.New(10).Add(
+	info := col.New(8).Add(
 		text.New(fmt.Sprintf("%s nº %06d · Código de validação %s", tipo, f.Numero, valorOuTraco(f.Token)),
 			props.Text{Size: 7.5, Style: fontstyle.Bold, Top: 4}),
 		text.New(fmt.Sprintf("Gerado em %s por %s · IP %s", auditoria.DadosServidor, valorOuTraco(responsavel), auditoria.Ip),
 			props.Text{Size: 7, Color: corRotulo, Top: 8.5}),
-		text.New("O QR code reúne o número, o código e o colaborador deste documento, para conferência com o registro no sistema.",
+		text.New("O QR code traz o número, o código e o colaborador deste documento.",
 			props.Text{Size: 7, Color: corRotulo, Top: 12}),
+		text.New("Emitido pelo SGEPI · RadapTech", props.Text{Size: 7, Color: corRotulo, Top: 15.5}),
 	)
+	marca := col.New(2).Add(image.NewFromBytes(simboloRadaptech, extension.Png, props.Rect{Center: true, Percent: 55}))
 
 	return m.RegisterFooter(
 		line.NewRow(2, props.Line{Thickness: 0.2, Color: corBorda, SizePercent: 100}),
-		row.New(20).Add(code.NewQrCol(2, qr, props.Rect{Percent: 95}), info),
+		row.New(20).Add(code.NewQrCol(2, qr, props.Rect{Percent: 95}), info, marca),
 	)
 }
 
