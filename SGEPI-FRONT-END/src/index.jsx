@@ -4,7 +4,6 @@ import '@fontsource-variable/archivo';
 import '@fontsource-variable/jetbrains-mono';
 import './index.css';
 import App from './App';
-import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -14,13 +13,8 @@ root.render(
 );
 
 // PWA: só em produção, no dev server o service worker atrapalharia o hot reload.
-if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register(`${process.env.PUBLIC_URL}/sw.js`);
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`);
   });
 }
-
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();

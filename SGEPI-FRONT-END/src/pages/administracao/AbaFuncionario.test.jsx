@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import AbaFuncionarios from "./AbaFuncionario";
 import { api } from "../../services/api";
 
-jest.mock("../../services/api", () => ({ api: { get: jest.fn(), post: jest.fn(), patch: jest.fn(), delete: jest.fn() } }));
+vi.mock("../../services/api", () => ({ api: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() } }));
 
 beforeAll(() => {
   Element.prototype.scrollIntoView = () => {};
@@ -27,7 +27,7 @@ function respostas(unidades) {
 
 const tabela = () => screen.getAllByRole("table")[0];
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => vi.clearAllMocks());
 
 test("com uma unidade só, a unidade não aparece em lugar nenhum", async () => {
   respostas([{ id: 10, nome: "Principal" }]);

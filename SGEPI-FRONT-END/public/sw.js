@@ -1,6 +1,6 @@
 // Service worker do PWA. Só guarda a "casca" do app (HTML, JS, CSS, ícones):
 // chamadas à API nunca passam pelo cache, porque são autenticadas e por empresa.
-const CACHE = "sgepi-v1";
+const CACHE = "sgepi-v2";
 
 self.addEventListener("install", () => self.skipWaiting());
 
@@ -37,9 +37,9 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // /static/ tem hash no nome, então nunca muda: cache primeiro.
+  // /assets/ (saída do vite) tem hash no nome, então nunca muda: cache primeiro.
   // ponytail: bundles de deploys antigos ficam no cache até trocar CACHE; troque a versão se crescer demais.
-  if (url.pathname.startsWith("/static/")) {
+  if (url.pathname.startsWith("/assets/")) {
     event.respondWith(
       caches.match(request).then(
         (cache) =>

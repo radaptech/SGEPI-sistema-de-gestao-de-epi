@@ -2,13 +2,13 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import AbaUnidades from "./AbaUnidades";
 import { api } from "../../services/api";
 
-jest.mock("../../services/api", () => ({ api: { get: jest.fn(), post: jest.fn(), patch: jest.fn(), delete: jest.fn(), put: jest.fn() } }));
-jest.mock("react-toastify", () => ({ toast: { success: jest.fn(), warning: jest.fn(), error: jest.fn() } }));
+vi.mock("../../services/api", () => ({ api: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn(), put: vi.fn() } }));
+vi.mock("react-toastify", () => ({ toast: { success: vi.fn(), warning: vi.fn(), error: vi.fn() } }));
 
 const principal = { id: 1, nome: "Principal", funcionarios: 62, saldo: 1844 };
 const vazia = { id: 2, nome: "Loja Centro", funcionarios: 0, saldo: 0 };
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => vi.clearAllMocks());
 
 test("com uma unidade só, nada pode ser desativado", async () => {
   api.get.mockResolvedValue([principal]);

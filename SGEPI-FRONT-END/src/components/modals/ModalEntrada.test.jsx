@@ -4,13 +4,13 @@ import { api } from "../../services/api";
 import { listar } from "../../services/listas";
 import * as entradaService from "../../services/entradaService";
 
-jest.mock("../../services/api", () => ({ api: { get: jest.fn() } }));
-jest.mock("../../services/listas", () => ({ listar: jest.fn() }));
-jest.mock("../../services/entradaService", () => ({
-  listarEpis: jest.fn(),
-  listarFornecedores: jest.fn(),
-  listarTamanhos: jest.fn(),
-  criarEntrada: jest.fn(),
+vi.mock("../../services/api", () => ({ api: { get: vi.fn() } }));
+vi.mock("../../services/listas", () => ({ listar: vi.fn() }));
+vi.mock("../../services/entradaService", () => ({
+  listarEpis: vi.fn(),
+  listarFornecedores: vi.fn(),
+  listarTamanhos: vi.fn(),
+  criarEntrada: vi.fn(),
 }));
 
 // o CRA zera os mocks entre os testes (resetMocks), então os retornos vão aqui

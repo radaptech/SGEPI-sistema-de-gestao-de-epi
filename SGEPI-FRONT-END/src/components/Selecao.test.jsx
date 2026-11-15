@@ -31,7 +31,7 @@ function Campo({ aoMudar, itens = ["Luva Nitrílica", "Luva de Vaqueta", "Bota"]
 }
 
 test("abre, escolhe com o mouse e devolve e.target.value como no select", () => {
-  const aoMudar = jest.fn();
+  const aoMudar = vi.fn();
   render(<Campo aoMudar={aoMudar} />);
   const gatilho = screen.getByRole("combobox");
   expect(gatilho).toHaveTextContent("Selecione...");
@@ -47,7 +47,7 @@ test("abre, escolhe com o mouse e devolve e.target.value como no select", () => 
 });
 
 test("teclado: setas, Enter e letra; Esc fecha só o menu", () => {
-  const fechouModal = jest.fn();
+  const fechouModal = vi.fn();
   document.addEventListener("keydown", fechouModal);
   render(<Campo />);
   const gatilho = screen.getByRole("combobox");

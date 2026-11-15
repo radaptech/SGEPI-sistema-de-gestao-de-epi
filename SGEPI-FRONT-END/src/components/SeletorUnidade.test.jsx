@@ -3,9 +3,9 @@ import SeletorUnidade from "./SeletorUnidade";
 import { api } from "../services/api";
 import { escolherUnidade, unidadeAtual } from "../services/unidadeAtual";
 
-jest.mock("../services/api", () => ({ api: { get: jest.fn() } }));
+vi.mock("../services/api", () => ({ api: { get: vi.fn() } }));
 
-const recarregar = jest.fn();
+const recarregar = vi.fn();
 beforeAll(() => {
   Object.defineProperty(window, "location", { configurable: true, value: { ...window.location, reload: recarregar } });
 });

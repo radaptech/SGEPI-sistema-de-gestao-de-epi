@@ -3,11 +3,11 @@ import ModalTransferencia from "./ModalTransferencia";
 import ListaTransferencias from "../ListaTransferencias";
 import { api } from "../../services/api";
 
-jest.mock("../../services/api", () => ({ api: { get: jest.fn(), post: jest.fn(), delete: jest.fn() } }));
-jest.mock("react-toastify", () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
+vi.mock("../../services/api", () => ({ api: { get: vi.fn(), post: vi.fn(), delete: vi.fn() } }));
+vi.mock("react-toastify", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
   Element.prototype.scrollIntoView = () => {};
 });
 
@@ -23,7 +23,7 @@ function escolher(rotulo, opcao) {
 
 test("soma os lotes dentro da validade, barra quantidade acima do saldo e envia da loja atual", async () => {
   api.post.mockResolvedValue({ id: 9 });
-  const onSalvo = jest.fn();
+  const onSalvo = vi.fn();
   render(
     <ModalTransferencia
       origem={unidades[0]}
@@ -62,7 +62,7 @@ test("admin desfaz a transferência depois de confirmar na linha", async () => {
     },
   ]);
   api.delete.mockResolvedValue(null);
-  const onCancelada = jest.fn();
+  const onCancelada = vi.fn();
   render(<ListaTransferencias podeCancelar recarregar={0} onCancelada={onCancelada} />);
 
   fireEvent.click(await screen.findByRole("button", { name: /Desfazer/ }));

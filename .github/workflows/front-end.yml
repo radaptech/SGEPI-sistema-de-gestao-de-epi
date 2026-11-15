@@ -20,15 +20,14 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
           cache: npm
           cache-dependency-path: SGEPI-FRONT-END/package-lock.json
 
       - run: npm ci
 
       - name: build
-        # CI=true (padrão do Actions): warning de lint quebra o build
         run: npm run build
 
       - name: testes
-        run: npm test -- --watchAll=false
+        run: npx vitest run

@@ -1,6 +1,6 @@
 # Imagem de desenvolvimento: o código entra pelo volume do docker-compose.dev.yml
 # e roda com o dev server (hot reload). Não gera build de produção aqui.
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 

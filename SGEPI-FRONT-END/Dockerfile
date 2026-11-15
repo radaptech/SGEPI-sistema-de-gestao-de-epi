@@ -1,7 +1,7 @@
 # ==========================================
 # ESTÁGIO 1: Construir a aplicação (Build)
 # ==========================================
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 
 # Define a pasta de trabalho dentro do contêiner
 WORKDIR /app
@@ -10,18 +10,18 @@ WORKDIR /app
 COPY package*.json ./
 
 # Instala as dependências
-RUN npm install
+RUN npm ci
 
 # Copia o resto do código do repositório
 COPY . .
 
-# Roda o build do React (Gera a pasta 'dist' se for Vite, ou 'build' se for CRA)
+# Roda o build do Vite (sai em 'build', configurado no vite.config.js)
 RUN npm run build
 
 # ==========================================
 # ESTÁGIO 2: Servir a aplicação na nuvem
 # ==========================================
-FROM node:18-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
@@ -29,8 +29,6 @@ WORKDIR /app
 RUN npm install -g serve
 
 # Copia APENAS os arquivos compilados do estágio anterior
-# ATENÇÃO: Se você usa Vite, a pasta gerada é 'dist'. 
-# Se usa Create React App, mude a palavra 'dist' abaixo para 'build'.
 COPY --from=builder /app/build ./build
 
 # O Railway injeta a variável $PORT automaticamente. 

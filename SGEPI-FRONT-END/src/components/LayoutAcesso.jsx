@@ -58,7 +58,7 @@ export default function LayoutAcesso({ titulo, subtitulo, children, rodape }) {
     <div className="min-h-screen flex flex-col lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] bg-canvas font-sans">
       <aside className="bg-painel text-painel-ink flex flex-col px-6 py-5 sm:px-10 lg:px-14 lg:py-12">
         <div className="flex items-center justify-between gap-4">
-          <img src={`${process.env.PUBLIC_URL}/radaptech.png`} alt="RadapTech" width="480" height="274" className="w-20 lg:w-36 h-auto" />
+          <img src={`${import.meta.env.BASE_URL}radaptech.png`} alt="RadapTech" width="480" height="274" className="w-20 lg:w-36 h-auto" />
           <span className="lg:hidden text-lg font-bold tracking-tight">SGEPI</span>
         </div>
 

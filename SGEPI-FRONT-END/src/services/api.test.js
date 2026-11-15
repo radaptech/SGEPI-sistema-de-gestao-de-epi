@@ -1,11 +1,11 @@
 import { api } from "./api";
 import { escolherUnidade } from "./unidadeAtual";
 
-jest.mock("react-toastify", () => ({ toast: { error: jest.fn() } }));
+vi.mock("react-toastify", () => ({ toast: { error: vi.fn() } }));
 
 beforeEach(() => {
   localStorage.clear();
-  global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 200, headers: { get: () => "application/json" }, json: async () => [], text: async () => "[]" });
+  global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, headers: { get: () => "application/json" }, json: async () => [], text: async () => "[]" });
 });
 
 test("manda a loja escolhida no header X-Unidade-ID, e nada em 'todas'", async () => {

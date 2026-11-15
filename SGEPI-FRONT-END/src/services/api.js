@@ -3,7 +3,7 @@ import { unidadeAtual } from "./unidadeAtual";
 
 const DEFAULT_BASE_URL = "https://homolog.radaptech.com.br/api";
 
-let envUrl = process.env.REACT_APP_API_URL || DEFAULT_BASE_URL;
+let envUrl = import.meta.env.REACT_APP_API_URL || DEFAULT_BASE_URL;
 
 if (envUrl && !envUrl.startsWith("http")) {
     envUrl = `https://${envUrl}`;
