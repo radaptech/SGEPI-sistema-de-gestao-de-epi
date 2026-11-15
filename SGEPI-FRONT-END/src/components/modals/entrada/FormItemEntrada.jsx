@@ -23,13 +23,13 @@ function validar(item) {
   return erros;
 }
 
-function OpcoesEpi({ lista }) {
-  return lista.map((epi) => (
+// função, não componente: o Selecao lê as <option> direto dos filhos, sem renderizar componentes
+const opcoesEpi = (lista) =>
+  lista.map((epi) => (
     <option key={epi.id} value={epi.id}>
       {epi.nome}
     </option>
   ));
-}
 
 // Linha de inclusão de item da nota. Valida e entrega o item pronto para onIncluir.
 // episDoFornecedor: os já comprados do fornecedor escolhido aparecem primeiro, num grupo à parte.
@@ -99,16 +99,16 @@ export default function FormItemEntrada({ episDoFornecedor, outrosEpis, carregan
           {episDoFornecedor.length > 0 ? (
             <>
               <optgroup label="Já comprados deste fornecedor">
-                <OpcoesEpi lista={episDoFornecedor} />
+                {opcoesEpi(episDoFornecedor)}
               </optgroup>
               {outrosEpis.length > 0 && (
                 <optgroup label="Outros EPIs">
-                  <OpcoesEpi lista={outrosEpis} />
+                  {opcoesEpi(outrosEpis)}
                 </optgroup>
               )}
             </>
           ) : (
-            <OpcoesEpi lista={outrosEpis} />
+            opcoesEpi(outrosEpis)
           )}
         </Selecao>
       </Campo>

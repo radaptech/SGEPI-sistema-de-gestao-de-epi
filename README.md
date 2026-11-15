@@ -20,7 +20,7 @@ o front só precisa de `REACT_APP_API_URL` em `SGEPI-FRONT-END/.env`.
 
 ```sh
 cd gestao-de-epi--backEnd && go test ./... -p 1
-cd SGEPI-FRONT-END && npm run build && npx vitest run
+cd SGEPI-FRONT-END && npm run lint && npm run build && npx vitest run
 ```
 
 O CI roda o back e o front separados (`.github/workflows/`), cada um só quando a pasta dele muda.

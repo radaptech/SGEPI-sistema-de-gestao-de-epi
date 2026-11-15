@@ -37,3 +37,12 @@ test("com duas unidades, a unidade é obrigatória", async () => {
   fireEvent.click(screen.getByRole("button", { name: /finalizar/i }));
   expect(screen.getByText("Escolha em qual unidade o material vai entrar.")).toBeInTheDocument();
 });
+
+test("lista os EPIs no campo EPI", async () => {
+  api.get.mockResolvedValue([{ id: 1, nome: "Principal" }]);
+  entradaService.listarEpis.mockResolvedValue([{ id: 7, nome: "Luva nitrílica", tamanhos: [] }]);
+  render(<ModalEntrada onClose={() => {}} />);
+  await screen.findByText("Selecione o EPI...");
+  fireEvent.click(screen.getByLabelText(/EPI/));
+  expect(screen.getByRole("option", { name: "Luva nitrílica" })).toBeInTheDocument();
+});
