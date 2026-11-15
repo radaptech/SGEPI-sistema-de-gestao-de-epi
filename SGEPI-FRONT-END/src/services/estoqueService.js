@@ -30,11 +30,5 @@ export function ValidarRegrasCancelamento(item) {
   return true; // Se chegou aqui, passou em todas as regras!
 }
 
-export async function CancelarEntrada(id) {
-  try {
-    await api.delete(`/gerencial/entrada/${id}`);
-  } catch (erro) {
-    console.error(`Erro ao cancelar entrada com id ${id}:`, erro);
-    throw new Error("Não foi possível cancelar a entrada. Tente novamente.");
-  }
-}
+// erro do servidor o api.js já mostra
+export const CancelarEntrada = (id) => api.delete(`/gerencial/entrada/${id}`);

@@ -79,3 +79,57 @@ export function getValidadeTexto(status) {
   if (status === "proximo") return "Próx. venc.";
   return "Regular";
 }
+
+const qtd = (item) => Number(item.quantidadeAtual || 0);
+const baixo = (item) => qtd(item) > 0 && qtd(item) <= Number(item.alertaMinimo || 0);
+
+// dd/mm/aaaa ou ISO -> timestamp; sem data vai para o fim
+function timestamp(data) {
+  if (!data || data === "-") return 0;
+  if (data.includes("/")) {
+    const [dia, mes, ano] = data.split("/");
+    return new Date(ano, mes - 1, dia).getTime();
+  }
+  return new Date(data).getTime();
+}
+
+// Filtro da tela de estoque. filtro é o campo escolhido; alguns têm regra própria:
+// logica_estoque (baixo | vazio | disponivel), status_validade (vencido | proximo | normal),
+// data_entrada (aaaa-mm-dd do input date). Os demais procuram o texto no campo do lote.
+export function filtrarEstoque(lotes, filtro, busca) {
+  const termo = busca.toLowerCase().trim();
+  if (!termo) return lotes;
+
+  return lotes.filter((item) => {
+    if (filtro === "logica_estoque") {
+      if (termo === "baixo") return baixo(item);
+      if (termo === "vazio") return qtd(item) <= 0;
+      if (termo === "disponivel") return qtd(item) > 0;
+      return true;
+    }
+    if (filtro === "status_validade") {
+      const status = calcularStatusValidade(item.validade);
+      return termo === "em_dia" ? status === "normal" : status === termo;
+    }
+    if (filtro === "data_entrada") {
+      const partes = (item.data_entrada || "").split("/");
+      return partes.length === 3 && `${partes[2]}-${partes[1]}-${partes[0]}` === termo;
+    }
+    return String(item[filtro] ?? "").toLowerCase().includes(termo);
+  });
+}
+
+// mais recentes primeiro; na mesma data, por nome
+export function ordenarPorEntrada(lotes) {
+  return [...lotes].sort((a, b) => timestamp(b.data_entrada) - timestamp(a.data_entrada) || (a.nome || "").localeCompare(b.nome || ""));
+}
+
+export function resumirEstoque(lotes) {
+  return {
+    totalLotes: lotes.length,
+    totalItens: lotes.reduce((acc, item) => acc + qtd(item), 0),
+    estoqueBaixo: lotes.filter(baixo).length,
+    semEstoque: lotes.filter((item) => qtd(item) <= 0).length,
+    valorTotal: lotes.reduce((acc, item) => acc + Number(item.valorTotal || 0), 0),
+  };
+}
