@@ -12,13 +12,14 @@ RUN go mod download
 # Copia todo o resto do seu código
 COPY . .
 
-# Compila o binário otimizado
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o main .
+# Compila o binário otimizado. VERSAO vem do release (tag vX.Y.Z) e aparece no GET /api.
+ARG VERSAO=dev
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s -X github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/routers.Versao=${VERSAO}" -o main .
 
 # ==========================================
 # ESTÁGIO 2: A Imagem Final (Produção)
 # ==========================================
-FROM alpine:latest
+FROM alpine:3.22
 
 WORKDIR /app
 

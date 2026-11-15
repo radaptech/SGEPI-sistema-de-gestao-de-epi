@@ -3,11 +3,12 @@ name: Front-end
 # Monorepo: só roda quando o front (ou este arquivo) muda.
 on:
   push:
-    branches: [main, dev, homologacao]
+    branches: [dev, homologacao] # na main os testes rodam dentro do release.yml
     paths: ['SGEPI-FRONT-END/**', '.github/workflows/front-end.yml']
   pull_request:
     paths: ['SGEPI-FRONT-END/**', '.github/workflows/front-end.yml']
   workflow_dispatch:
+  workflow_call: # o release.yml chama antes de gerar as imagens
 
 jobs:
   build:

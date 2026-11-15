@@ -408,9 +408,10 @@ os metadados globais estão em `main.go`. Rode `swag init` após alterar rotas �
   login/sessão e o fluxo EPI → entrada → entrega → devolução num tenant criado na hora.
   `make e2e` (passe `E2E_EMAIL`/`E2E_SENHA` se o super admin do seu `.env` não usar os defaults do
   `seed.go`). O `/login` tem rate limit: rodar a suíte várias vezes seguidas dá 429.
-- CI (`.github/workflows/cicd.yml`): roda `go test -v ./... -p 1` nos pushes/PRs para
-  `main`, `dev` e `homologacao`, com `setup-go` em `go-version: '1.26'` — alinhado ao `go.mod`.
-  Ao subir a linha `go` do `go.mod`, atualize também essa chave e o `FROM golang:` dos Dockerfiles.
+- CI (`.github/workflows/back-end.yml`, na raiz do monorepo): gofmt, vet e `go test -v ./... -p 1` nos
+  pushes para `dev`/`homologacao` e em PRs, com a versão do Go lida do `go.mod`. Na `main` ele roda dentro
+  do `release.yml`, que só gera as imagens do Docker Hub e a tag `vX.Y.Z` se back, front e e2e passarem
+  (ver "Deploy" no README da raiz). Ao subir a linha `go` do `go.mod`, atualize o `FROM golang:` dos Dockerfiles.
 
 ---
 

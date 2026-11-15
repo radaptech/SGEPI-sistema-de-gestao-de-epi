@@ -15,6 +15,11 @@ RUN npm ci
 # Copia o resto do código do repositório
 COPY . .
 
+# O Vite grava a URL da API dentro do JS no build: ela tem que chegar aqui como build arg.
+# Sem ela, o api.js cai no endereço padrão (homologação).
+ARG REACT_APP_API_URL
+ENV REACT_APP_API_URL=${REACT_APP_API_URL}
+
 # Roda o build do Vite (sai em 'build', configurado no vite.config.js)
 RUN npm run build
 
@@ -26,7 +31,7 @@ FROM node:22-alpine
 WORKDIR /app
 
 # Instala o pacote 'serve' globalmente para rodar o site
-RUN npm install -g serve
+RUN npm install -g serve@14.2.4
 
 # Copia APENAS os arquivos compilados do estágio anterior
 COPY --from=builder /app/build ./build

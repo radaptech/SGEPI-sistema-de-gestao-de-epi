@@ -95,6 +95,11 @@ func NewContainer(db *pgxpool.Pool) *Container {
 		Empresas:        *controller.NewEmpresaController(empresaService),
 	}
 }
+
+// Versao vem da tag do release (-ldflags "-X .../internal/routers.Versao=1.2.3" no Dockerfile).
+// GET /api mostra qual versão está no ar.
+var Versao = "dev"
+
 func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 
 	queries := repository.New(db)
@@ -114,13 +119,14 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "online",
 			"message": "Bem-vindo à API do Sistema de Gestão de EPIs - Radaptech",
-			"version": "1.0.0",
+			"version": Versao,
 		})
 	})
 	r.GET("/api", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "online",
 			"message": "API operando normalmente. Acesse a documentação do Swagger para ver as rotas.",
+			"version": Versao,
 		})
 	})
 	api := r.Group("/api")

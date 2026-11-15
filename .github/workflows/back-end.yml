@@ -3,11 +3,12 @@ name: Back-end
 # Monorepo: só roda quando o back (ou este arquivo) muda.
 on:
   push:
-    branches: [main, dev, homologacao]
+    branches: [dev, homologacao] # na main os testes rodam dentro do release.yml
     paths: ['gestao-de-epi--backEnd/**', '.github/workflows/back-end.yml']
   pull_request:
     paths: ['gestao-de-epi--backEnd/**', '.github/workflows/back-end.yml']
   workflow_dispatch:
+  workflow_call: # o release.yml chama antes de gerar as imagens
 
 jobs:
   testes-Unitarios:

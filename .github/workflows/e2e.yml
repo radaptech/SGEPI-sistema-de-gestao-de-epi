@@ -4,9 +4,10 @@ name: E2E
 # e roda o Playwright contra ele, do jeito que o dev usa: *.localhost na porta 80.
 on:
   push:
-    branches: [main, dev, homologacao]
+    branches: [dev, homologacao] # na main os testes rodam dentro do release.yml
   pull_request:
   workflow_dispatch:
+  workflow_call: # o release.yml chama antes de gerar as imagens
 
 jobs:
   e2e:
