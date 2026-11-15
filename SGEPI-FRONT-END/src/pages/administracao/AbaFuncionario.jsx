@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "react-toastify";
-import { Users, Search, Plus, PenLine, Trash2, Loader2, UserSearch, Building2, Briefcase } from "lucide-react";
+import { Users, PenLine, Trash2, UserSearch, Building2, Briefcase } from "lucide-react";
 import { api } from "../../services/api";
 import Selecao from "../../components/Selecao";
 import Paginacao, { usePaginacao, PAGINACAO_SOLTA } from "../../components/Paginacao";
 import ModalFuncionario from "./ModalFuncionario";
+import { AcoesLinha, CabecalhoLista, EstadoLista } from "../../components/Cadastro";
 
 const th = "p-4 text-xs font-bold text-ink-2 uppercase tracking-wide";
 const rotulo = "block text-xs uppercase font-bold text-ink-3 tracking-wide mb-1";
@@ -32,20 +33,6 @@ function Departamento({ f }) {
       <Building2 className="w-3 h-3" />
       {f.funcao?.departamento?.departamento || "-"}
     </span>
-  );
-}
-
-function Vazio({ carregando, mensagemCarregando }) {
-  return carregando ? (
-    <div className="flex flex-col items-center justify-center gap-3 py-16 text-ink-3">
-      <Loader2 className="w-8 h-8 animate-spin text-ink" />
-      <span className="font-medium text-sm">{mensagemCarregando}</span>
-    </div>
-  ) : (
-    <div className="flex flex-col items-center justify-center gap-3 py-16 text-ink-3">
-      <UserSearch className="w-10 h-10 opacity-50" strokeWidth={1.5} />
-      <span className="font-medium text-sm">Nenhum funcionário encontrado.</span>
-    </div>
   );
 }
 
@@ -114,59 +101,38 @@ export default function AbaFuncionarios() {
 
   return (
     <div>
-      <div className="flex flex-col lg:flex-row gap-5 lg:items-center lg:justify-between">
-        <div className="flex-1 max-w-2xl">
-          <h2 className="text-xl font-bold text-ink mb-3 flex items-center gap-2">
-            <Users className="w-5 h-5 text-ink" />
-            Funcionários
-          </h2>
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            {variasUnidades && (
-              <div className="sm:w-56 shrink-0">
-                <label htmlFor="abafuncionario-filtro-unidade" className="sr-only">
-                  Filtrar por unidade
-                </label>
-                <Selecao
-                  id="abafuncionario-filtro-unidade"
-                  className="w-full h-[46px] px-4 border border-line bg-sunken rounded-md text-sm text-ink"
-                  value={filtroUnidade}
-                  onChange={(e) => setFiltroUnidade(e.target.value)}
-                >
-                  <option value="">Todas as unidades</option>
-                  {unidades.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.nome}
-                    </option>
-                  ))}
-                </Selecao>
-              </div>
-            )}
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-3 pointer-events-none" />
-              <input
-                className="w-full h-[46px] pl-11 pr-4 border border-line bg-sunken rounded-md focus:ring-1 focus:ring-ink focus:border-ink outline-none text-sm transition-all text-ink placeholder-ink-3"
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                placeholder="Nome, CPF, matrícula, departamento ou função..."
-              />
-            </div>
+      <CabecalhoLista
+        icone={Users}
+        titulo="Funcionários"
+        busca={busca}
+        onBusca={setBusca}
+        placeholder="Nome, CPF, matrícula, departamento ou função..."
+        total={filtrados.length}
+        carregando={carregando}
+        textoNovo="Cadastrar"
+        onNovo={() => setEditando(null)}
+      >
+        {variasUnidades && (
+          <div className="sm:w-56 shrink-0">
+            <label htmlFor="abafuncionario-filtro-unidade" className="sr-only">
+              Filtrar por unidade
+            </label>
+            <Selecao
+              id="abafuncionario-filtro-unidade"
+              className="w-full h-[46px] px-4 border border-line bg-sunken rounded-md text-sm text-ink"
+              value={filtroUnidade}
+              onChange={(e) => setFiltroUnidade(e.target.value)}
+            >
+              <option value="">Todas as unidades</option>
+              {unidades.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.nome}
+                </option>
+              ))}
+            </Selecao>
           </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4 shrink-0">
-          <div className="hidden sm:block text-right pr-4 border-r border-line">
-            <p className="text-xs font-bold text-ink-3 uppercase tracking-wide mb-1">Total</p>
-            <p className="text-2xl font-bold text-ink">{carregando ? "..." : filtrados.length}</p>
-          </div>
-          <button
-            onClick={() => setEditando(null)}
-            className="h-[46px] px-6 bg-action hover:bg-action-hover text-on-action font-bold rounded-md transition-all flex items-center justify-center gap-2 text-sm"
-          >
-            <Plus className="w-5 h-5" strokeWidth={2.5} /> Cadastrar
-          </button>
-        </div>
-      </div>
+        )}
+      </CabecalhoLista>
 
       <div className="hidden lg:block bg-surface rounded-md border border-line overflow-hidden">
         <div className="overflow-x-auto">
@@ -186,7 +152,7 @@ export default function AbaFuncionarios() {
               {carregando || pagina.length === 0 ? (
                 <tr>
                   <td colSpan={variasUnidades ? 6 : 5}>
-                    <Vazio carregando={carregando} mensagemCarregando="Sincronizando dados..." />
+                    <EstadoLista carregando={carregando} icone={UserSearch} mensagem="Nenhum funcionário encontrado." />
                   </td>
                 </tr>
               ) : (
@@ -208,22 +174,7 @@ export default function AbaFuncionarios() {
                     </td>
                     {variasUnidades && <td className="p-4 text-ink-2 font-medium">{f.unidade?.nome || "-"}</td>}
                     <td className="p-4">
-                      <div className="flex items-center justify-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => setEditando(f)}
-                          className="w-8 h-8 flex items-center justify-center rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition-colors"
-                          title="Editar"
-                        >
-                          <PenLine className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => excluir(f.id)}
-                          className="w-8 h-8 flex items-center justify-center rounded-md text-ink-3 hover:text-erro hover:bg-erro-soft transition-colors"
-                          title="Excluir"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      <AcoesLinha onEditar={() => setEditando(f)} onExcluir={() => excluir(f.id)} />
                     </td>
                   </tr>
                 ))
@@ -236,7 +187,7 @@ export default function AbaFuncionarios() {
       <div className="lg:hidden flex flex-col gap-4">
         {carregando || pagina.length === 0 ? (
           <div className="bg-surface border border-dashed border-line rounded-md">
-            <Vazio carregando={carregando} mensagemCarregando="Carregando dados..." />
+            <EstadoLista carregando={carregando} icone={UserSearch} mensagem="Nenhum funcionário encontrado." />
           </div>
         ) : (
           pagina.map((f) => (

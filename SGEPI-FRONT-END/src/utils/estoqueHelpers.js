@@ -24,7 +24,8 @@ export function formatarPreco(valor) {
   }).format(Number(valor || 0));
 }
 
-export function calcularStatusValidade(dataString) {
+// vencido | proximo (vence em até diasAlerta dias) | normal
+export function calcularStatusValidade(dataString, diasAlerta = 30) {
   if (!dataString) return "normal";
 
   const hoje = new Date();
@@ -39,7 +40,7 @@ export function calcularStatusValidade(dataString) {
   const diffDias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
   if (diffDias < 0) return "vencido";
-  if (diffDias <= 30) return "proximo";
+  if (diffDias <= diasAlerta) return "proximo";
   return "normal";
 }
 

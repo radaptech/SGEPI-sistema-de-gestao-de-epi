@@ -1,4 +1,4 @@
-import { Loader2, PenLine, Plus, Save, Trash2 } from "lucide-react";
+import { Loader2, PenLine, Plus, Save, Search, Trash2 } from "lucide-react";
 
 // Peças das abas de cadastro da Administração (departamentos, funções, fornecedores):
 // cartão do formulário "Novo X / Editar X", lista "X Cadastrados" e os botões de cada linha.
@@ -111,4 +111,53 @@ export function AcoesCartao({ onEditar, onExcluir, children }) {
 
 export function Rotulo({ children }) {
   return <span className="block text-xs uppercase font-bold text-ink-3 tracking-wide mb-0.5">{children}</span>;
+}
+
+// Topo das listas com busca (EPIs, funcionários): título, filtros, busca, total e botão de cadastrar.
+// children entra antes da busca (ex.: filtro de unidade).
+export function CabecalhoLista({ icone: Icone, titulo, busca, onBusca, placeholder, total, carregando, textoNovo, onNovo, children }) {
+  return (
+    <div className="flex flex-col lg:flex-row gap-5 lg:items-center lg:justify-between">
+      <div className="flex-1 max-w-2xl">
+        <h2 className="text-xl font-bold text-ink mb-3 flex items-center gap-2">
+          <Icone className="w-5 h-5 text-ink" />
+          {titulo}
+        </h2>
+        <div className="flex flex-col sm:flex-row gap-3">
+          {children}
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-3 pointer-events-none" />
+            <input
+              className="w-full h-[46px] pl-11 pr-4 border border-line bg-sunken rounded-md focus:ring-1 focus:ring-ink focus:border-ink outline-none text-sm transition-all text-ink placeholder-ink-3"
+              value={busca}
+              onChange={(e) => onBusca(e.target.value)}
+              placeholder={placeholder}
+            />
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 shrink-0">
+        <div className="hidden sm:block text-right pr-4 border-r border-line">
+          <p className="text-xs font-bold text-ink-3 uppercase tracking-wide mb-1">Total</p>
+          <p className="text-2xl font-bold text-ink">{carregando ? "..." : total}</p>
+        </div>
+        <button
+          onClick={onNovo}
+          className="h-[46px] px-6 bg-action hover:bg-action-hover text-on-action font-bold rounded-md transition-all flex items-center justify-center gap-2 text-sm"
+        >
+          <Plus className="w-5 h-5" strokeWidth={2.5} /> {textoNovo}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Carregando ou lista vazia, no lugar das linhas.
+export function EstadoLista({ carregando, textoCarregando = "Carregando dados...", icone: Icone, mensagem }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 py-16 text-ink-3">
+      {carregando ? <Loader2 className="w-8 h-8 animate-spin text-ink" /> : <Icone className="w-10 h-10 opacity-50" strokeWidth={1.5} />}
+      <span className="font-medium text-sm">{carregando ? textoCarregando : mensagem}</span>
+    </div>
+  );
 }
