@@ -162,7 +162,7 @@ function Estoque({ usuarioLogado }) {
         />
       )}
 
-      <ModalDetalhesEstoque aberto={!!itemDetalhe} item={itemDetalhe} onClose={() => setItemDetalhe(null)} />
+      <ModalDetalhesEstoque aberto={!!itemDetalhe} item={itemDetalhe} onClose={() => setItemDetalhe(null)} geradoPor={usuarioLogado?.nome} />
     </>
   );
 }

@@ -2,8 +2,9 @@ import { useEffect } from "react";
 import { formatarPreco, formatarValidade } from "../../utils/estoqueHelpers";
 import { X, Download } from "lucide-react";
 import Dialogo from "../Dialogo";
+import { cabecalho, novoPdf, rodape, secao } from "../../utils/pdfDocumento";
 
-function ModalDetalhesEstoque({ aberto, item, onClose }) {
+function ModalDetalhesEstoque({ aberto, item, onClose, geradoPor }) {
   useEffect(() => {
     if (aberto) {
       document.body.style.overflow = "hidden";
@@ -17,57 +18,32 @@ function ModalDetalhesEstoque({ aberto, item, onClose }) {
 
   if (!aberto || !item) return null;
 
-  // o jspdf (~400 kB) só carrega quando alguém pede o PDF
   const gerarPDF = async () => {
-    const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
-    const doc = new jsPDF();
-    const dataEmissao = new Date().toLocaleDateString("pt-BR");
-
-    doc.setFontSize(18);
-    doc.text("Dados de Controle de estoque do EPI", 14, 22);
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Emitido em: ${dataEmissao}`, 14, 30);
-    doc.text(`Lote: ${item.lote || "N/A"}`, 14, 35);
-    doc.setLineWidth(0.5);
-    doc.line(14, 40, 196, 40);
-
-    const tableBody = [
-      ["Nome do EPI", item.nome],
-      ["Fabricante", item.fabricante || "-"],
-      ["CA", item.ca || "-"],
-      ["Proteção", item.tipoProtecao || "-"],
-      ["Tamanho", item.tamanho || "-"],
-      ["Lote", item.lote || "-"],
-      ["Preço Unit.", formatarPreco(item.preco)],
-      ["Qtd. Inicial", String(item.quantidadeInicial)],
-      ["Qtd. Atual", String(item.quantidadeAtual)],
-      ["Validade", formatarValidade(item.validade)],
-      ["Entrada no estoque ", item.data_entrada || "-"],
-    ];
-
-    autoTable(doc, {
-      startY: 45,
-      head: [["Campo", "Informação"]],
-      body: tableBody,
-      theme: "striped",
-      headStyles: { fillColor: [59, 130, 246] },
-      styles: { fontSize: 10 },
+    const { doc, autoTable } = await novoPdf("Detalhes do lote em estoque");
+    let y = cabecalho(doc, {
+      titulo: "DETALHES DO LOTE EM ESTOQUE",
+      subtitulo: "Situação de um lote de Equipamento de Proteção Individual",
+      numero: item.lote ? `Lote ${item.lote}` : undefined,
     });
-
-    const finalY = doc.lastAutoTable.finalY + 10;
-    doc.setFontSize(11);
-    doc.setTextColor(40);
-    doc.text("Descrição / Observações:", 14, finalY);
-    doc.setFontSize(10);
-    doc.setTextColor(80);
-    const splitDesc = doc.splitTextToSize(
-      item.descricao || "Sem descrição adicional.",
-      180
-    );
-    doc.text(splitDesc, 14, finalY + 7);
-
-    doc.save(`EPI_${item.nome.replace(/\s+/g, "_")}.pdf`);
+    y = secao(doc, autoTable, y, "EPI", [
+      { rotulo: "Nome", valor: item.nome, largo: true },
+      { rotulo: "CA", valor: item.ca },
+      { rotulo: "Tamanho", valor: item.tamanho },
+      { rotulo: "Fabricante", valor: item.fabricante },
+      { rotulo: "Proteção", valor: item.tipoProtecao },
+      { rotulo: "Descrição", valor: item.descricao, largo: true },
+    ]);
+    secao(doc, autoTable, y, "Lote", [
+      { rotulo: "Lote", valor: item.lote },
+      { rotulo: "Entrada no estoque", valor: item.data_entrada },
+      { rotulo: "Validade", valor: formatarValidade(item.validade) },
+      { rotulo: "Preço unitário", valor: formatarPreco(item.preco) },
+      { rotulo: "Quantidade inicial", valor: `${item.quantidadeInicial} un.` },
+      { rotulo: "Quantidade atual", valor: `${item.quantidadeAtual} un.` },
+      { rotulo: "Valor em estoque", valor: formatarPreco(item.quantidadeAtual * item.preco) },
+    ]);
+    rodape(doc, geradoPor);
+    doc.save(`Lote_${item.nome}_${item.lote || item.id}.pdf`.replace(/[^\wÀ-ú.-]+/g, "_"));
   };
 
   const InfoCard = ({ label, value }) => (

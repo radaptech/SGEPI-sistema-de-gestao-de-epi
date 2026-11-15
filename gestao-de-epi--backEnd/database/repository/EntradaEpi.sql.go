@@ -359,6 +359,7 @@ SELECT
     nf.Idfornecedor,
     f.nome_fantasia,
     f.razao_social,
+    f.cnpj as fornecedor_cnpj,
     nf.nota_fiscal_numero, 
     nf.nota_fiscal_serie, 
     ei.cancelada_em,
@@ -422,6 +423,7 @@ type ListarEntradasRow struct {
 	Idfornecedor     int32
 	NomeFantasia     string
 	RazaoSocial      string
+	FornecedorCnpj   string
 	NotaFiscalNumero string
 	NotaFiscalSerie  pgtype.Text
 	CanceladaEm      pgtype.Timestamp
@@ -470,6 +472,7 @@ func (q *Queries) ListarEntradas(ctx context.Context, arg ListarEntradasParams) 
 			&i.Idfornecedor,
 			&i.NomeFantasia,
 			&i.RazaoSocial,
+			&i.FornecedorCnpj,
 			&i.NotaFiscalNumero,
 			&i.NotaFiscalSerie,
 			&i.CanceladaEm,

@@ -35,7 +35,9 @@ type EntradaEpiDto struct {
 	IDFornecedor int `json:"id_fornecedor"`
 
 	// 2. Linha do tempo
-	DataEntrada configs.DataBr `json:"data_entrada"`
+	DataEntrada    configs.DataBr `json:"data_entrada"`
+	DataFabricacao configs.DataBr `json:"data_fabricacao"`
+	DataValidade   configs.DataBr `json:"data_validade"`
 
 	// 3. Valores e informações da operação
 	Quantidade       int             `json:"quantidade"`
@@ -93,4 +95,5 @@ type FornecedorSimples struct {
 	ID           int    `json:"id"`
 	NomeFantasia string `json:"nome_fantasia"`
 	RazaoSocial  string `json:"razao_social"`
+	Cnpj         string `json:"cnpj,omitempty"`
 }

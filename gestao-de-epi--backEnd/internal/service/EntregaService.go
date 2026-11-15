@@ -373,24 +373,39 @@ func (e *EntregaService) GerarDadosPdfService(ctx context.Context, matricula str
 		return helper.DadosPdf{}, err
 	}
 
-	epis := make([]helper.DadosEpiPdf, 0)
+	// O FEFO pode tirar o mesmo EPI de dois lotes: na ficha ele sai numa linha só, somado.
+	epis := make([]helper.DadosEpiPdf, 0, len(entregas))
+	posicao := map[string]int{}
 	for _, ent := range entregas {
+		chave := fmt.Sprintf("%s|%s|%d", ent.EpiNome, ent.Ca, ent.IDTamanho)
+		if i, ok := posicao[chave]; ok {
+			epis[i].Quantidade += ent.Quantidade
+			continue
+		}
+		posicao[chave] = len(epis)
 		epis = append(epis, helper.DadosEpiPdf{
-			Data: *configs.NewDataBrPtr(ent.DataEntrega.Time), NomeEpi: ent.EpiNome,
-			Ca: ent.Ca, Descricao: ent.Descricao, Tamanho: ent.Tamanho, Quantidade: ent.Quantidade,
+			NomeEpi: ent.EpiNome, Ca: ent.Ca, Descricao: ent.Descricao, Tamanho: ent.Tamanho, Quantidade: ent.Quantidade,
 		})
 	}
 
 	primeira := entregas[0]
 	return helper.DadosPdf{
-		NomeEmpresa:     primeira.RazaoSocial,
-		NomeFuncionario: primeira.FuncNome,
-		Cpf:             primeira.Cpf.String,
-		Matricula:       strconv.Itoa(int(primeira.Matricula)),
-		Setor:           primeira.DepNome,
-		Cargo:           primeira.FuncaoNome,
-		Assinatura:      primeira.Assinatura,
-		Epi:             epis,
+		FichaPdf: helper.FichaPdf{
+			Numero:          primeira.EntregaID,
+			Token:           primeira.TokenValidacao.String,
+			NomeEmpresa:     primeira.RazaoSocial,
+			Cnpj:            primeira.Cnpj,
+			Unidade:         primeira.UnidadeNome,
+			NomeFuncionario: primeira.FuncNome,
+			Cpf:             primeira.Cpf.String,
+			Matricula:       strconv.Itoa(int(primeira.Matricula)),
+			Setor:           primeira.DepNome,
+			Cargo:           primeira.FuncaoNome,
+			Assinatura:      primeira.Assinatura,
+		},
+		Data:        configs.DataBr(primeira.DataEntrega.Time),
+		EntreguePor: primeira.EntreguePor,
+		Epi:         epis,
 	}, nil
 }
 

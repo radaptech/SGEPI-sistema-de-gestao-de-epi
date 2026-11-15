@@ -168,6 +168,8 @@ func (e *EntradaService) ListarEntradas(ctx context.Context, f FiltroEntradas, t
 			IDTamanho:        int(ent.IDTamanho),
 			IDFornecedor:     int(ent.Idfornecedor),
 			DataEntrada:      *configs.NewDataBrPtr(ent.DataEntrada.Time),
+			DataFabricacao:   configs.DataBr(ent.DataFabricacao.Time),
+			DataValidade:     configs.DataBr(ent.DataValidade.Time),
 			Quantidade:       int(ent.Quantidade),
 			QuantidadeAtual:  int(ent.QuantidadeAtual),
 			ValorUnitario:    valorDecimal,
@@ -189,6 +191,7 @@ func (e *EntradaService) ListarEntradas(ctx context.Context, f FiltroEntradas, t
 				ID:           int(ent.Idfornecedor),
 				NomeFantasia: ent.NomeFantasia,
 				RazaoSocial:  ent.RazaoSocial,
+				Cnpj:         ent.FornecedorCnpj,
 			},
 		})
 	}

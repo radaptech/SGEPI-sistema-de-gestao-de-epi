@@ -218,9 +218,11 @@ recebe `sem-upload://<pasta>/<token>_<unix>.<ext>` e a ficha PDF sai sem a image
 
 ### Geração de PDF
 
-`internal/helper/pdfHelperEntrega.go` e `pdfHelperDevolucao.go` usam **maroto/v2** para montar a
-ficha de EPI (com código de barras e a imagem da assinatura baixada da URL, rotacionada quando
-necessário). Rotas: `GET /api/gerencial/:matricula/ficha-pdf/:id` e
+`internal/helper/pdfHelperEntrega.go` e `pdfHelperDevolucao.go` usam **maroto/v2** para montar as
+fichas sobre as peças de `pdfHelperComum.go` (cabeçalho com nº e código de validação, seções com rótulo,
+tabela que quebra linha, rodapé com QR code e página em toda folha). A imagem da assinatura é baixada
+da URL e rotacionada quando necessário. Os PDFs do front (comprovante de entrada, detalhes do lote) usam
+jsPDF com o mesmo visual, em `SGEPI-FRONT-END/src/utils/pdfDocumento.js`. Rotas: `GET /api/gerencial/:matricula/ficha-pdf/:id` e
 `GET /api/gerencial/devolucoes/:id/pdf`.
 
 ### Matrícula do funcionário

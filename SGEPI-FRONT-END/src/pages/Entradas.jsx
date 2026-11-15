@@ -170,7 +170,7 @@ function Entradas({ usuarioLogado }) {
           </div>
         ) : (
           <>
-            <TabelaEntradas itens={itens} onComprovante={baixarComprovanteEntrada} />
+            <TabelaEntradas itens={itens} onComprovante={(entrada) => baixarComprovanteEntrada(entrada, usuarioLogado?.nome)} />
             <Paginacao {...paginacao} className="mt-6 flex items-center justify-between" />
           </>
         )}

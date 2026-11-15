@@ -397,30 +397,40 @@ func (d *DevolucaoService) GerarDadosPdf(ctx context.Context, idDevolucao, tenan
 		return helper.DadosDevolucaoPdf{}, err
 	}
 
-	matString := strconv.Itoa(int(devolucao.Matricula))
 	epi := helper.ItemDevolvidoPdf{
 		DataDevolucao:       configs.DataBr(devolucao.DataDevolucao.Time),
 		NomeEpi:             devolucao.EpiNome,
+		Ca:                  devolucao.Ca,
 		Tamanho:             devolucao.Tamanho,
 		QuantidadeADevolver: devolucao.Quantidadeadevolver,
 		Motivo:              devolucao.Motivo,
+		Descarte:            devolucao.GeraDescarte,
 		HouveTroca:          devolucao.HouveTroca.Bool,
 	}
 
 	if devolucao.HouveTroca.Bool {
 		epi.EpiNovo = devolucao.EpiNovo.String
+		epi.CaNovo = devolucao.CaNovo.String
 		epi.TamanhoNovo = devolucao.TamanhoNovo.String
 		epi.QuantidadeNova = devolucao.Quantidadenova.Int32
-
 	}
 	return helper.DadosDevolucaoPdf{
-		NomeEmpresa:     devolucao.NomeEmpresa,
-		NomeFuncionario: devolucao.FuncionarioNome,
-		Matricula:       matString,
-		Setor:           devolucao.Setor,
-		Cargo:           devolucao.Cargo,
-		Assinatura:      devolucao.AssinaturaDigital,
-		Itens:           epi,
+		FichaPdf: helper.FichaPdf{
+			Numero:          devolucao.ID,
+			Token:           devolucao.TokenValidacao.String,
+			NomeEmpresa:     devolucao.NomeEmpresa,
+			Cnpj:            devolucao.Cnpj,
+			Unidade:         devolucao.UnidadeNome,
+			NomeFuncionario: devolucao.FuncionarioNome,
+			Cpf:             devolucao.Cpf.String,
+			Matricula:       strconv.Itoa(int(devolucao.Matricula)),
+			Setor:           devolucao.Setor,
+			Cargo:           devolucao.Cargo,
+			Assinatura:      devolucao.AssinaturaDigital,
+		},
+		RecebidoPor: devolucao.RecebidoPor,
+		Cancelada:   !devolucao.Ativo,
+		Observacao:  devolucao.Observacao.String,
+		Item:        epi,
 	}, nil
-
 }

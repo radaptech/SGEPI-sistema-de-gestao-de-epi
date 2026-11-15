@@ -150,19 +150,22 @@ func (q *Queries) AddTrocaEpi(ctx context.Context, arg AddTrocaEpiParams) (int32
 const buscarDadosPdfDevolucao = `-- name: BuscarDadosPdfDevolucao :one
 
 SELECT 
-    em.razao_social AS nome_empresa, 
-    f.nome AS funcionario_nome, 
+    d.id,
+    em.razao_social AS nome_empresa, em.cnpj,
+    f.nome AS funcionario_nome, f.cpf,
     f.matricula, 
     dep.nome AS setor, 
     ff.nome AS cargo, 
-    d.assinatura_digital,
+    un.nome AS unidade_nome,
+    COALESCE(u.nome, '')::text AS recebido_por,
+    d.assinatura_digital, d.token_validacao, d.ativo, d.observacao,
     d.data_devolucao, 
     d.quantidadeadevolver, 
-    e.nome AS epi_nome, 
+    e.nome AS epi_nome, e.ca,
     t.tamanho, 
-    m.motivo, 
+    m.motivo, m.gera_descarte,
     d.houve_troca,               
-    en.nome AS epi_novo, 
+    en.nome AS epi_novo, en.ca AS ca_novo,
     tn.tamanho AS tamanho_novo, 
     d.quantidadenova
 FROM devolucao d
@@ -170,9 +173,11 @@ INNER JOIN empresas em ON em.id = d.tenant_id
 INNER JOIN funcionario f ON f.id = d.idfuncionario
 INNER JOIN funcao ff ON ff.id = f.idfuncao
 INNER JOIN departamento dep ON dep.id = f.iddepartamento
+INNER JOIN unidade un ON un.id = d.id_unidade AND un.tenant_id = d.tenant_id
 INNER JOIN epi e ON e.id = d.idepi
 INNER JOIN tamanho t ON t.id = d.idtamanho
 INNER JOIN motivo_devolucao m ON m.id = d.idmotivo
+LEFT JOIN usuarios u ON u.id = d.id_usuario_cancelamento
 LEFT JOIN epi en ON en.id = d.idepinovo      
 LEFT JOIN tamanho tn ON tn.id = d.idtamanhonovo 
 WHERE d.id = $1 AND d.tenant_id = $2
@@ -184,41 +189,64 @@ type BuscarDadosPdfDevolucaoParams struct {
 }
 
 type BuscarDadosPdfDevolucaoRow struct {
+	ID                  int32
 	NomeEmpresa         string
+	Cnpj                string
 	FuncionarioNome     string
+	Cpf                 pgtype.Text
 	Matricula           int32
 	Setor               string
 	Cargo               string
+	UnidadeNome         string
+	RecebidoPor         string
 	AssinaturaDigital   string
+	TokenValidacao      pgtype.Text
+	Ativo               bool
+	Observacao          pgtype.Text
 	DataDevolucao       pgtype.Date
 	Quantidadeadevolver int32
 	EpiNome             string
+	Ca                  string
 	Tamanho             string
 	Motivo              string
+	GeraDescarte        bool
 	HouveTroca          pgtype.Bool
 	EpiNovo             pgtype.Text
+	CaNovo              pgtype.Text
 	TamanhoNovo         pgtype.Text
 	Quantidadenova      pgtype.Int4
 }
 
 // Pega do lote mais recente para o mais antigo
+// Dados da ficha de devolução (PDF). id_usuario_cancelamento guarda quem registrou a devolução.
 func (q *Queries) BuscarDadosPdfDevolucao(ctx context.Context, arg BuscarDadosPdfDevolucaoParams) (BuscarDadosPdfDevolucaoRow, error) {
 	row := q.db.QueryRow(ctx, buscarDadosPdfDevolucao, arg.ID, arg.TenantID)
 	var i BuscarDadosPdfDevolucaoRow
 	err := row.Scan(
+		&i.ID,
 		&i.NomeEmpresa,
+		&i.Cnpj,
 		&i.FuncionarioNome,
+		&i.Cpf,
 		&i.Matricula,
 		&i.Setor,
 		&i.Cargo,
+		&i.UnidadeNome,
+		&i.RecebidoPor,
 		&i.AssinaturaDigital,
+		&i.TokenValidacao,
+		&i.Ativo,
+		&i.Observacao,
 		&i.DataDevolucao,
 		&i.Quantidadeadevolver,
 		&i.EpiNome,
+		&i.Ca,
 		&i.Tamanho,
 		&i.Motivo,
+		&i.GeraDescarte,
 		&i.HouveTroca,
 		&i.EpiNovo,
+		&i.CaNovo,
 		&i.TamanhoNovo,
 		&i.Quantidadenova,
 	)

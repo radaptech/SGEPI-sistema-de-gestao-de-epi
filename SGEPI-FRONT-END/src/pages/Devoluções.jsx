@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import Paginacao from "../components/Paginacao";
-import { toast } from "react-toastify";
-import { api } from "../services/api";
-
 import ModalBaixa from "../components/modals/ModalBaixa";
 import ModalDetalhesTroca from "../components/modals/ModalDetalhesTroca";
 import { useDevolucoes } from "../hooks/useDevolucoes";
 import { temPermissao } from "../utils/permissoes";
 import { formatarData } from "../utils/devolucoes";
+import { baixarFichaDevolucao } from "../utils/pdfUtils";
 
 import { AlertTriangle, Plus, Search, X, FileDown, RefreshCw, XCircle } from "lucide-react";
 
@@ -45,20 +43,9 @@ function Devolucoes({ usuarioLogado }) {
   const handleBaixarPdf = async (id) => {
     try {
       setBaixandoPdfId(id);
-      const response = await api.get(`/gerencial/devolucoes/${id}/pdf`, { responseType: 'blob' });
-      const arquivoByte = response.data ? response.data : response;
-
-      const url = window.URL.createObjectURL(new Blob([arquivoByte], { type: 'application/pdf' }));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `Ficha_TROCA_EPI_${id}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Erro ao baixar o PDF:", error);
-      toast.error("Não foi possível baixar o PDF desta entrega.");
+      await baixarFichaDevolucao(id);
+    } catch {
+      // o api.js já mostrou o erro
     } finally {
       setBaixandoPdfId(null);
     }

@@ -99,20 +99,24 @@ WHERE tenant_id = $1
 ORDER BY id DESC; -- Pega do lote mais recente para o mais antigo
 
 -- name: BuscarDadosPdfDevolucao :one
+-- Dados da ficha de devolução (PDF). id_usuario_cancelamento guarda quem registrou a devolução.
 SELECT 
-    em.razao_social AS nome_empresa, 
-    f.nome AS funcionario_nome, 
+    d.id,
+    em.razao_social AS nome_empresa, em.cnpj,
+    f.nome AS funcionario_nome, f.cpf,
     f.matricula, 
     dep.nome AS setor, 
     ff.nome AS cargo, 
-    d.assinatura_digital,
+    un.nome AS unidade_nome,
+    COALESCE(u.nome, '')::text AS recebido_por,
+    d.assinatura_digital, d.token_validacao, d.ativo, d.observacao,
     d.data_devolucao, 
     d.quantidadeadevolver, 
-    e.nome AS epi_nome, 
+    e.nome AS epi_nome, e.ca,
     t.tamanho, 
-    m.motivo, 
+    m.motivo, m.gera_descarte,
     d.houve_troca,               
-    en.nome AS epi_novo, 
+    en.nome AS epi_novo, en.ca AS ca_novo,
     tn.tamanho AS tamanho_novo, 
     d.quantidadenova
 FROM devolucao d
@@ -120,9 +124,11 @@ INNER JOIN empresas em ON em.id = d.tenant_id
 INNER JOIN funcionario f ON f.id = d.idfuncionario
 INNER JOIN funcao ff ON ff.id = f.idfuncao
 INNER JOIN departamento dep ON dep.id = f.iddepartamento
+INNER JOIN unidade un ON un.id = d.id_unidade AND un.tenant_id = d.tenant_id
 INNER JOIN epi e ON e.id = d.idepi
 INNER JOIN tamanho t ON t.id = d.idtamanho
 INNER JOIN motivo_devolucao m ON m.id = d.idmotivo
+LEFT JOIN usuarios u ON u.id = d.id_usuario_cancelamento
 LEFT JOIN epi en ON en.id = d.idepinovo      
 LEFT JOIN tamanho tn ON tn.id = d.idtamanhonovo 
 WHERE d.id = $1 AND d.tenant_id = $2;

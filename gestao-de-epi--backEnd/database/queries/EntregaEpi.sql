@@ -88,18 +88,23 @@ WHERE IdTroca = $1
 RETURNING id;
 
 -- name: ListarHistoricoEntregasPorMatricula :many
+-- Dados da ficha de entrega (PDF): uma linha por lote consumido.
 SELECT 
-    emp.razao_social as razao_social,
+    emp.razao_social as razao_social, emp.cnpj,
     f.id as func_id, f.nome as func_nome, f.cpf ,f.matricula,
     d.id as dep_id, d.nome as dep_nome,
     ff.id as funcao_id, ff.nome as funcao_nome,
-    ee.data_entrega, i.quantidade, e.ca, e.nome AS epi_nome, e.descricao,
+    ee.id as entrega_id, ee.data_entrega, ee.token_validacao,
+    un.nome as unidade_nome, COALESCE(u.nome, '')::text as entregue_por,
+    i.quantidade, e.ca, e.nome AS epi_nome, e.descricao,
     i.id_tamanho, t.tamanho, ee.assinatura
 FROM entrega_epi ee
 INNER JOIN empresas emp ON ee.tenant_id = emp.id
 INNER JOIN funcionario f ON ee.IdFuncionario = f.id
 INNER JOIN departamento d ON f.IdDepartamento = d.id
 INNER JOIN funcao ff ON f.IdFuncao = ff.id
+INNER JOIN unidade un ON un.id = ee.id_unidade AND un.tenant_id = ee.tenant_id
+LEFT JOIN usuarios u ON u.id = ee.id_usuario_entrega
 INNER JOIN epis_entregues i ON i.id_entrega_cabecalho = ee.id
 INNER JOIN epi e ON e.id = i.id_epi
 INNER JOIN tamanho t ON t.id = i.id_tamanho
@@ -107,7 +112,7 @@ WHERE f.matricula = $1
 AND ee.tenant_id = $2
 and ee.id = $3
 AND ee.ativo = TRUE
-ORDER BY ee.data_entrega DESC, ee.id DESC;
+ORDER BY i.id;
 
 -- name: EntregaDashbord :many
 SELECT

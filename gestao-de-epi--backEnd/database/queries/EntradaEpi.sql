@@ -33,6 +33,7 @@ SELECT
     nf.Idfornecedor,
     f.nome_fantasia,
     f.razao_social,
+    f.cnpj as fornecedor_cnpj,
     nf.nota_fiscal_numero, 
     nf.nota_fiscal_serie, 
     ei.cancelada_em,
