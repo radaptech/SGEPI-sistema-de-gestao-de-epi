@@ -1,7 +1,5 @@
 import { useEffect } from "react";
 import { formatarPreco, formatarValidade } from "../../utils/estoqueHelpers";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { X, Download } from "lucide-react";
 import Dialogo from "../Dialogo";
 
@@ -19,7 +17,9 @@ function ModalDetalhesEstoque({ aberto, item, onClose }) {
 
   if (!aberto || !item) return null;
 
-  const gerarPDF = () => {
+  // o jspdf (~400 kB) só carrega quando alguém pede o PDF
+  const gerarPDF = async () => {
+    const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
     const doc = new jsPDF();
     const dataEmissao = new Date().toLocaleDateString("pt-BR");
 

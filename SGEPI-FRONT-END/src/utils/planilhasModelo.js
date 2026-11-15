@@ -1,12 +1,12 @@
-import * as XLSX from "xlsx";
-
 // Planilhas-modelo da importação em lote. As primeiras linhas são orientações; o leitor do back
 // procura a linha de cabeçalho, então os nomes das colunas não podem mudar.
+// O xlsx (~400 kB) só carrega quando alguém baixa um modelo.
 
-function salvar(linhas, opcoes, larguras, aba, arquivo, ajustar = () => {}) {
+async function salvar(linhas, opcoes, larguras, aba, arquivo, ajustar = () => {}) {
+  const XLSX = await import("xlsx");
   const planilha = XLSX.utils.json_to_sheet(linhas, opcoes);
   planilha["!cols"] = larguras.map((wch) => ({ wch }));
-  ajustar(planilha);
+  ajustar(planilha, XLSX);
   const livro = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(livro, planilha, aba);
   XLSX.writeFile(livro, arquivo);
@@ -58,7 +58,7 @@ export function baixarModeloFornecedores() {
   ];
 
   // skipHeader: o cabeçalho de verdade é a última linha acima, não o topo
-  salvar(linhas, { skipHeader: true }, [45, 30, 22, 22], "Fornecedores", "modelo_importacao_fornecedores.xlsx", (planilha) => {
+  salvar(linhas, { skipHeader: true }, [45, 30, 22, 22], "Fornecedores", "modelo_importacao_fornecedores.xlsx", (planilha, XLSX) => {
     // CNPJ e inscrição como texto, para não perder zeros nem formatação
     const faixa = XLSX.utils.decode_range(planilha["!ref"]);
     for (let r = faixa.s.r; r <= faixa.e.r; ++r) {
