@@ -14,7 +14,6 @@ function ModalDetalhesDashboard({
   subColunas = null,
   chaveSubItens = "itens",
   dados = [],
-  tipo = "tabela",
   onClose,
 }) {
   const [paginaAtual, setPaginaAtual] = useState(1);

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import ModalNovaMensalidade from "../../components/modals/master/ModalNovaMensalidade";
 import ModalEditarMensalidade from "../../components/modals/master/ModalEditarMensalidade";
 import ModalConfirmarPagamento from "../../components/modals/master/ModalConfirmarPagamento";
@@ -12,17 +12,6 @@ function Mensalidades() {
   const [modalNovaAberto, setModalNovaAberto] = useState(false);
   const [modalEditarAberto, setModalEditarAberto] = useState(false);
   const [modalPagamentoAberto, setModalPagamentoAberto] = useState(false);
-
-  useEffect(() => {
-    const carregarMensalidades = async () => {
-      try {
-      } catch (error) {
-        setMensalidades([]);
-      }
-    };
-
-    carregarMensalidades();
-  }, []);
 
   const mensalidadesFiltradas = useMemo(() => {
     if (!Array.isArray(mensalidades)) return [];

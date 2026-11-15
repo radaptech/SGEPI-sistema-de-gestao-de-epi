@@ -26,6 +26,10 @@ jobs:
 
       - run: npm ci
 
+      # o CRA rodava o lint no build; com o vite ele é um passo à parte
+      - name: lint
+        run: npm run lint
+
       - name: build
         run: npm run build
 

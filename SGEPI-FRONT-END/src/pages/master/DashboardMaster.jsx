@@ -45,7 +45,7 @@ const getAlertaClass = (nivel) => {
   }
 };
 
-function DashboardMaster({ usuarioLogado }) {
+function DashboardMaster() {
   const [resumo, setResumo] = useState({});
   const [empresasRecentes, setEmpresasRecentes] = useState([]);
   const [planosDisponiveis, setPlanosDisponiveis] = useState([]);
