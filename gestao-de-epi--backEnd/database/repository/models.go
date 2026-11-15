@@ -69,6 +69,7 @@ type Empresa struct {
 	Responsavel  pgtype.Text
 	Email        pgtype.Text
 	Telefone     pgtype.Text
+	LogoKey      pgtype.Text
 }
 
 type EntradaEpiItem struct {

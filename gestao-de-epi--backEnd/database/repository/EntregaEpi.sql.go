@@ -556,7 +556,7 @@ func (q *Queries) ListarFaltasKit(ctx context.Context, arg ListarFaltasKitParams
 
 const listarHistoricoEntregasPorMatricula = `-- name: ListarHistoricoEntregasPorMatricula :many
 SELECT 
-    emp.razao_social as razao_social, emp.cnpj,
+    emp.razao_social as razao_social, emp.cnpj, COALESCE(emp.logo_key, '')::text as logo_key,
     f.id as func_id, f.nome as func_nome, f.cpf ,f.matricula,
     d.id as dep_id, d.nome as dep_nome,
     ff.id as funcao_id, ff.nome as funcao_nome,
@@ -590,6 +590,7 @@ type ListarHistoricoEntregasPorMatriculaParams struct {
 type ListarHistoricoEntregasPorMatriculaRow struct {
 	RazaoSocial    string
 	Cnpj           string
+	LogoKey        string
 	FuncID         int32
 	FuncNome       string
 	Cpf            pgtype.Text
@@ -625,6 +626,7 @@ func (q *Queries) ListarHistoricoEntregasPorMatricula(ctx context.Context, arg L
 		if err := rows.Scan(
 			&i.RazaoSocial,
 			&i.Cnpj,
+			&i.LogoKey,
 			&i.FuncID,
 			&i.FuncNome,
 			&i.Cpf,

@@ -653,6 +653,31 @@ const docTemplate = `{
                 }
             }
         },
+        "/empresa/logo": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "PNG da logo; 204 sem corpo quando a empresa não tem (o front mostra toast em todo não-2xx).",
+                "produces": [
+                    "image/png"
+                ],
+                "tags": [
+                    "Empresas"
+                ],
+                "summary": "Logo da empresa",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
         "/empresa/{id}": {
             "put": {
                 "security": [
@@ -2205,6 +2230,62 @@ const docTemplate = `{
                 }
             }
         },
+        "/gerencial/empresa/logo": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "PNG ou JPG de até 2 MB (campo \"file\"). Vai no cabeçalho das fichas em PDF.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "tags": [
+                    "Empresas"
+                ],
+                "summary": "Enviar a logo da empresa",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Logo (PNG ou JPG)",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Empresas"
+                ],
+                "summary": "Remover a logo da empresa",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
         "/gerencial/transferencias/{id}": {
             "delete": {
                 "description": "Devolve o estoque à origem. Recusa (409) se o destino já usou parte dele.",
@@ -3026,6 +3107,12 @@ const docTemplate = `{
                     "description": "2. Linha do tempo",
                     "type": "string"
                 },
+                "data_fabricacao": {
+                    "type": "string"
+                },
+                "data_validade": {
+                    "type": "string"
+                },
                 "epi": {
                     "description": "4. Objetos completos (Relacionamentos)",
                     "allOf": [
@@ -3575,6 +3662,9 @@ const docTemplate = `{
         "model.FornecedorSimples": {
             "type": "object",
             "properties": {
+                "cnpj": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },

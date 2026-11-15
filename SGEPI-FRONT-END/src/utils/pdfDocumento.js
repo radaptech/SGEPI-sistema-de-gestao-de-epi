@@ -1,3 +1,5 @@
+import { api } from "../services/api";
+
 // Peças comuns dos PDFs gerados no navegador, no mesmo visual das fichas que a API gera.
 // O jspdf (~400 kB) só carrega quando alguém pede um PDF.
 
@@ -6,29 +8,47 @@ const CINZA = [105, 112, 120];
 const FUNDO = [238, 240, 243];
 const TEXTO = 25;
 
+const paraDataUrl = (blob) =>
+  new Promise((ok, erro) => {
+    const leitor = new FileReader();
+    leitor.onload = () => ok(leitor.result);
+    leitor.onerror = erro;
+    leitor.readAsDataURL(blob);
+  });
+
 // Símbolo da RadapTech para o rodapé (só o "D" azul: o texto da logo é branco e some no papel).
 // Sem conseguir baixar, o PDF sai sem ele.
 let simbolo;
 async function carregarSimbolo() {
   try {
-    const blob = await (await fetch(`${import.meta.env.BASE_URL}radaptech-simbolo.png`)).blob();
-    return await new Promise((ok, erro) => {
-      const leitor = new FileReader();
-      leitor.onload = () => ok(leitor.result);
-      leitor.onerror = erro;
-      leitor.readAsDataURL(blob);
-    });
+    return await paraDataUrl(await (await fetch(`${import.meta.env.BASE_URL}radaptech-simbolo.png`)).blob());
   } catch {
     return null;
   }
 }
 
+// Logo da empresa para o cabeçalho; a API responde 204 quando não tem. Lida a cada PDF,
+// porque o admin pode ter trocado a logo nesse meio-tempo.
+async function carregarLogoEmpresa() {
+  try {
+    const blob = await api.get("/empresa/logo");
+    return blob instanceof Blob ? await paraDataUrl(blob) : null;
+  } catch {
+    return null;
+  }
+}
+
+// logo: a da empresa, para passar ao cabecalho (null = sem logo).
 export async function novoPdf(titulo) {
-  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
+  const [{ default: jsPDF }, { default: autoTable }, logo] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+    carregarLogoEmpresa(),
+  ]);
   simbolo ??= await carregarSimbolo();
   const doc = new jsPDF();
   doc.setProperties({ title: titulo });
-  return { doc, autoTable };
+  return { doc, autoTable, logo };
 }
 
 const vazio = (v) => v === undefined || v === null || String(v).trim() === "" || v === "-" || v === "--";
@@ -39,13 +59,22 @@ export function formatarCnpj(cnpj) {
   return d.length === 14 ? d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") : cnpj;
 }
 
-// Título e número à direita, subtítulo e filete. Devolve o y onde o conteúdo começa.
-export function cabecalho(doc, { titulo, subtitulo, numero }) {
+// Logo da empresa (se tiver), título, número à direita, subtítulo e filete.
+// Devolve o y onde o conteúdo começa.
+export function cabecalho(doc, { titulo, subtitulo, numero, logo }) {
   const largura = doc.internal.pageSize.getWidth();
+  let x = MARGEM;
+  if (logo) {
+    // cabe numa caixa de 36x14mm sem distorcer
+    const { width, height } = doc.getImageProperties(logo);
+    const escala = Math.min(36 / width, 14 / height);
+    doc.addImage(logo, "PNG", MARGEM, 11, width * escala, height * escala);
+    x += width * escala + 6;
+  }
   doc.setTextColor(TEXTO);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(15);
-  doc.text(titulo, MARGEM, 20);
+  doc.text(titulo, x, 20);
   if (numero) {
     doc.setFontSize(11);
     doc.text(numero, largura - MARGEM, 20, { align: "right" });
@@ -53,7 +82,7 @@ export function cabecalho(doc, { titulo, subtitulo, numero }) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(...CINZA);
-  doc.text(subtitulo, MARGEM, 26);
+  doc.text(subtitulo, x, 26);
   doc.setDrawColor(TEXTO);
   doc.setLineWidth(0.4);
   doc.line(MARGEM, 30, largura - MARGEM, 30);

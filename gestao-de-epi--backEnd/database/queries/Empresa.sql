@@ -162,3 +162,9 @@ from empresas e
 inner join planos p on e.plano_id = p.id
 where e.id = @id
 FOR UPDATE;
+-- name: BuscarLogoEmpresa :one
+-- empresas.id é o próprio tenant
+SELECT COALESCE(logo_key, '')::text AS logo_key FROM empresas WHERE id = $1;
+
+-- name: DefinirLogoEmpresa :exec
+UPDATE empresas SET logo_key = sqlc.narg('logo_key') WHERE id = sqlc.arg('id');

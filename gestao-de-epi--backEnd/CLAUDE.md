@@ -222,7 +222,10 @@ recebe `sem-upload://<pasta>/<token>_<unix>.<ext>` e a ficha PDF sai sem a image
 fichas sobre as peças de `pdfHelperComum.go` (cabeçalho com nº e código de validação, seções com rótulo,
 tabela que quebra linha, rodapé com QR code e página em toda folha). A imagem da assinatura é baixada
 da URL e rotacionada quando necessário. Os PDFs do front (comprovante de entrada, detalhes do lote) usam
-jsPDF com o mesmo visual, em `SGEPI-FRONT-END/src/utils/pdfDocumento.js`. Rotas: `GET /api/gerencial/:matricula/ficha-pdf/:id` e
+jsPDF com o mesmo visual, em `SGEPI-FRONT-END/src/utils/pdfDocumento.js`. A logo da empresa (`empresas.logo_key`, chave
+no bucket `R2_BUCKET_NAME_LOGOS`) é enviada pelo admin em `PUT /api/gerencial/empresa/logo`, reduzida a
+800x400 PNG (`helper.PrepararLogo`) e lida por `GET /api/empresa/logo` (204 sem logo). Se o R2 falhar, a ficha
+sai sem logo em vez de dar erro. Rotas: `GET /api/gerencial/:matricula/ficha-pdf/:id` e
 `GET /api/gerencial/devolucoes/:id/pdf`.
 
 ### Matrícula do funcionário
@@ -423,7 +426,8 @@ Copie `.env-example` para `.env` (o `.env` está no `.gitignore`).
 | `RESEND_API_KEY` | Envio de e-mail de recuperação de senha (Resend) |
 | `URL_FRONTEND_FORMATO` | Template do link de redefinição, ex.: `http://%s:3000` (`%s` = subdomínio) |
 | `SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_PASSWORD` | Seed do super admin no boot |
-| `R2_IDCLOUDFLARE`, `R2_KEYID`, `R2_SECRETKEY`, `R2_BUCKET_NAME_BACKUPS` | Backup do banco no R2 — só usadas por `./main backup-banco` |
+| `R2_IDCLOUDFLARE`, `R2_KEYID`, `R2_SECRETKEY`, `R2_BUCKET_NAME_BACKUPS` | Backup do banco no R2 (`./main backup-banco`) |
+| `R2_BUCKET_NAME_LOGOS` | Bucket R2 da logo das empresas (mesmas credenciais). Vazio: upload da logo responde 422 e os PDFs saem sem logo |
 
 ---
 

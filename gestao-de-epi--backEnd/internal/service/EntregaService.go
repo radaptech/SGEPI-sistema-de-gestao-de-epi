@@ -395,6 +395,7 @@ func (e *EntregaService) GerarDadosPdfService(ctx context.Context, matricula str
 			Token:           primeira.TokenValidacao.String,
 			NomeEmpresa:     primeira.RazaoSocial,
 			Cnpj:            primeira.Cnpj,
+			LogoKey:         primeira.LogoKey,
 			Unidade:         primeira.UnidadeNome,
 			NomeFuncionario: primeira.FuncNome,
 			Cpf:             primeira.Cpf.String,

@@ -1,8 +1,10 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
 	"sort"
 	"time"
 
@@ -22,6 +24,8 @@ type EmpresaRepository interface {
 	EmpresasRecentes(ctx context.Context) ([]repository.EmpresasRecentesRow, error)
 	DadosEmpresas(ctx context.Context) ([]repository.DadosEmpresasRow, error)
 	EditarEmpresa(ctx context.Context, arg repository.EditarEmpresaParams) error
+	BuscarLogo(ctx context.Context, tenantId int32) (string, error)
+	DefinirLogo(ctx context.Context, tenantId int32, key string) error
 }
 
 type EmpresaService struct {
@@ -264,4 +268,69 @@ func (e *EmpresaService) EditarEmpresa(ctx context.Context, id int32, model mode
 
 	return nil
 
+}
+
+// SalvarLogo troca a logo da empresa. A antiga só sai do bucket depois que o banco já aponta
+// para a nova; cada envio tem uma chave nova, então nenhum cache fica com a imagem velha.
+func (e *EmpresaService) SalvarLogo(ctx context.Context, tenantId int32, arquivo []byte) error {
+	bucket := helper.BucketLogos()
+	if bucket == "" {
+		return helper.ErrLogoSemArmazenamento
+	}
+	logo, err := helper.PrepararLogo(arquivo)
+	if err != nil {
+		return err
+	}
+	antiga, err := e.repo.BuscarLogo(ctx, tenantId)
+	if err != nil {
+		return err
+	}
+
+	key := fmt.Sprintf("logos/%d/%d.png", tenantId, time.Now().UnixNano())
+	if err := helper.UploadArquivo(ctx, bucket, key, bytes.NewReader(logo), "image/png"); err != nil {
+		return err
+	}
+	if err := e.repo.DefinirLogo(ctx, tenantId, key); err != nil {
+		e.apagarLogo(ctx, key)
+		return err
+	}
+	e.apagarLogo(ctx, antiga)
+	return nil
+}
+
+func (e *EmpresaService) RemoverLogo(ctx context.Context, tenantId int32) error {
+	antiga, err := e.repo.BuscarLogo(ctx, tenantId)
+	if err != nil {
+		return err
+	}
+	if err := e.repo.DefinirLogo(ctx, tenantId, ""); err != nil {
+		return err
+	}
+	e.apagarLogo(ctx, antiga)
+	return nil
+}
+
+// Logo devolve o PNG da logo, ou nil quando a empresa não tem. Com o R2 fora do ar também
+// devolve nil: os PDFs saem sem logo em vez de falhar, igual às fichas da API.
+func (e *EmpresaService) Logo(ctx context.Context, tenantId int32) ([]byte, error) {
+	key, err := e.repo.BuscarLogo(ctx, tenantId)
+	if err != nil || key == "" {
+		return nil, err
+	}
+	logo, err := helper.BaixarArquivo(ctx, helper.BucketLogos(), key)
+	if err != nil {
+		slog.WarnContext(ctx, "ler logo da empresa no R2", "tenant", tenantId, "key", key, "err", err)
+		return nil, nil
+	}
+	return logo, nil
+}
+
+// apagarLogo: objeto que sobrar no bucket não quebra nada, então a falha só vai para o log.
+func (e *EmpresaService) apagarLogo(ctx context.Context, key string) {
+	if key == "" {
+		return
+	}
+	if err := helper.ApagarArquivo(ctx, helper.BucketLogos(), key); err != nil {
+		slog.WarnContext(ctx, "apagar logo antiga do R2", "key", key, "err", err)
+	}
 }

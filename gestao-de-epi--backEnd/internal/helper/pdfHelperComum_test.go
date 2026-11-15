@@ -24,6 +24,17 @@ func TestCreatePdfFichas(t *testing.T) {
 		NomeFuncionario: "José da Silva", Cpf: "12345678901", Matricula: "42", Setor: "Produção", Cargo: "Soldador"}
 	aud := Auditoria{DadosServidor: "10/11/2026 às 10:00:00", Ip: "127.0.0.1"}
 
+	t.Run("entrega com a logo da empresa", func(t *testing.T) {
+		usarLogoDeTeste(t, imagemDeTeste(t, "png", 400, 120))
+		comLogo := ficha
+		comLogo.LogoKey = "logos/1/x.png"
+		doc, err := CreatePdf(DadosPdf{FichaPdf: comLogo, Data: data}, aud, "Maria")
+		require.NoError(t, err)
+		semLogo, err := CreatePdf(DadosPdf{FichaPdf: ficha, Data: data}, aud, "Maria")
+		require.NoError(t, err)
+		assert.Greater(t, len(doc.GetBytes()), len(semLogo.GetBytes()), "a logo entra no PDF")
+	})
+
 	t.Run("entrega com mais itens do que cabem numa página", func(t *testing.T) {
 		itens := make([]DadosEpiPdf, 30)
 		for i := range itens {

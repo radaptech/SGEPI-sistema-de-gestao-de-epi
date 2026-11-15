@@ -151,7 +151,7 @@ const buscarDadosPdfDevolucao = `-- name: BuscarDadosPdfDevolucao :one
 
 SELECT 
     d.id,
-    em.razao_social AS nome_empresa, em.cnpj,
+    em.razao_social AS nome_empresa, em.cnpj, COALESCE(em.logo_key, '')::text AS logo_key,
     f.nome AS funcionario_nome, f.cpf,
     f.matricula, 
     dep.nome AS setor, 
@@ -192,6 +192,7 @@ type BuscarDadosPdfDevolucaoRow struct {
 	ID                  int32
 	NomeEmpresa         string
 	Cnpj                string
+	LogoKey             string
 	FuncionarioNome     string
 	Cpf                 pgtype.Text
 	Matricula           int32
@@ -226,6 +227,7 @@ func (q *Queries) BuscarDadosPdfDevolucao(ctx context.Context, arg BuscarDadosPd
 		&i.ID,
 		&i.NomeEmpresa,
 		&i.Cnpj,
+		&i.LogoKey,
 		&i.FuncionarioNome,
 		&i.Cpf,
 		&i.Matricula,

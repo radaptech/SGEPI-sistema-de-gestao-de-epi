@@ -102,7 +102,7 @@ ORDER BY id DESC; -- Pega do lote mais recente para o mais antigo
 -- Dados da ficha de devolução (PDF). id_usuario_cancelamento guarda quem registrou a devolução.
 SELECT 
     d.id,
-    em.razao_social AS nome_empresa, em.cnpj,
+    em.razao_social AS nome_empresa, em.cnpj, COALESCE(em.logo_key, '')::text AS logo_key,
     f.nome AS funcionario_nome, f.cpf,
     f.matricula, 
     dep.nome AS setor, 

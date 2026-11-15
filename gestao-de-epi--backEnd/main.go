@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
 
@@ -88,6 +89,10 @@ func main() {
 			fatal("registrar validador de CNPJ", err)
 		}
 	}
+
+	// Cliente do R2 para a logo das empresas. Fica depois do InitAplicattion, que é quem
+	// carrega o .env; sem as credenciais, só a logo deixa de funcionar.
+	helper.InitR2_cloudflare(context.Background())
 
 	container := routers.NewContainer(db)
 

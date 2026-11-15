@@ -5,7 +5,8 @@ import AbaFuncionarios from "./administracao/AbaFuncionario";
 import AbaEpis from "./administracao/AbaEpi";
 import AbaFornecedores from "./administracao/AbaFornecedores";
 import AbaUnidades from "./administracao/AbaUnidades";
-import { Factory, Building2, Briefcase, Users, ShieldCheck, Warehouse } from "lucide-react";
+import AbaEmpresa from "./administracao/AbaEmpresa";
+import { Factory, Building2, Briefcase, Users, ShieldCheck, Warehouse, Building } from "lucide-react";
 
 function Administracao() {
   const [abaAtiva, setAbaAtiva] = useState("fornecedores");
@@ -17,6 +18,7 @@ function Administracao() {
     { id: "funcionarios", label: "Funcionários", icone: <Users className="w-4 h-4" /> },
     { id: "epis", label: "EPIs", icone: <ShieldCheck className="w-4 h-4" /> },
     { id: "unidades", label: "Unidades", icone: <Warehouse className="w-4 h-4" /> },
+    { id: "empresa", label: "Empresa", icone: <Building className="w-4 h-4" /> },
   ];
 
   return (
@@ -60,6 +62,7 @@ function Administracao() {
         {abaAtiva === "funcionarios" && <AbaFuncionarios />}
         {abaAtiva === "epis" && <AbaEpis />}
         {abaAtiva === "unidades" && <AbaUnidades />}
+        {abaAtiva === "empresa" && <AbaEmpresa />}
       </div>
     </div>
   );

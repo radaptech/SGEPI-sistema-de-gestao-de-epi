@@ -37,6 +37,7 @@ type FichaPdf struct {
 	Setor           string
 	Cargo           string
 	Assinatura      string // URL da assinatura ou da foto no bucket
+	LogoKey         string // chave da logo da empresa no bucket R2 de logos ("" = sem logo)
 }
 
 var (
@@ -75,18 +76,28 @@ func novoDocumento(titulo string, f FichaPdf) core.Maroto {
 	return maroto.New(cfg)
 }
 
-// cabecalho: título e número da ficha, subtítulo e, se for o caso, o aviso de cancelamento.
+// cabecalho: logo da empresa (se tiver), título e subtítulo, número e código da ficha.
 func cabecalho(m core.Maroto, titulo, subtitulo string, f FichaPdf, cancelada bool) {
+	textos := func(tam int) core.Col {
+		return col.New(tam).Add(
+			text.New(titulo, props.Text{Size: 14, Style: fontstyle.Bold, Top: 3}),
+			text.New(subtitulo, props.Text{Size: 8, Color: corRotulo, Top: 10.5}),
+		)
+	}
+	numero := col.New(3).Add(
+		text.New(fmt.Sprintf("Nº %06d", f.Numero), props.Text{Size: 11, Style: fontstyle.Bold, Align: align.Right, Top: 3.5}),
+		text.New("Código "+valorOuTraco(f.Token), props.Text{Size: 8, Color: corRotulo, Align: align.Right, Top: 10.5}),
+	)
+
+	cols := []core.Col{textos(9), numero}
+	if logo := baixarLogoEmpresa(f.LogoKey); logo != nil {
+		// a logo fica numa caixa de 2 colunas x 16mm (~31mm), encostada à esquerda e sem distorcer
+		cols = []core.Col{col.New(2).Add(image.NewFromBytes(logo, extension.Png, props.Rect{Percent: 100})), textos(7), numero}
+	}
+
 	m.AddRows(
-		row.New().Add(
-			text.NewCol(9, titulo, props.Text{Size: 14, Style: fontstyle.Bold}),
-			text.NewCol(3, fmt.Sprintf("Nº %06d", f.Numero), props.Text{Size: 11, Style: fontstyle.Bold, Align: align.Right, Top: 1}),
-		),
-		row.New().Add(
-			text.NewCol(9, subtitulo, props.Text{Size: 8, Color: corRotulo, Top: 1}),
-			text.NewCol(3, "Código "+valorOuTraco(f.Token), props.Text{Size: 8, Color: corRotulo, Align: align.Right, Top: 1}),
-		),
-		row.New(4),
+		row.New(16).Add(cols...),
+		row.New(3),
 		line.NewRow(1, props.Line{Thickness: 0.4, SizePercent: 100}),
 	)
 	if cancelada {

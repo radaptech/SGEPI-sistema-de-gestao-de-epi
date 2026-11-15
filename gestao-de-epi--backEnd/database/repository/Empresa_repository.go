@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -97,4 +98,21 @@ func (e *EmpresaRepository) ValidaTotalFuncionario(ctx context.Context, id int32
 
 	return total, nil
 
+}
+
+func (e *EmpresaRepository) BuscarLogo(ctx context.Context, tenantId int32) (string, error) {
+	key, err := e.q.BuscarLogoEmpresa(ctx, tenantId)
+	if err != nil {
+		return "", helper.TraduzErroPostgres(err)
+	}
+	return key, nil
+}
+
+// DefinirLogo grava a chave da logo no bucket; key vazia tira a logo.
+func (e *EmpresaRepository) DefinirLogo(ctx context.Context, tenantId int32, key string) error {
+	err := e.q.DefinirLogoEmpresa(ctx, DefinirLogoEmpresaParams{ID: tenantId, LogoKey: pgtype.Text{String: key, Valid: key != ""}})
+	if err != nil {
+		return helper.TraduzErroPostgres(err)
+	}
+	return nil
 }

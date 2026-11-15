@@ -94,7 +94,8 @@ async function lerCorpoResposta(resposta) {
 
     if (
         contentType.includes("application/pdf") ||
-        contentType.includes("application/octet-stream")
+        contentType.includes("application/octet-stream") ||
+        contentType.startsWith("image/")
     ) {
         try {
             return await resposta.blob();

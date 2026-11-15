@@ -19,8 +19,9 @@ function ModalDetalhesEstoque({ aberto, item, onClose, geradoPor }) {
   if (!aberto || !item) return null;
 
   const gerarPDF = async () => {
-    const { doc, autoTable } = await novoPdf("Detalhes do lote em estoque");
+    const { doc, autoTable, logo } = await novoPdf("Detalhes do lote em estoque");
     let y = cabecalho(doc, {
+      logo,
       titulo: "DETALHES DO LOTE EM ESTOQUE",
       subtitulo: "Situação de um lote de Equipamento de Proteção Individual",
       numero: item.lote ? `Lote ${item.lote}` : undefined,

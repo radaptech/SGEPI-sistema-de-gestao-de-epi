@@ -60,3 +60,25 @@ func UploadArquivo(ctx context.Context, bucket, key string, corpo io.Reader, con
 
 	return nil
 }
+
+// BaixarArquivo lê um objeto do R2 (usado para a logo da empresa nas fichas).
+func BaixarArquivo(ctx context.Context, bucket, key string) ([]byte, error) {
+	if s3Client == nil || bucket == "" {
+		return nil, fmt.Errorf("R2 não configurado")
+	}
+	obj, err := s3Client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if err != nil {
+		return nil, fmt.Errorf("ler %s do R2: %w", key, err)
+	}
+	defer obj.Body.Close()
+	return io.ReadAll(obj.Body)
+}
+
+// ApagarArquivo remove um objeto do R2.
+func ApagarArquivo(ctx context.Context, bucket, key string) error {
+	if s3Client == nil || bucket == "" {
+		return fmt.Errorf("R2 não configurado")
+	}
+	_, err := s3Client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	return err
+}

@@ -420,6 +420,7 @@ func (d *DevolucaoService) GerarDadosPdf(ctx context.Context, idDevolucao, tenan
 			Token:           devolucao.TokenValidacao.String,
 			NomeEmpresa:     devolucao.NomeEmpresa,
 			Cnpj:            devolucao.Cnpj,
+			LogoKey:         devolucao.LogoKey,
 			Unidade:         devolucao.UnidadeNome,
 			NomeFuncionario: devolucao.FuncionarioNome,
 			Cpf:             devolucao.Cpf.String,

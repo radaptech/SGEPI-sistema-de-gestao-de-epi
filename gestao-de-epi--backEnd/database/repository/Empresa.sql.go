@@ -69,6 +69,18 @@ func (q *Queries) AlertasMaster(ctx context.Context) ([]AlertasMasterRow, error)
 	return items, nil
 }
 
+const buscarLogoEmpresa = `-- name: BuscarLogoEmpresa :one
+SELECT COALESCE(logo_key, '')::text AS logo_key FROM empresas WHERE id = $1
+`
+
+// empresas.id é o próprio tenant
+func (q *Queries) BuscarLogoEmpresa(ctx context.Context, id int32) (string, error) {
+	row := q.db.QueryRow(ctx, buscarLogoEmpresa, id)
+	var logo_key string
+	err := row.Scan(&logo_key)
+	return logo_key, err
+}
+
 const criarEmpresa = `-- name: CriarEmpresa :exec
 INSERT INTO empresas (
     nome_fantasia,
@@ -201,6 +213,20 @@ func (q *Queries) DadosEmpresas(ctx context.Context) ([]DadosEmpresasRow, error)
 		return nil, err
 	}
 	return items, nil
+}
+
+const definirLogoEmpresa = `-- name: DefinirLogoEmpresa :exec
+UPDATE empresas SET logo_key = $1 WHERE id = $2
+`
+
+type DefinirLogoEmpresaParams struct {
+	LogoKey pgtype.Text
+	ID      int32
+}
+
+func (q *Queries) DefinirLogoEmpresa(ctx context.Context, arg DefinirLogoEmpresaParams) error {
+	_, err := q.db.Exec(ctx, definirLogoEmpresa, arg.LogoKey, arg.ID)
+	return err
 }
 
 const editarEmpresa = `-- name: EditarEmpresa :exec

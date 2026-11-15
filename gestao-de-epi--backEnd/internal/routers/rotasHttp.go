@@ -172,6 +172,7 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 		//colaborador e adm tem acesso a essas rotas
 
 		api.GET("/me", c.Usuario.VerPerfil())
+		api.GET("/empresa/logo", c.Empresas.Logo())
 		//departamentos
 		api.GET("/departamentos", c.Departamento.ListarDepartamentos())
 		//unidades (lojas, obras, almoxarifados)
@@ -295,6 +296,8 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 
 			//devolucao
 			rotasAdm.GET("/devolucoes/:id/pdf", c.Devolucao.GerarFichaPDF())
+			rotasAdm.PUT("/empresa/logo", c.Empresas.SalvarLogo())
+			rotasAdm.DELETE("/empresa/logo", c.Empresas.RemoverLogo())
 
 		}
 	}

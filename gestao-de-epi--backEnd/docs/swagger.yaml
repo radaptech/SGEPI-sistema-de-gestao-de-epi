@@ -297,6 +297,10 @@ definitions:
       data_entrada:
         description: 2. Linha do tempo
         type: string
+      data_fabricacao:
+        type: string
+      data_validade:
+        type: string
       epi:
         allOf:
         - $ref: '#/definitions/model.EpiSimples'
@@ -670,6 +674,8 @@ definitions:
     type: object
   model.FornecedorSimples:
     properties:
+      cnpj:
+        type: string
       id:
         type: integer
       nome_fantasia:
@@ -1520,6 +1526,22 @@ paths:
       security:
       - BearerAut: []
       summary: Editar empresa
+      tags:
+      - Empresas
+  /empresa/logo:
+    get:
+      description: PNG da logo; 204 sem corpo quando a empresa não tem (o front mostra
+        toast em todo não-2xx).
+      produces:
+      - image/png
+      responses:
+        "200":
+          description: OK
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Logo da empresa
       tags:
       - Empresas
   /empresas:
@@ -2470,6 +2492,41 @@ paths:
       summary: Consultar CA na base do MTE
       tags:
       - EPIs
+  /gerencial/empresa/logo:
+    delete:
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Remover a logo da empresa
+      tags:
+      - Empresas
+    put:
+      consumes:
+      - multipart/form-data
+      description: PNG ou JPG de até 2 MB (campo "file"). Vai no cabeçalho das fichas
+        em PDF.
+      parameters:
+      - description: Logo (PNG ou JPG)
+        in: formData
+        name: file
+        required: true
+        type: file
+      responses:
+        "204":
+          description: No Content
+        "422":
+          description: Unprocessable Entity
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Enviar a logo da empresa
+      tags:
+      - Empresas
   /gerencial/transferencias/{id}:
     delete:
       description: Devolve o estoque à origem. Recusa (409) se o destino já usou parte

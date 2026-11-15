@@ -3,10 +3,11 @@ import { cabecalho, formatarCnpj, novoPdf, rodape, secao } from "./pdfDocumento"
 
 // PDF de comprovante de uma entrada (um item da nota). geradoPor: nome de quem baixou.
 export async function baixarComprovanteEntrada(entrada, geradoPor) {
-  const { doc, autoTable } = await novoPdf("Comprovante de entrada de EPI");
+  const { doc, autoTable, logo } = await novoPdf("Comprovante de entrada de EPI");
   const nf = [entrada.nota_fiscal_numero, entrada.nota_fiscal_serie].filter(Boolean).join(" / série ");
 
   let y = cabecalho(doc, {
+    logo,
     titulo: "COMPROVANTE DE ENTRADA DE EPI",
     subtitulo: "Registro de entrada de Equipamento de Proteção Individual no estoque",
     numero: `Nº ${String(entrada.id).padStart(6, "0")}`,
