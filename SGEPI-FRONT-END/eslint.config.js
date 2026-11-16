@@ -27,4 +27,5 @@ export default [
     },
   },
   { files: ["*.config.{js,cjs}"], languageOptions: { globals: globals.node } },
+  { files: ["public/**/*.js"], languageOptions: { globals: globals.browser } },
 ];
