@@ -178,7 +178,7 @@ jobs:
              | sub("\r$"; "")
              | select(test("^\\s*(export\\s+)?[A-Za-z_][A-Za-z0-9_]*="))
              | capture("^\\s*(export\\s+)?(?<k>[A-Za-z_][A-Za-z0-9_]*)=(?<v>.*)$")
-             | {(.k): (.v | if test("^\".*\"$") or test("^'.*'$") then .[1:-1] else . end)}
+             | {(.k): (.v | if test("^\".*\"$") or test("^\u0027.*\u0027$") then .[1:-1] else . end)}
             ] | add // {}')
           [ "$(jq 'length' <<< "$variaveis")" -gt 0 ] || { echo "::error::ENV_PRODUCAO sem nenhuma linha KEY=VALOR"; exit 1; }
           echo "Variáveis: $(jq -r 'keys | join(", ")' <<< "$variaveis")" >> "$GITHUB_STEP_SUMMARY"
