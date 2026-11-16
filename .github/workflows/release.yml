@@ -138,14 +138,36 @@ jobs:
         run: |
           set -euo pipefail
 
-          # chamada à API GraphQL do Railway; erro na resposta derruba o job
-          gql() {
-            local resposta
-            resposta=$(curl -sS https://backboard.railway.com/graphql/v2 \
+          railway() {
+            curl -sS https://backboard.railway.com/graphql/v2 \
               -H "Authorization: Bearer $RAILWAY_API_TOKEN" -H "Content-Type: application/json" \
-              -d "$(jq -n --arg q "$1" --argjson v "$2" '{query: $q, variables: $v}')")
+              -d "$(jq -n --arg q "$1" --argjson v "$2" '{query: $q, variables: $v}')"
+          }
+
+          # o que o projeto tem de verdade, para comparar com as variables do GitHub
+          diagnostico() {
+            railway 'query($id: String!) { project(id: $id) { name
+                environments { edges { node { id name } } }
+                services { edges { node { id name serviceInstances { edges { node { environmentId } } } } } } } }' \
+              "$(jq -n --arg id "$PROJETO" '{id: $id}')" | jq -r '
+                if .errors then "não deu para listar o projeto: \([.errors[].message])" else
+                .data.project as $p
+                | "Projeto \($p.name)",
+                  "Ambientes (RAILWAY_ENVIRONMENT_ID):",
+                  ($p.environments.edges[].node | "  \(.id)  \(.name)"),
+                  "Serviços (RAILWAY_SERVICOS) e ambientes em que existem:",
+                  ($p.services.edges[].node | "  \(.id)  \(.name)  [\([.serviceInstances.edges[].node.environmentId] | join(", "))]")
+                end' || true
+          }
+
+          # chamada à API GraphQL do Railway; erro na resposta derruba o job
+          gql() { # $1 = o que está fazendo, $2 = query, $3 = variáveis
+            local resposta
+            resposta=$(railway "$2" "$3")
             if jq -e '.errors // empty' >/dev/null <<< "$resposta"; then
-              echo "::error::Railway: $(jq -c '[.errors[].message]' <<< "$resposta")"
+              echo "::error::Railway ($1): $(jq -c '[.errors[].message]' <<< "$resposta")"
+              echo "Configurado: RAILWAY_ENVIRONMENT_ID=$AMBIENTE RAILWAY_SERVICOS=$SERVICOS"
+              diagnostico
               exit 1
             fi
           }
@@ -164,16 +186,16 @@ jobs:
           for servico in $SERVICOS; do
             # replace=false: variável que só existe no Railway (ex.: referência ao Postgres de lá) fica
             # skipDeploys: o deploy é um só, no fim, já com a imagem nova
-            gql 'mutation($input: VariableCollectionUpsertInput!) { variableCollectionUpsert(input: $input) }' \
+            gql "variáveis do serviço $servico" 'mutation($input: VariableCollectionUpsertInput!) { variableCollectionUpsert(input: $input) }' \
               "$(jq -n --arg p "$PROJETO" --arg e "$AMBIENTE" --arg s "$servico" --argjson v "$variaveis" \
                  '{input: {projectId: $p, environmentId: $e, serviceId: $s, variables: $v, skipDeploys: true}}')"
 
-            gql 'mutation($serviceId: String!, $environmentId: String!, $input: ServiceInstanceUpdateInput!) { serviceInstanceUpdate(serviceId: $serviceId, environmentId: $environmentId, input: $input) }' \
+            gql "imagem do serviço $servico" 'mutation($serviceId: String!, $environmentId: String!, $input: ServiceInstanceUpdateInput!) { serviceInstanceUpdate(serviceId: $serviceId, environmentId: $environmentId, input: $input) }' \
               "$(jq -n --arg e "$AMBIENTE" --arg s "$servico" --arg i "$IMAGEM" \
                  '{serviceId: $s, environmentId: $e, input: {source: {image: $i}}}')"
 
             # DeployV2 sobe a imagem recém-configurada (o redeploy repetiria a tag antiga)
-            gql 'mutation($serviceId: String!, $environmentId: String!) { serviceInstanceDeployV2(serviceId: $serviceId, environmentId: $environmentId) }' \
+            gql "deploy do serviço $servico" 'mutation($serviceId: String!, $environmentId: String!) { serviceInstanceDeployV2(serviceId: $serviceId, environmentId: $environmentId) }' \
               "$(jq -n --arg e "$AMBIENTE" --arg s "$servico" '{serviceId: $s, environmentId: $e}')"
 
             echo "- serviço $servico → $IMAGEM" >> "$GITHUB_STEP_SUMMARY"
