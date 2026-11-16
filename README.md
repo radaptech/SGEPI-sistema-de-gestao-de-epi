@@ -71,7 +71,12 @@ e `R2_*` (incluindo `R2_BUCKET_NAME_LOGOS`). Não ponha `PORT` nem `FRONT_DIR`: 
 e a imagem já traz o segundo. O job roda no environment `producao` do GitHub; em Settings → Environments
 dá para exigir aprovação antes de cada deploy.
 
-Railway, criando os serviços uma vez (a imagem e as variáveis o workflow preenche):
+Railway, criando os serviços uma vez. Crie cada um já com a imagem (New → Docker Image →
+`<usuario>/sgepi:<versão já publicada>`), não como serviço vazio: serviço sem fonte não tem instância no
+ambiente e o deploy do workflow falha com "Service Instance not found". Por isso o primeiro release só
+publica a imagem; conecte os serviços a ela e rode o `release.yml` de novo. Dali em diante o workflow
+troca a tag e grava as variáveis sozinho. Os IDs (`RAILWAY_*`) saem da URL de um serviço:
+`railway.com/project/<projeto>/service/<serviço>?environmentId=<ambiente>`.
 
 - **Web**: healthcheck em `/api`. As migrações rodam sozinhas no boot. Aponte o domínio e o curinga
   `*.radaptech.com.br` (um subdomínio por empresa) para este serviço.
