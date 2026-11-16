@@ -11,8 +11,8 @@ import (
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/database/repository"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/middleware"
 	"github.com/gin-gonic/gin"
-	"github.com/radaptech/ginmw"
 )
 
 type LoginService interface {
@@ -84,11 +84,7 @@ func (l *LoginController) Registrar() gin.HandlerFunc {
 				})
 				return
 			}
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 
 			return
 		}
@@ -117,7 +113,7 @@ func (l *LoginController) Login() gin.HandlerFunc {
 		}
 
 		// Único endpoint em que o tenant vem do header: ainda não existe sessão.
-		tenantID64, ok := ginmw.TenantIDFromHeader(c)
+		tenantID64, ok := middleware.TenantIDFromHeader(c)
 		tenantID := int32(tenantID64)
 		if !ok {
 			c.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -134,30 +130,21 @@ func (l *LoginController) Login() gin.HandlerFunc {
 				return
 			}
 
-			c.Error(err)
-			c.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": "Erro interno ao realizar login",
-			})
+			responderErro(c, err, "Erro interno ao realizar login")
 			return
 		}
 
 		err = l.service.UltimoAcesso(c, user.ID, tenantID)
 		if err != nil {
 
-			c.Error(err)
-			c.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "Erro interno ao realizar login",
-				"detalhes": err.Error(),
-			})
+			responderErro(c, err, "Erro interno ao realizar login")
 			return
 
 		}
 
 		c.SetSameSite(http.SameSiteNoneMode)
 		c.SetCookie(
-			auth.CookieSessao,
+			auth.CookieSessao(c.GetHeader("X-Tenant-ID")),
 			token,
 			int(auth.DuracaoSessao.Seconds()),
 			"/",
@@ -181,10 +168,9 @@ func (l *LoginController) Logout() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		if token, err := ctx.Cookie(auth.CookieSessao); err == nil && token != "" {
+		if token, err := ctx.Cookie(auth.CookieSessao(ctx.GetHeader("X-Tenant-ID"))); err == nil && token != "" {
 			if err := l.service.Logout(ctx, token); err != nil {
-				ctx.Error(err)
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Erro interno ao realizar logout"})
+				responderErro(ctx, err, "Erro interno ao realizar logout")
 				return
 			}
 		}
@@ -192,7 +178,7 @@ func (l *LoginController) Logout() gin.HandlerFunc {
 		// mesmos atributos do login, senão o navegador não sobrescreve o cookie
 		ctx.SetSameSite(http.SameSiteNoneMode)
 		ctx.SetCookie(
-			auth.CookieSessao,
+			auth.CookieSessao(ctx.GetHeader("X-Tenant-ID")),
 			"",
 			-1,
 			"/",
@@ -211,7 +197,7 @@ func (l *LoginController) VerPerfil() gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 
-		id, existe := ginmw.UserID(c)
+		id, existe := middleware.UserID(c)
 		if !existe {
 			c.JSON(http.StatusUnauthorized, gin.H{
 
@@ -220,7 +206,7 @@ func (l *LoginController) VerPerfil() gin.HandlerFunc {
 
 			return
 		}
-		tenantID64, ok := ginmw.TenantID(c)
+		tenantID64, ok := middleware.TenantID(c)
 		tenantID := int32(tenantID64)
 		if !ok {
 			c.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -240,6 +226,8 @@ func (l *LoginController) VerPerfil() gin.HandlerFunc {
 			"nome":  usuario.Nome,
 			"email": usuario.Email,
 			"role":  usuario.Role,
+			// unidades que pode ver; vazio = todas (o seletor do topo esconde "Todas" se vier preenchido)
+			"unidades": append([]int32{}, middleware.Unidades(c)...),
 		})
 	}
 }
@@ -248,7 +236,7 @@ func (l *LoginController) ListarUsuario() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		tenantID64, ok := ginmw.TenantID(ctx)
+		tenantID64, ok := middleware.TenantID(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -258,12 +246,7 @@ func (l *LoginController) ListarUsuario() gin.HandlerFunc {
 		users, err := l.service.ListarUsuario(ctx, tenantID)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro interno do servidor",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -286,7 +269,7 @@ func (l *LoginController) SalvarToken() gin.HandlerFunc {
 		}
 
 		// Rota pública, sem sessão: tenant vem do header, como no Login.
-		tenantID64, ok := ginmw.TenantIDFromHeader(ctx)
+		tenantID64, ok := middleware.TenantIDFromHeader(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -298,11 +281,7 @@ func (l *LoginController) SalvarToken() gin.HandlerFunc {
 		err := l.service.RecuperacaoSenha(ctx, input)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": "erro interno do servidor",
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -325,7 +304,7 @@ func (l *LoginController) RedefinirSenha() gin.HandlerFunc {
 		}
 
 		// Rota pública, sem sessão: tenant vem do header, como no Login.
-		tenantID64, ok := ginmw.TenantIDFromHeader(ctx)
+		tenantID64, ok := middleware.TenantIDFromHeader(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -341,8 +320,7 @@ func (l *LoginController) RedefinirSenha() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Erro interno ao redefinir senha."})
+			responderErro(ctx, err, "Erro interno ao redefinir senha.")
 			return
 		}
 
@@ -359,12 +337,7 @@ func (l *LoginController) MostrarUsuariosPainel() gin.HandlerFunc {
 		users, err := l.service.MostrarUsuariosPainel(ctx)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro interno do servidor",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -398,12 +371,7 @@ func (l *LoginController) EditarUsuario() gin.HandlerFunc {
 		err = l.service.EditarUsuario(ctx, int32(idUsuario), input)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro ao atualizar usuario",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao atualizar usuario")
 			return
 		}
 
@@ -437,12 +405,7 @@ func (l *LoginController) EditarStatusUsuario() gin.HandlerFunc {
 		err = l.service.EditarStatusUsuario(ctx, int32(idUsuario), input)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro ao atualizar usuario",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao atualizar usuario")
 			return
 		}
 

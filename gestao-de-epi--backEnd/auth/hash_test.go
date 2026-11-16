@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-
 func TestHashPassword_Success(t *testing.T) {
 	// Arrange (Preparação)
 	senha := "minhaSenhaSuperSegura123"
@@ -15,7 +14,6 @@ func TestHashPassword_Success(t *testing.T) {
 	//  (Execução)
 	hash, err := HashPassword(senha)
 
-	
 	// Verificando se não houve erro na execução
 	require.NoError(t, err)
 	// retorno não está vazio
@@ -24,6 +22,6 @@ func TestHashPassword_Success(t *testing.T) {
 	// 3. A verificação mais importante: o hash NÃO É a senha original
 	assert.NotEqual(t, []byte(senha), hash)
 
- /* comparando a senha com o hash gerado, se der certo, o teste passa*/
-	
+	/* comparando a senha com o hash gerado, se der certo, o teste passa*/
+
 }

@@ -653,6 +653,31 @@ const docTemplate = `{
                 }
             }
         },
+        "/empresa/logo": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "PNG da logo; 204 sem corpo quando a empresa não tem (o front mostra toast em todo não-2xx).",
+                "produces": [
+                    "image/png"
+                ],
+                "tags": [
+                    "Empresas"
+                ],
+                "summary": "Logo da empresa",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
         "/empresa/{id}": {
             "put": {
                 "security": [
@@ -1604,6 +1629,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/faltas-kit": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Funcionários ativos com menos EPI em posse (entregue − devolvido) do que o kit da função exige",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Entregas"
+                ],
+                "summary": "Funcionários sem o EPI do kit",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.FaltaKitDto"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno",
+                        "schema": {
+                            "$ref": "#/definitions/helper.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/funcao/{id}": {
             "put": {
                 "description": "Atualiza o nome de uma funcao e seu departamento existente",
@@ -1697,6 +1756,120 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Não encontrado",
+                        "schema": {
+                            "$ref": "#/definitions/helper.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno",
+                        "schema": {
+                            "$ref": "#/definitions/helper.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/funcao/{id}/kit": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lista os EPIs (e quantidades) que a função recebe na entrega",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "funcao"
+                ],
+                "summary": "Kit de EPI da função",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da funcao",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.KitItem"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ID inválido",
+                        "schema": {
+                            "$ref": "#/definitions/helper.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno",
+                        "schema": {
+                            "$ref": "#/definitions/helper.HTTPError"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Substitui o kit inteiro da função. Lista vazia limpa o kit.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "funcao"
+                ],
+                "summary": "Salvar kit de EPI da função",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da funcao",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Itens do kit",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.KitFuncaoInserir"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Dados inválidos",
+                        "schema": {
+                            "$ref": "#/definitions/helper.HTTPError"
+                        }
+                    },
+                    "422": {
+                        "description": "EPI repetido no kit",
                         "schema": {
                             "$ref": "#/definitions/helper.HTTPError"
                         }
@@ -2013,6 +2186,491 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/gerencial/caepi/{ca}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Busca o CA na base pública CAEPI (atualizada por ` + "`" + `./main atualizar-caepi` + "`" + `) para preencher o cadastro do EPI",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "EPIs"
+                ],
+                "summary": "Consultar CA na base do MTE",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Número do CA",
+                        "name": "ca",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.CaepiDto"
+                        }
+                    },
+                    "204": {
+                        "description": "CA não está na base do MTE (sem corpo, para o front não tratar como erro)"
+                    },
+                    "500": {
+                        "description": "Erro interno",
+                        "schema": {
+                            "$ref": "#/definitions/helper.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/gerencial/empresa/logo": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "PNG ou JPG de até 2 MB (campo \"file\"). Vai no cabeçalho das fichas em PDF.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "tags": [
+                    "Empresas"
+                ],
+                "summary": "Enviar a logo da empresa",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Logo (PNG ou JPG)",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Empresas"
+                ],
+                "summary": "Remover a logo da empresa",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/gerencial/transferencias/{id}": {
+            "delete": {
+                "description": "Devolve o estoque à origem. Recusa (409) se o destino já usou parte dele.",
+                "tags": [
+                    "Transferencia"
+                ],
+                "summary": "Cancela uma transferência",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da transferência",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/gerencial/unidades": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Unidade"
+                ],
+                "summary": "Cadastra uma unidade",
+                "parameters": [
+                    {
+                        "description": "Nome da unidade",
+                        "name": "unidade",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UnidadeInserir"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/model.UnidadeDto"
+                        }
+                    }
+                }
+            }
+        },
+        "/gerencial/unidades/acessos": {
+            "get": {
+                "description": "Usuários ativos da empresa com as unidades que cada um pode ver. Vazio = todas; admin sempre vê todas.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Unidade"
+                ],
+                "summary": "Lista quem vê quais unidades",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.AcessoUnidadeDto"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/gerencial/unidades/{id}": {
+            "delete": {
+                "description": "Recusa (409) a última unidade da empresa e a que ainda tem estoque ou funcionários ativos.",
+                "tags": [
+                    "Unidade"
+                ],
+                "summary": "Desativa uma unidade",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da unidade",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            },
+            "patch": {
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Unidade"
+                ],
+                "summary": "Renomeia uma unidade",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da unidade",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Novo nome",
+                        "name": "unidade",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UnidadeInserir"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/gerencial/usuarios/{id}/unidades": {
+            "put": {
+                "description": "Troca a lista inteira. Lista vazia = todas as unidades. Não vale para admin, que sempre vê todas.",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Unidade"
+                ],
+                "summary": "Limita o usuário a algumas unidades",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do usuário",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Unidades permitidas",
+                        "name": "acesso",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.AcessoUnidadeInserir"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/master/dashboard/alertas": {
+            "get": {
+                "description": "Empresas com vencimento passado (nível alto), vencendo em até 7 dias ou sem nenhum acesso há 14 dias (nível medio).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Empresas"
+                ],
+                "summary": "Alertas do painel master",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.AlertaMaster"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/motivos": {
+            "get": {
+                "description": "Lista global e pronta, igual para todas as empresas. gera_descarte=true: o EPI não volta ao estoque.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Devolucao"
+                ],
+                "summary": "Lista os motivos de devolução",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.MotivoDevolucaoEpiDto"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/protecoes": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lista os 9 grupos de proteção do Anexo I da NR-6 (globais, iguais para todas as empresas)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "protecao"
+                ],
+                "summary": "Grupos de proteção",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.TipoProtecaoDto"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno",
+                        "schema": {
+                            "$ref": "#/definitions/helper.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/transferencias": {
+            "get": {
+                "description": "As 100 mais recentes. Com a unidade escolhida (X-Unidade-ID ou ?id_unidade=), só as que saíram dela ou chegaram nela.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Transferencia"
+                ],
+                "summary": "Lista as transferências",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.TransferenciaDto"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Sai da origem pelo FEFO e entra na destino na hora, lote a lote. Falta de saldo → 422; origem fora das unidades do usuário → 403.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Transferencia"
+                ],
+                "summary": "Transfere EPIs entre unidades",
+                "parameters": [
+                    {
+                        "description": "Origem, destino e itens",
+                        "name": "transferencia",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.TransferenciaInserir"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/trocas-pendentes": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "EPIs em posse dos funcionários cuja vida útil já venceu ou vence nos próximos ` + "`" + `dias` + "`" + ` dias (padrão 30)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Entregas"
+                ],
+                "summary": "Trocas periódicas pendentes",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Janela em dias a partir de hoje (0 a 365)",
+                        "name": "dias",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.TrocaPendenteDto"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Parâmetro inválido",
+                        "schema": {
+                            "$ref": "#/definitions/helper.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno",
+                        "schema": {
+                            "$ref": "#/definitions/helper.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/unidades": {
+            "get": {
+                "description": "Lojas, obras ou almoxarifados do tenant, com funcionários ativos e saldo de EPI em cada uma.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Unidade"
+                ],
+                "summary": "Lista as unidades da empresa",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "1 = todas as unidades, para o destino da transferência (usuário limitado recebe só id e nome)",
+                        "name": "destinos",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.UnidadeDto"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -2023,6 +2681,84 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.AcessoUnidadeDto": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "nome": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "unidades": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "model.AcessoUnidadeInserir": {
+            "type": "object",
+            "properties": {
+                "unidades": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "model.AlertaMaster": {
+            "type": "object",
+            "properties": {
+                "empresa_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "mensagem": {
+                    "type": "string"
+                },
+                "nivel": {
+                    "type": "string"
+                },
+                "tipo": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.CaepiDto": {
+            "type": "object",
+            "properties": {
+                "ca": {
+                    "type": "string"
+                },
+                "equipamento": {
+                    "type": "string"
+                },
+                "fabricante": {
+                    "type": "string"
+                },
+                "id_protecao_sugerida": {
+                    "description": "grupo da NR-6 deduzido do nome do equipamento; nil quando nenhuma regra bate",
+                    "type": "integer"
+                },
+                "situacao": {
+                    "type": "string"
+                },
+                "validade": {
                     "type": "string"
                 }
             }
@@ -2056,11 +2792,11 @@ const docTemplate = `{
             "required": [
                 "assinatura_digital",
                 "data_devolucao",
-                "idEpi",
-                "idFuncionario",
-                "idMotivo",
-                "idTamanho",
-                "quantidadeADevolver"
+                "id_epi",
+                "id_funcionario",
+                "id_motivo",
+                "id_tamanho",
+                "quantidade_a_devolver"
             ],
             "properties": {
                 "assinatura_digital": {
@@ -2073,33 +2809,33 @@ const docTemplate = `{
                 "houve_troca": {
                     "type": "boolean"
                 },
-                "idEpi": {
+                "id_epi": {
                     "type": "integer"
                 },
-                "idEpiNovo": {
+                "id_epi_novo": {
                     "description": "Campos de Troca (Podem ser nulos no JS)",
                     "type": "integer"
                 },
-                "idFuncionario": {
+                "id_funcionario": {
                     "description": "Campos Obrigatórios (binding:\"required\")",
                     "type": "integer"
                 },
-                "idMotivo": {
+                "id_motivo": {
                     "type": "integer"
                 },
-                "idTamanho": {
+                "id_tamanho": {
                     "type": "integer"
                 },
-                "idTamanhoNovo": {
+                "id_tamanho_novo": {
                     "type": "integer"
                 },
                 "observacao": {
                     "type": "string"
                 },
-                "quantidadeADevolver": {
+                "quantidade_a_devolver": {
                     "type": "integer"
                 },
-                "quantidadeNova": {
+                "quantidade_nova": {
                     "type": "integer"
                 }
             }
@@ -2115,46 +2851,46 @@ const docTemplate = `{
                     "description": "Formato ISO ou DD/MM/YYYY",
                     "type": "string"
                 },
-                "epiNome": {
+                "epi_nome": {
                     "type": "string"
                 },
-                "epiNovoNome": {
+                "epi_novo_nome": {
                     "description": "Ponteiro pois pode ser null se não houver troca",
                     "type": "string"
                 },
-                "funcionarioMatricula": {
+                "funcionario_matricula": {
                     "type": "integer"
                 },
-                "funcionarioNome": {
+                "funcionario_nome": {
                     "type": "string"
                 },
-                "houveTroca": {
+                "houve_troca": {
                     "type": "boolean"
                 },
                 "id": {
                     "type": "integer"
                 },
-                "idFuncionario": {
+                "id_funcionario": {
                     "type": "integer"
                 },
-                "motivoNome": {
+                "motivo_nome": {
                     "type": "string"
                 },
                 "observacao": {
                     "description": "Ponteiro pois é opcional",
                     "type": "string"
                 },
-                "quantidadeADevolver": {
+                "quantidade_a_devolver": {
                     "type": "integer"
                 },
-                "quantidadeNova": {
+                "quantidade_nova": {
                     "description": "Ponteiro pois pode ser null",
                     "type": "integer"
                 },
-                "tamanhoNome": {
+                "tamanho_nome": {
                     "type": "string"
                 },
-                "tamanhoNovoNome": {
+                "tamanho_novo_nome": {
                     "description": "Ponteiro pois pode ser null",
                     "type": "string"
                 },
@@ -2169,7 +2905,7 @@ const docTemplate = `{
             "required": [
                 "email",
                 "nome",
-                "planoId",
+                "plano_id",
                 "responsavel",
                 "status"
             ],
@@ -2186,7 +2922,7 @@ const docTemplate = `{
                 "observacoes": {
                     "type": "string"
                 },
-                "planoId": {
+                "plano_id": {
                     "type": "integer"
                 },
                 "responsavel": {
@@ -2221,6 +2957,10 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "limite_unidades": {
+                    "description": "do plano; nil = ilimitado",
+                    "type": "integer"
+                },
                 "mensalidade": {
                     "type": "number"
                 },
@@ -2241,6 +2981,9 @@ const docTemplate = `{
                 },
                 "telefone": {
                     "type": "string"
+                },
+                "unidades": {
+                    "type": "integer"
                 },
                 "vencimento": {
                     "type": "string"
@@ -2328,17 +3071,19 @@ const docTemplate = `{
         "model.EntradaDashbord": {
             "type": "object",
             "properties": {
-                "dataEntrada": {
-                    "description": "Usa o helper para garantir o ponteiro da data formatada",
+                "data_entrada": {
                     "type": "string"
                 },
                 "id": {
                     "type": "integer"
                 },
-                "idEpi": {
+                "id_epi": {
                     "type": "integer"
                 },
-                "idTamanho": {
+                "id_tamanho": {
+                    "type": "integer"
+                },
+                "id_unidade": {
                     "type": "integer"
                 },
                 "lote": {
@@ -2347,10 +3092,10 @@ const docTemplate = `{
                 "quantidade": {
                     "type": "integer"
                 },
-                "quantidadeAtual": {
+                "quantidade_atual": {
                     "type": "integer"
                 },
-                "valorUnitario": {
+                "valor_unitario": {
                     "type": "number"
                 }
             }
@@ -2360,6 +3105,12 @@ const docTemplate = `{
             "properties": {
                 "data_entrada": {
                     "description": "2. Linha do tempo",
+                    "type": "string"
+                },
+                "data_fabricacao": {
+                    "type": "string"
+                },
+                "data_validade": {
                     "type": "string"
                 },
                 "epi": {
@@ -2424,6 +3175,11 @@ const docTemplate = `{
             "properties": {
                 "data_emissao": {
                     "type": "string"
+                },
+                "id_unidade": {
+                    "description": "obrigatório com 2+ unidades",
+                    "type": "integer",
+                    "minimum": 1
                 },
                 "idfornecedor": {
                     "type": "integer"
@@ -2528,6 +3284,9 @@ const docTemplate = `{
                 "id_funcionario": {
                     "type": "integer"
                 },
+                "id_unidade": {
+                    "type": "integer"
+                },
                 "token_validacao": {
                     "type": "string"
                 }
@@ -2625,6 +3384,11 @@ const docTemplate = `{
                     "description": "Usei ponteiro para aceitar nulo",
                     "type": "integer"
                 },
+                "id_unidade": {
+                    "description": "sem ela, sai da unidade do funcionário",
+                    "type": "integer",
+                    "minimum": 1
+                },
                 "id_user": {
                     "type": "integer"
                 },
@@ -2643,10 +3407,20 @@ const docTemplate = `{
                 "alerta_minimo": {
                     "type": "integer"
                 },
+                "ca": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
                 "nome": {
+                    "type": "string"
+                },
+                "situacao_ca": {
+                    "description": "situação na base do MTE; vazio se o CA não está nela",
+                    "type": "string"
+                },
+                "validade_ca": {
                     "type": "string"
                 }
             }
@@ -2684,6 +3458,10 @@ const docTemplate = `{
                 },
                 "validade_ca": {
                     "type": "string"
+                },
+                "vida_util_dias": {
+                    "description": "0 = sem troca periódica",
+                    "type": "integer"
                 }
             }
         },
@@ -2711,7 +3489,7 @@ const docTemplate = `{
                 "protecao": {
                     "$ref": "#/definitions/model.TipoProtecaoDto"
                 },
-                "saldoAtual": {
+                "saldo_atual": {
                     "type": "integer"
                 },
                 "tamanhos": {
@@ -2729,7 +3507,7 @@ const docTemplate = `{
         "model.EpiDtoEstoque": {
             "type": "object",
             "properties": {
-                "alertaMinimo": {
+                "alerta_minimo": {
                     "type": "integer"
                 },
                 "ca": {
@@ -2750,7 +3528,7 @@ const docTemplate = `{
                 "protecao": {
                     "$ref": "#/definitions/model.TipoProtecaoDto"
                 },
-                "validadeCa": {
+                "validade_ca": {
                     "type": "string"
                 }
             }
@@ -2758,7 +3536,6 @@ const docTemplate = `{
         "model.EpiInserir": {
             "type": "object",
             "required": [
-                "alerta_minimo",
                 "ca",
                 "data_validade_ca",
                 "fabricante",
@@ -2799,6 +3576,11 @@ const docTemplate = `{
                 },
                 "nome": {
                     "type": "string"
+                },
+                "vida_util_dias": {
+                    "description": "0 = sem troca periódica",
+                    "type": "integer",
+                    "minimum": 0
                 }
             }
         },
@@ -2848,9 +3630,41 @@ const docTemplate = `{
                 }
             }
         },
+        "model.FaltaKitDto": {
+            "type": "object",
+            "properties": {
+                "em_posse": {
+                    "type": "integer"
+                },
+                "epi_id": {
+                    "type": "integer"
+                },
+                "epi_nome": {
+                    "type": "string"
+                },
+                "exigido": {
+                    "type": "integer"
+                },
+                "funcao_nome": {
+                    "type": "string"
+                },
+                "funcionario_id": {
+                    "type": "integer"
+                },
+                "funcionario_nome": {
+                    "type": "string"
+                },
+                "matricula": {
+                    "type": "integer"
+                }
+            }
+        },
         "model.FornecedorSimples": {
             "type": "object",
             "properties": {
+                "cnpj": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -2912,10 +3726,13 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "matricula": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "nome": {
                     "type": "string"
+                },
+                "unidade": {
+                    "$ref": "#/definitions/model.UnidadeResumo"
                 }
             }
         },
@@ -2925,8 +3742,11 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "id_unidade": {
+                    "type": "integer"
+                },
                 "matricula": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "nome": {
                     "type": "string"
@@ -2953,6 +3773,11 @@ const docTemplate = `{
                     "type": "integer",
                     "minimum": 1
                 },
+                "id_unidade": {
+                    "description": "sem ele, vai para a primeira unidade",
+                    "type": "integer",
+                    "minimum": 1
+                },
                 "nome": {
                     "type": "string",
                     "maxLength": 150,
@@ -2973,10 +3798,13 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "matricula": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "nome": {
                     "type": "string"
+                },
+                "unidade": {
+                    "$ref": "#/definitions/model.UnidadeResumo"
                 }
             }
         },
@@ -3020,31 +3848,84 @@ const docTemplate = `{
                 }
             }
         },
+        "model.KitFuncaoInserir": {
+            "type": "object",
+            "properties": {
+                "itens": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.KitItem"
+                    }
+                }
+            }
+        },
+        "model.KitItem": {
+            "type": "object",
+            "required": [
+                "id_epi",
+                "quantidade"
+            ],
+            "properties": {
+                "ca": {
+                    "type": "string"
+                },
+                "id_epi": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "nome": {
+                    "type": "string"
+                },
+                "quantidade": {
+                    "type": "integer",
+                    "minimum": 1
+                }
+            }
+        },
+        "model.MotivoDevolucaoEpiDto": {
+            "type": "object",
+            "properties": {
+                "gera_descarte": {
+                    "description": "true: o EPI devolvido não volta ao estoque",
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "motivo": {
+                    "type": "string"
+                }
+            }
+        },
         "model.ResumoDashboard": {
             "type": "object",
             "properties": {
-                "empresasAtivas": {
+                "empresas_ativas": {
                     "type": "integer"
                 },
-                "empresasBloqueadas": {
+                "empresas_bloqueadas": {
                     "type": "integer"
                 },
-                "empresasEmTeste": {
+                "empresas_em_teste": {
                     "type": "integer"
                 },
-                "receitaMensal": {
+                "empresas_vencidas": {
+                    "description": "não bloqueadas com vencimento passado",
+                    "type": "integer"
+                },
+                "receita_mensal": {
                     "type": "number"
                 },
-                "totalEmpresas": {
+                "total_empresas": {
                     "type": "integer"
                 },
-                "totalEntregas": {
+                "total_entregas": {
                     "type": "integer"
                 },
-                "totalEpis": {
+                "total_epis": {
                     "type": "integer"
                 },
-                "totalFuncionarios": {
+                "total_funcionarios": {
                     "type": "integer"
                 }
             }
@@ -3072,6 +3953,158 @@ const docTemplate = `{
             }
         },
         "model.TipoProtecaoDto": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "nome": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.TransferenciaDto": {
+            "type": "object",
+            "properties": {
+                "cancelada": {
+                    "type": "boolean"
+                },
+                "data": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "itens": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.TransferenciaItemDto"
+                    }
+                },
+                "observacao": {
+                    "type": "string"
+                },
+                "unidade_destino": {
+                    "$ref": "#/definitions/model.UnidadeResumo"
+                },
+                "unidade_origem": {
+                    "$ref": "#/definitions/model.UnidadeResumo"
+                },
+                "usuario": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.TransferenciaInserir": {
+            "type": "object",
+            "required": [
+                "id_unidade_destino",
+                "id_unidade_origem",
+                "itens"
+            ],
+            "properties": {
+                "id_unidade_destino": {
+                    "type": "integer"
+                },
+                "id_unidade_origem": {
+                    "type": "integer"
+                },
+                "itens": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/model.ItemParaInserir"
+                    }
+                },
+                "observacao": {
+                    "type": "string",
+                    "maxLength": 500
+                }
+            }
+        },
+        "model.TransferenciaItemDto": {
+            "type": "object",
+            "properties": {
+                "epi_nome": {
+                    "type": "string"
+                },
+                "id_epi": {
+                    "type": "integer"
+                },
+                "id_tamanho": {
+                    "type": "integer"
+                },
+                "lote": {
+                    "type": "string"
+                },
+                "quantidade": {
+                    "type": "integer"
+                },
+                "tamanho_nome": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.TrocaPendenteDto": {
+            "type": "object",
+            "properties": {
+                "em_posse": {
+                    "type": "integer"
+                },
+                "epi_id": {
+                    "type": "integer"
+                },
+                "epi_nome": {
+                    "type": "string"
+                },
+                "funcionario_id": {
+                    "type": "integer"
+                },
+                "funcionario_nome": {
+                    "type": "string"
+                },
+                "matricula": {
+                    "type": "integer"
+                },
+                "ultima_entrega": {
+                    "type": "string"
+                },
+                "vence_em": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.UnidadeDto": {
+            "type": "object",
+            "properties": {
+                "funcionarios": {
+                    "description": "ativos lotados nela",
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "nome": {
+                    "type": "string"
+                },
+                "saldo": {
+                    "description": "unidades de EPI em estoque nela",
+                    "type": "integer"
+                }
+            }
+        },
+        "model.UnidadeInserir": {
+            "type": "object",
+            "required": [
+                "nome"
+            ],
+            "properties": {
+                "nome": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.UnidadeResumo": {
             "type": "object",
             "properties": {
                 "id": {
@@ -3112,6 +4145,11 @@ const docTemplate = `{
                 },
                 "validade_ca": {
                     "type": "string"
+                },
+                "vida_util_dias": {
+                    "description": "0 desliga",
+                    "type": "integer",
+                    "minimum": 0
                 }
             }
         },
@@ -3125,6 +4163,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "id_funcao": {
+                    "type": "integer"
+                },
+                "id_unidade": {
                     "type": "integer"
                 },
                 "nome": {
@@ -3144,7 +4185,7 @@ const docTemplate = `{
                 "pagina": {
                     "type": "integer"
                 },
-                "paginaFinal": {
+                "pagina_final": {
                     "type": "integer"
                 },
                 "total": {
@@ -3202,23 +4243,20 @@ const docTemplate = `{
                     }
                 },
                 "pagina": {
-                    "type": "integer",
-                    "format": "int32"
+                    "type": "integer"
                 },
-                "paginaFinal": {
-                    "type": "integer",
-                    "format": "int32"
+                "pagina_final": {
+                    "type": "integer"
                 },
                 "total": {
-                    "type": "integer",
-                    "format": "int64"
+                    "type": "integer"
                 }
             }
         },
         "service.FuncionarioPaginado": {
             "type": "object",
             "properties": {
-                "funcionario": {
+                "funcionarios": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.Funcionario_Dto"
@@ -3227,7 +4265,7 @@ const docTemplate = `{
                 "pagina": {
                     "type": "integer"
                 },
-                "paginaFinal": {
+                "pagina_final": {
                     "type": "integer"
                 },
                 "total": {

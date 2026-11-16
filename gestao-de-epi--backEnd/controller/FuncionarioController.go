@@ -9,8 +9,8 @@ import (
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/service"
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/middleware"
 	"github.com/gin-gonic/gin"
-	"github.com/radaptech/ginmw"
 )
 
 type FuncionarioService interface {
@@ -19,8 +19,8 @@ type FuncionarioService interface {
 	ListaTodosFuncionarios(ctx context.Context, f service.FiltroFuncionario, tenantId int32) (service.FuncionarioPaginado, error)
 	DeletarFuncionario(ctx context.Context, id int, tenantId int32) error
 	AtualizarFuncionarioCompleto(ctx context.Context, id int, req model.UpdateFuncionarioRequest, tenantId int) error
-	FuncionariosDashbord(ctx context.Context, tenantId int32) ([]model.FuncionarioDashbord, error)
-	FuncionarioCompleto(ctx context.Context, tenantId int32) ([]model.FuncionarioCompletoDto, error)
+	FuncionariosDashbord(ctx context.Context, tenantId, unidade int32) ([]model.FuncionarioDashbord, error)
+	FuncionarioCompleto(ctx context.Context, tenantId, unidade int32) ([]model.FuncionarioCompletoDto, error)
 }
 
 type FuncionarioController struct {
@@ -67,7 +67,7 @@ func (f *FuncionarioController) Adicionar() gin.HandlerFunc {
 			ID_funcao:       input.ID_funcao,
 			Cpf:             input.Cpf,
 		}
-		tenantID64, ok := ginmw.TenantID(ctx)
+		tenantID64, ok := middleware.TenantID(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -95,6 +95,11 @@ func (f *FuncionarioController) Adicionar() gin.HandlerFunc {
 				return
 			}
 
+			if errors.Is(err, helper.ErrUnidadeInvalida) {
+				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+				return
+			}
+
 			if errors.Is(err, helper.ErrConflitoIntegridade) {
 
 				ctx.JSON(http.StatusUnprocessableEntity, gin.H{
@@ -104,11 +109,7 @@ func (f *FuncionarioController) Adicionar() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -135,8 +136,8 @@ func (f *FuncionarioController) ListarFuncionarios() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		var filtro service.FiltroFuncionario
-		tenantID64, ok := ginmw.TenantID(ctx)
+		filtro := service.FiltroFuncionario{IdUnidade: unidadeEscolhida(ctx)}
+		tenantID64, ok := middleware.TenantID(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -163,10 +164,7 @@ func (f *FuncionarioController) ListarFuncionarios() gin.HandlerFunc {
 		funcs, err := f.Service.ListaTodosFuncionarios(ctx, filtro, tenantID)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Erro interno ao listar departamentos",
-			})
+			responderErro(ctx, err, "Erro interno ao listar departamentos")
 			return
 		}
 
@@ -191,7 +189,7 @@ func (f *FuncionarioController) ListarFuncionarioPorMatricula() gin.HandlerFunc 
 
 		matricula := ctx.Param("matricula")
 
-		tenantID64, ok := ginmw.TenantID(ctx)
+		tenantID64, ok := middleware.TenantID(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -210,11 +208,7 @@ func (f *FuncionarioController) ListarFuncionarioPorMatricula() gin.HandlerFunc 
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -248,7 +242,7 @@ func (f *FuncionarioController) DeletarFuncionaioId() gin.HandlerFunc {
 			return
 		}
 
-		tenantID64, ok := ginmw.TenantID(ctx)
+		tenantID64, ok := middleware.TenantID(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -268,11 +262,7 @@ func (f *FuncionarioController) DeletarFuncionaioId() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -308,7 +298,7 @@ func (f *FuncionarioController) AtualizaFuncionario() gin.HandlerFunc {
 			return
 		}
 
-		tenantID64, ok := ginmw.TenantID(ctx)
+		tenantID64, ok := middleware.TenantID(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -347,6 +337,11 @@ func (f *FuncionarioController) AtualizaFuncionario() gin.HandlerFunc {
 				return
 			}
 
+			if errors.Is(err, helper.ErrUnidadeInvalida) {
+				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+				return
+			}
+
 			if errors.Is(err, helper.ErrConflitoIntegridade) {
 
 				ctx.JSON(http.StatusUnprocessableEntity, gin.H{
@@ -356,11 +351,7 @@ func (f *FuncionarioController) AtualizaFuncionario() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 
 		}
@@ -383,22 +374,17 @@ func (f *FuncionarioController) BuscaFuncionarioDashbord() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		tenantID64, ok := ginmw.TenantID(ctx)
+		tenantID64, ok := middleware.TenantID(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
 			return
 		}
 
-		funcionarios, err := f.Service.FuncionariosDashbord(ctx, tenantID)
+		funcionarios, err := f.Service.FuncionariosDashbord(ctx, tenantID, unidadeEscolhida(ctx))
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro ao busca todos os funcionarios",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao busca todos os funcionarios")
 
 			return
 		}
@@ -420,22 +406,17 @@ func (f *FuncionarioController) FuncionarioCompleto() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		tenantID64, ok := ginmw.TenantID(ctx)
+		tenantID64, ok := middleware.TenantID(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
 			return
 		}
 
-		funcionarios, err := f.Service.FuncionarioCompleto(ctx, tenantID)
+		funcionarios, err := f.Service.FuncionarioCompleto(ctx, tenantID, unidadeEscolhida(ctx))
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro ao busca todos os funcionarios",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao busca todos os funcionarios")
 
 			return
 		}

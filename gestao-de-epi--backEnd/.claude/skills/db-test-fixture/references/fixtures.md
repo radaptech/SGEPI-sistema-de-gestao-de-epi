@@ -24,7 +24,7 @@ como primeiros parâmetros.
 | `CreateDepartamento` | `(tenantID int64)` | nome único via timestamp |
 | `CreateFuncao` | `(idDep, tenantID int64)` | |
 | `CreateFuncionario` | `(IdDepartamento, IdFuncao, tenantID int64)` | matrícula aleatória, CPF único (11 dígitos) |
-| `CreateProtecao` | `(tenantID int64)` | tipo_protecao |
+| `CreateProtecao` | `()` | grupo global da NR-6 (codigo F) |
 | `CreateTamanho` | `(tenantID int64)` | |
 | `CreateEpi` | `(idTipoProtecao, tenantID int64)` | CA aleatório, validade +1 ano |
 | `CreateFornecedor` | `(tenantID int64)` | CNPJ aleatório de 14 dígitos |
@@ -98,7 +98,7 @@ func TestEpi(t *testing.T) {
 
 		planos := CreatePlanos(t, db)
 		empresa := CreateEmpresa(t, db, planos)
-		idprotec := CreateProtecao(t, db, empresa)
+		idprotec := CreateProtecao(t, db)
 
 		repo := repository.NewEpiRepository(db)
 		serv := NewEpiService(repo, db)

@@ -36,20 +36,19 @@ func randomCNPJ() string {
 func CreatePlanos(t *testing.T, db *pgxpool.Pool) int64 {
 
 	var id int64
-	query := `INSERT INTO planos (nome, mensalidade, limite_funcionarios, limite_usuarios, limite_epis, status, descricao)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
+	query := `INSERT INTO planos (nome, mensalidade, limite_funcionarios, limite_usuarios, status, descricao)
+    VALUES ($1, $2, $3, $4, $5, $6)
     RETURNING id;`
 
 	nome := "plano teste"
 	mensalidade := 1000
 	limite_funcionarios := 1000
 	limite_usuarios := 1000
-	limite_epis := 1000
 	status := "Ativo"
 	descricao := "teste descricao"
 
 	err := db.QueryRow(context.Background(), query,
-		nome, mensalidade, limite_funcionarios, limite_usuarios, limite_epis, status, descricao).Scan(&id)
+		nome, mensalidade, limite_funcionarios, limite_usuarios, status, descricao).Scan(&id)
 	if err != nil {
 		t.Fatalf("erro ao criar plano de teste: %v", err)
 
@@ -201,7 +200,7 @@ func CreateFuncionario(t *testing.T, db *pgxpool.Pool, IdDepartamento, IdFuncao,
 	`
 
 	nome := randomString("Funcionario")
-	matriculo:= randomInt()
+	matriculo := randomInt()
 	// cpf precisa caber em VARCHAR(11) e ser único por tenant (UNIQUE(tenant_id, cpf))
 	cpf := fmt.Sprintf("%011d", time.Now().UnixNano()%100000000000)
 
@@ -209,8 +208,8 @@ func CreateFuncionario(t *testing.T, db *pgxpool.Pool, IdDepartamento, IdFuncao,
 		tenantID,
 		nome,
 		matriculo,
-		IdFuncao,
 		IdDepartamento,
+		IdFuncao,
 		cpf,
 	).Scan(&id)
 
@@ -222,18 +221,10 @@ func CreateFuncionario(t *testing.T, db *pgxpool.Pool, IdDepartamento, IdFuncao,
 
 // --- 4. CATALOGO DE EPIs ---
 
-func CreateProtecao(t *testing.T, db *pgxpool.Pool, tenantID int64) int64 {
+// CreateProtecao devolve um grupo de proteção global da NR-6 (a migração 000040 já cria os 9).
+func CreateProtecao(t *testing.T, db *pgxpool.Pool) int64 {
 	var id int64
-	query := `
-		INSERT INTO tipo_protecao (tenant_id, nome) 
-		VALUES ($1, $2)
-		RETURNING id;
-	`
-	err := db.QueryRow(context.Background(), query,
-		tenantID,
-		randomString("Protecao"),
-	).Scan(&id)
-
+	err := db.QueryRow(context.Background(), `SELECT id FROM tipo_protecao WHERE codigo = 'F'`).Scan(&id)
 	if err != nil {
 		t.Fatalf("Helper CreateProtecao falhou: %v", err)
 	}
@@ -413,7 +404,7 @@ RETURNING id;
 	`
 	assinatura := randomString("AssinaturaBase64")
 	token := randomString("TokenValidacao")
-	idtroca:= 1
+	idtroca := 1
 
 	err := db.QueryRow(context.Background(), query,
 		tenantID,
@@ -457,15 +448,16 @@ func CreateEpiEntregues(t *testing.T, db *pgxpool.Pool, IDEntregaCabecalho, idEn
 	return id
 }
 
-func CreateMotivoDevolucao(t *testing.T, db *pgxpool.Pool, motivo string, geraDescarte bool, tenantID int64) int64 {
+// motivo_devolucao é global: o tenant não entra (o parâmetro fica para não mexer nas chamadas).
+func CreateMotivoDevolucao(t *testing.T, db *pgxpool.Pool, motivo string, geraDescarte bool, _ int64) int64 {
 	var id int64
 	query := `
-		INSERT INTO motivo_devolucao (tenant_id, motivo, gera_descarte)
-		VALUES ($1, $2, $3)
+		INSERT INTO motivo_devolucao (motivo, gera_descarte)
+		VALUES ($1, $2)
+		ON CONFLICT (motivo) DO UPDATE SET gera_descarte = EXCLUDED.gera_descarte
 		RETURNING id;
 	`
 	err := db.QueryRow(context.Background(), query,
-		tenantID,
 		motivo,
 		geraDescarte,
 	).Scan(&id)
@@ -499,7 +491,7 @@ func CreateFornecedor(t *testing.T, db *pgxpool.Pool, tenantID int64) int64 {
 		razaoSocial, // $2: Razão Social
 		fantasia,    // $3: Nome Fantasia (repetido para facilitar)
 		cnpj,        // $4: CNPJ
-		"ISENTO",    // $5: Inscrição Estadual (valor padrão     
+		"ISENTO",    // $5: Inscrição Estadual (valor padrão
 	).Scan(&id)
 
 	if err != nil {

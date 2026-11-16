@@ -67,7 +67,7 @@ type DepartamentoPaginado struct {
 	Departamento []model.DepartamentoDto `json:"departamentos"`
 	Total        int64                   `json:"total"`
 	Pagina       int32                   `json:"pagina"`
-	PaginaFinal  int32                   `json:"paginaFinal"`
+	PaginaFinal  int32                   `json:"pagina_final"`
 }
 
 func (d *DepartamentoService) ListarTodosDepartamentos(ctx context.Context, f FiltroDepartamento, tenantId int32) (DepartamentoPaginado, error) {

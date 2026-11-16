@@ -37,6 +37,10 @@ swag init
 # localmente ele só existe dentro da imagem de produção, ver docs/BACKUP.md
 make backup-banco    # = go run . backup-banco
 ./main backup-banco  # binário compilado (é o que roda no cron do Railway)
+
+# Atualiza a base de CAs do MTE (tabela caepi) baixando o .zip do FTP do governo.
+# Com um caminho, lê um .zip local. Deve rodar num cron diário/semanal, como o backup.
+go run . atualizar-caepi [arquivo.zip]
 ```
 
 ### Subir o ambiente completo (Docker)
@@ -52,7 +56,9 @@ docker compose -f docker-compose.dev.yml --env-file gestao-de-epi--backEnd/.env 
 Sobe Traefik (roteia por subdomínio `*.localhost`), Postgres 16, pgAdmin (`:5050`),
 Mailpit (`:8025`), a API (`Dockerfile.dev`, hot-reload via CompileDaemon) e o front React.
 
-A API sozinha escuta em `:8080`. Via Traefik: `http://api.localhost` ou qualquer host com `/api`.
+A API sozinha escuta em `:8080` (ou no `PORT`, quando definido). Em produção é uma imagem só
+(`Dockerfile` da raiz): com `FRONT_DIR` apontando para o build do Vite, o Go também entrega o front
+(`internal/routers/front.go`: fallback do SPA, cache dos assets e uma CSP própria do front). Via Traefik: `http://api.localhost` ou qualquer host com `/api`.
 
 ---
 
@@ -112,10 +118,12 @@ Como o tenant chega até a query:
 4. O service repassa `tenantId` como parâmetro de **toda** query.
 
 **Ao escrever qualquer query nova em `database/queries/`, o `WHERE` precisa incluir
-`tenant_id = $N`.** Não existe RLS no banco — o isolamento é feito 100% na aplicação. Um `WHERE`
+`tenant_id = $N`.** As exceções são as tabelas globais, iguais para todos os tenants e sem `tenant_id`:
+`caepi` (base pública de CAs do MTE), `tipo_protecao` (os 9 grupos da NR-6) e `motivo_devolucao`
+(lista pronta de motivos; `gera_descarte` diz se o EPI volta ao estoque). Os tenants só leem essas três. Não existe RLS no banco — o isolamento é feito 100% na aplicação. Um `WHERE`
 sem tenant vaza dados entre empresas.
 
-O `userId` logado sai da sessão e é lido com `ginmw.UserID(c)` (usado para auditoria:
+O `userId` logado sai da sessão e é lido com `middleware.UserID(c)` (usado para auditoria:
 `id_usuario_criacao`, `id_usuario_cancelamento`, etc.).
 
 ---
@@ -127,8 +135,11 @@ O `userId` logado sai da sessão e é lido com `ginmw.UserID(c)` (usado para aud
   grava só o **SHA-256** dele na tabela `sessoes` (`usuario_id`, `expira_em` = 24 h). O token vai
   no **cookie `sessao`** (HttpOnly, `Secure`, `SameSite=None`). Não existe header `Authorization`.
 - `middleware.Sessao` busca a sessão a cada request (join com `usuarios`, exige `ativo = TRUE` e
-  `expira_em > now()`) e popula as chaves do `ginmw` (`ginmw.UserID`/`TenantID`/`Role`, usadas por
-  `ginmw.Require`) + `user_nome`. Desativar o usuário derruba a sessão na hora.
+  `expira_em > now()`) e popula as chaves lidas por `middleware.UserID`/`TenantID`/`Role` (usadas por
+  `middleware.Require`) + `user_nome`. Desativar o usuário derruba a sessão na hora.
+- **Unidades permitidas** (`usuario_unidade`, sem linha = todas; admin sempre todas): a `Sessao` põe em
+  `middleware.UnidadesKey`, o `middleware.LimitarUnidade` dá 403 para unidade de fora no header/URL, e
+  `unidadeDaOperacao` (entrega/devolução) recusa com `ErrUnidadeSemAcesso`. Ver `docs/PLANO-UNIDADES.md`, Fase 6.
 - `POST /api/logout` apaga a linha da sessão. Sessões vencidas são limpas a cada login.
 
 ### Roles
@@ -164,13 +175,13 @@ Rotas públicas: `GET /`, `GET /api` (health) e `GET /swagger/*any`.
 ```
 empresas (tenant) ──┬── usuarios (role, ultimo_acesso, token_recuperacao_senha)
                     ├── departamento ── funcao ── funcionario (matricula, cpf)
-                    ├── tipo_protecao ── epi ── tamanhos_epis ── tamanho
+                    ├── epi ── tamanhos_epis ── tamanho   (epi → tipo_protecao, global: 9 grupos da NR-6)
                     ├── fornecedor
                     ├── entrada_nf ── entrada_epi_item   (o "lote": quantidade_atual, validade)
                     ├── entrega_epi ── epis_entregues    (aponta para o lote de origem)
                     ├── motivo_devolucao (eh_descarte)
                     ├── devolucao (opcionalmente com troca: epi/tamanho/quantidade novos)
-                    └── planos (limite_funcionarios / limite_usuarios / limite_epis, mensalidade)
+                    └── planos (limite_funcionarios / limite_usuarios / limite_unidades, mensalidade)
 ```
 
 ### Estoque: controle por lote, FEFO
@@ -204,11 +215,19 @@ Entregas e devoluções exigem assinatura. O fluxo no controller é sempre:
 3. Substituir `input.Assinatura_Digital` pela URL antes de chamar o service. **O banco guarda a URL,
    nunca o base64.**
 
+Com `SUPABASE_BUCKET` vazio (dev, CI, e2e) o upload é pulado: o formato ainda é validado, mas o banco
+recebe `sem-upload://<pasta>/<token>_<unix>.<ext>` e a ficha PDF sai sem a imagem da assinatura.
+
 ### Geração de PDF
 
-`internal/helper/pdfHelperEntrega.go` e `pdfHelperDevolucao.go` usam **maroto/v2** para montar a
-ficha de EPI (com código de barras e a imagem da assinatura baixada da URL, rotacionada quando
-necessário). Rotas: `GET /api/gerencial/:matricula/ficha-pdf/:id` e
+`internal/helper/pdfHelperEntrega.go` e `pdfHelperDevolucao.go` usam **maroto/v2** para montar as
+fichas sobre as peças de `pdfHelperComum.go` (cabeçalho com nº e código de validação, seções com rótulo,
+tabela que quebra linha, rodapé com QR code e página em toda folha). A imagem da assinatura é baixada
+da URL e rotacionada quando necessário. Os PDFs do front (comprovante de entrada, detalhes do lote) usam
+jsPDF com o mesmo visual, em `SGEPI-FRONT-END/src/utils/pdfDocumento.js`. A logo da empresa (`empresas.logo_key`, chave
+no bucket `R2_BUCKET_NAME_LOGOS`) é enviada pelo admin em `PUT /api/gerencial/empresa/logo`, reduzida a
+800x400 PNG (`helper.PrepararLogo`) e lida por `GET /api/empresa/logo` (204 sem logo). Se o R2 falhar, a ficha
+sai sem logo em vez de dar erro. Rotas: `GET /api/gerencial/:matricula/ficha-pdf/:id` e
 `GET /api/gerencial/devolucoes/:id/pdf`.
 
 ### Matrícula do funcionário
@@ -228,16 +247,38 @@ e **encerra sem subir a API**; sem argumento, sobe a API normalmente. O fluxo é
 `configs.NewVariaveisAmbiente()`** (que é quem chama o `godotenv.Load`) — invertendo a ordem, a chave
 vem vazia e o R2 devolve 401.
 
-O `pg_dump` vem do pacote `postgresql17-client` instalado no `Dockerfile` de produção; na máquina de
+O `pg_dump` vem do pacote `postgresql17-client` instalado no `Dockerfile` de produção (raiz do monorepo); na máquina de
 dev ele normalmente não existe, então teste pela imagem:
 
 ```bash
-docker build -t sgeepi-backup-test .
-docker run --rm --network sgeepi-infra_default --env-file .env sgeepi-backup-test ./main backup-banco
+# na raiz do monorepo (o Dockerfile de produção fica lá); pesado: pare a stack de dev antes
+docker build -t sgepi-backup-test .
+docker run --rm --network sgepi-sistema-de-getao-de-epi_default --env-file gestao-de-epi--backEnd/.env sgepi-backup-test ./main backup-banco
 ```
 
 Nada no código agenda o backup — quem chama `./main backup-banco` é o cron do Railway. Retenção dos dumps
 é regra de lifecycle no bucket. Detalhes, verificação do upload e restauração: `docs/BACKUP.md`.
+
+### Base de CAs do MTE (CAEPI)
+
+`cli_atualizarCaepi.go`: `./main atualizar-caepi` baixa `tgg_export_caepi.zip` do FTP do MTE
+(`ftp.mtps.gov.br`, via `jlaffaye/ftp`), lê o `.txt` separado por `|` e, numa transação, troca todo o
+conteúdo da tabela `caepi` (`DELETE` + `COPY`). Depois roda `RenovarValidadeCaEpis`, que estende o
+`epi.validade_CA` de **todos os tenants** quando o MTE tem uma validade mais nova. Só usa as 8
+primeiras colunas porque a descrição às vezes tem `|` no meio. O mesmo CA aparece uma vez por laudo,
+e fica a linha com a validade mais recente.
+
+O CA do EPI é comparado com a `caepi` só pelos dígitos e sem zero à esquerda
+(`ltrim(regexp_replace(CA, '\D', '', 'g'), '0')`). Onde ela é usada:
+- `GET /api/gerencial/caepi/:ca`: o botão "Buscar" (ou Enter) no campo CA do cadastro de EPI chama essa
+  rota e sobrescreve nome, fabricante e validade. CA fora da base responde **204** sem corpo, e não 404, porque o
+  `services/api.js` do front mostra toast de erro em toda resposta que não é 2xx.
+- `ListarEpisCaVencido`: além da validade vencida, bloqueia a entrega de CA `CANCELADO` ou `SUSPENSO`
+  (`ErrCaVencido`). `VENCIDO` na base não bloqueia sozinho, porque o arquivo pode estar desatualizado
+  e a renovação ainda não ter entrado. O que vale nesse caso é a data.
+- `/epis-dashbord` devolve `situacao_ca`, e o card "CA Vencendo" mostra os cancelados e suspensos.
+
+Nada no código agenda o comando. Em produção ele precisa de um cron no Railway, igual ao backup.
 
 ### Limites de plano
 
@@ -269,23 +310,35 @@ listagem expõem um booleano `cancelados`/`canceladas` para consultar o oposto.
 `TraduzErroPostgres` converte `pgconn.PgError` por código (`23505` → `ErrDadoDuplicado`,
 `23503` → `ErrConflitoIntegridade`, `23502` → `ErrCampoObrigatorio`, …).
 
-Regra de ouro: **repository traduz, service propaga com `errors.Is`, controller decide o status**:
+Regra de ouro: **repository traduz, service propaga (`%w`), controller responde com `responderErro`**
+(`controller/erros.go`):
 
 ```go
-if errors.Is(err, helper.ErrDadoDuplicado) {
-    ctx.JSON(http.StatusConflict, gin.H{"error": "...", "detalhes": err.Error()})
+if err != nil {
+    responderErro(ctx, err, "erro ao salvar a entrega") // mensagem só para o caso não previsto
     return
 }
 ```
 
-Formato de resposta de erro em uso: `{"error": "<mensagem amigável>", "detalhes": "<err.Error()>"}`.
-(Existe `helper.HTTPError` para o Swagger, mas os handlers respondem com `gin.H`.)
+`statusDoErro` concentra o mapa erro → status: os `helper.Err*` (400/401/403/404/409/422), o
+`pgx.ErrNoRows` (404), os códigos do Postgres e `helper.ErroDeNegocio` (422, recusa de regra com
+mensagem própria, ex.: estoque insuficiente). Erro previsto responde `{"error": "<mensagem dele>"}`;
+o não previsto responde 500 com a mensagem padrão e o erro técnico vai **só para o log**
+(`ctx.Error`). Nunca mande `err.Error()` de erro não previsto ao cliente: o front mostra o
+`detalhes` na tela. Erro novo de domínio entra no mapa de `statusDoErro`, não num `if` no controller.
 
 ### Controllers
 
 Cada controller declara **sua própria interface de service** no topo do arquivo (interface do lado
 do consumidor) e recebe a implementação por construtor. Os handlers são *closures*:
 `func (c *XController) Acao() gin.HandlerFunc`.
+
+### Contrato JSON
+
+Toda chave de JSON (entrada e saída) é **snake_case**, inclusive em struct sem tag (sem tag o Go
+sai em PascalCase — sempre ponha `json:"..."`). Listagens paginadas respondem
+`{"<plural>": [...], "total", "pagina", "pagina_final"}`. `matricula` é número (a coluna é INT).
+O front lê a lista de cada rota pela chave em `SGEPI-FRONT-END/src/services/listas.js`.
 
 ### Datas
 
@@ -344,23 +397,31 @@ os metadados globais estão em `main.go`. Rode `swag init` após alterar rotas �
 
 - **Unitários**: `auth/hash_test.go` (argon2id) e `internal/helper/CNPJ_test.go` (table-driven com
   testify). Rápidos, sem dependências externas.
-- **Integração**: `internal/service/testeIntegracaoEntregaEpi_test.go` sobe um
-  **Postgres 15-alpine via testcontainers-go**, cria o schema com `criarTabelasPostgres`
+- **Integração**: `internal/service/*_test.go` usam um **Postgres 15-alpine via testcontainers-go**
+  só, que sobe uma vez por execução (`TestMain` + `SetupTestDB`): as migrations rodam uma vez num
+  banco modelo e cada teste ganha um banco copiado dele (`CREATE DATABASE ... TEMPLATE`), então os
+  testes seguem isolados e a suíte toda leva segundos. Schema via `criarTabelasPostgres`
   (`SetupTabelasTesteIntegracao.go`) e popula fixtures com os helpers `CreateEmpresa`,
   `CreateFuncionario`, `CreateEpi`, `CreateEntradaEpi`, … (`SetupDadosTesteIntegracao.go`).
   Cobrem entrega concorrente e consistência de estoque.
 - **Requer Docker rodando.** Use sempre `-p 1` (containers não toleram pacotes em paralelo).
 - Os arquivos de setup **não** têm build tag: `go test ./...` já os compila. O `oque-fazer.txt`
   menciona `-tags=integration`, mas essa tag não existe mais no código.
-- CI (`.github/workflows/cicd.yml`): roda `go test -v ./... -p 1` nos pushes/PRs para
-  `main`, `dev` e `homologacao`, com `setup-go` em `go-version: '1.26'` — alinhado ao `go.mod`.
-  Ao subir a linha `go` do `go.mod`, atualize também essa chave e o `FROM golang:` dos Dockerfiles.
+- **E2E**: `e2e/` na raiz do monorepo (Playwright) roda contra o `docker-compose.dev.yml` no ar:
+  login/sessão e o fluxo EPI → entrada → entrega → devolução num tenant criado na hora.
+  `make e2e` (passe `E2E_EMAIL`/`E2E_SENHA` se o super admin do seu `.env` não usar os defaults do
+  `seed.go`). O `/login` tem rate limit: rodar a suíte várias vezes seguidas dá 429.
+- CI (`.github/workflows/back-end.yml`, na raiz do monorepo): gofmt, vet e `go test -v ./... -p 1` nos
+  pushes para `dev`/`homologacao` e em PRs, com a versão do Go lida do `go.mod`. Na `main` ele roda dentro
+  do `release.yml`, que só gera a imagem do Docker Hub, a tag `vX.Y.Z` e o deploy no Railway se back, front e e2e passarem
+  (ver "Deploy" no README da raiz). Ao subir a linha `go` do `go.mod`, atualize o `FROM golang:` do `Dockerfile` da raiz e do `Dockerfile.dev`.
 
 ---
 
 ## Variáveis de ambiente
 
-Copie `.env-example` para `.env` (o `.env` está no `.gitignore`).
+Copie `.env-example` para `.env` (o `.env` está no `.gitignore`). Em produção as variáveis ficam no
+secret `ENV_PRODUCAO` do GitHub, e o `release.yml` as grava no Railway a cada deploy.
 
 | Variável | Uso |
 |---|---|
@@ -370,7 +431,8 @@ Copie `.env-example` para `.env` (o `.env` está no `.gitignore`).
 | `RESEND_API_KEY` | Envio de e-mail de recuperação de senha (Resend) |
 | `URL_FRONTEND_FORMATO` | Template do link de redefinição, ex.: `http://%s:3000` (`%s` = subdomínio) |
 | `SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_PASSWORD` | Seed do super admin no boot |
-| `R2_IDCLOUDFLARE`, `R2_KEYID`, `R2_SECRETKEY`, `R2_BUCKET_NAME_BACKUPS` | Backup do banco no R2 — só usadas por `./main backup-banco` |
+| `R2_IDCLOUDFLARE`, `R2_KEYID`, `R2_SECRETKEY`, `R2_BUCKET_NAME_BACKUPS` | Backup do banco no R2 (`./main backup-banco`) |
+| `R2_BUCKET_NAME_LOGOS` | Bucket R2 da logo das empresas (mesmas credenciais). Vazio: upload da logo responde 422 e os PDFs saem sem logo |
 
 ---
 
@@ -414,7 +476,7 @@ validadores entram no mesmo bloco.
 - **O `FROM golang:` dos Dockerfiles precisa acompanhar a linha `go` do `go.mod`.** Com `go 1.26.5`
   no `go.mod` e uma imagem `1.26.1`, o `go mod download` falha no build (`GOTOOLCHAIN=local`).
 - **`golang-migrate` procura `file://database/migrate` relativo ao working dir.** Rodar o binário de
-  outra pasta quebra o boot (por isso o `Dockerfile` copia `database/migrate` para junto dele).
+  outra pasta quebra o boot (por isso o `Dockerfile` da raiz copia `database/migrate` para junto dele).
 - **`repository.Queries` não tem `sqlc.embed` nem RLS**: repetir `tenant_id` em cada query é
   responsabilidade sua.
 - **Logs são `log/slog` em JSON** (`middleware/logs.go`). `middleware.LogRequest` escreve uma linha por
@@ -424,6 +486,8 @@ validadores entram no mesmo bloco.
   No **controller**, todo 500 com erro chama `ctx.Error(err)` antes do `ctx.JSON` — o `LogRequest` põe a
   causa no campo `erros` da linha do request. No **service**, erro de infra com contexto útil (lote, entrega)
   vira `slog.ErrorContext` com campos nomeados (`"tenant", tenantId, "err", err`).
+- **Todos os middlewares são do próprio projeto** (`middleware/`): CORS, `SecurityHeaders`, `RateLimit`,
+  `Tenant`, `Sessao`, `Require` e os logs. Antes vinham do módulo externo `radaptech/ginmw`, que foi removido.
 - **CORS** (`middleware/cors.go`) libera `localhost`, `*.localhost` e `*.radaptech.com.br`, com
   `AllowCredentials: true` (necessário para o cookie HttpOnly). Um domínio novo precisa entrar no
   `AllowOriginFunc`.

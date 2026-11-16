@@ -5,18 +5,19 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/middleware"
 	"github.com/gin-gonic/gin"
-	"github.com/radaptech/ginmw"
 )
 
 type DevolucaoService interface {
 	SalvarDevolucao(ctx context.Context, modelDevolucao model.DevolucaoInserir, tenantId int32, token string) error
 	CancelarDevolucao(ctx context.Context, id, iduser, tenantId int) error
-	ListarDevolucoes(ctx context.Context, tenantId int32) ([]model.DevolucaoResponse, error)
+	ListarDevolucoes(ctx context.Context, tenantId, unidade int32) ([]model.DevolucaoResponse, error)
 	TokenDevolucao(ctx context.Context, tenantId, Idfuncionario int32) (string, error)
 	GerarDadosPdf(ctx context.Context, idDevolucao, tenantId int32) (helper.DadosDevolucaoPdf, error)
 }
@@ -58,14 +59,14 @@ func (d *DevolucaoController) Adicionar() gin.HandlerFunc {
 			return
 		}
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro interno de tenant"})
 			return
 		}
 
-		userId, ok := ginmw.UserID(ctx)
+		userId, ok := middleware.UserID(ctx)
 		if !ok {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"erro": "erro ao setar usuario",
@@ -75,18 +76,13 @@ func (d *DevolucaoController) Adicionar() gin.HandlerFunc {
 
 		token, err := d.service.TokenDevolucao(ctx, tenantId, int32(input.IdFuncionario))
 		if err != nil {
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro ao gerar token de auditoria"})
+			responderErro(ctx, err, "erro ao gerar token de auditoria")
 			return
 		}
 
 		urlAssinatura, err := helper.UploadAssinaturaSupabase(input.AssinaturaDigital, token, "devolucao")
 		if err != nil {
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error":    "falha ao salvar assinatura digital",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "falha ao salvar assinatura digital")
 			return
 		}
 
@@ -99,8 +95,23 @@ func (d *DevolucaoController) Adicionar() gin.HandlerFunc {
 				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "funcionario ou registro não encontrado"})
 				return
 			}
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro ao salvar entrega", "detalhes": err.Error()})
+			if errors.Is(err, helper.ErrCaVencido) {
+				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+				return
+			}
+			if errors.Is(err, helper.ErrUnidadeSemAcesso) {
+				ctx.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+				return
+			}
+			if errors.Is(err, helper.ErrUnidadeInvalida) {
+				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+				return
+			}
+			if strings.Contains(err.Error(), "estoque insuficiente") {
+				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+				return
+			}
+			responderErro(ctx, err, "erro ao salvar entrega")
 			return
 		}
 
@@ -123,7 +134,7 @@ func (d *DevolucaoController) Listar() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -132,15 +143,10 @@ func (d *DevolucaoController) Listar() gin.HandlerFunc {
 			return
 		}
 
-		devolucoes, err := d.service.ListarDevolucoes(ctx, tenantId)
+		devolucoes, err := d.service.ListarDevolucoes(ctx, tenantId, unidadeEscolhida(ctx))
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro ao realizar buscar das entregas de epi",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao realizar buscar das entregas de epi")
 			return
 		}
 
@@ -171,7 +177,7 @@ func (d *DevolucaoController) GerarFichaPDF() gin.HandlerFunc {
 			return
 		}
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -200,12 +206,7 @@ func (d *DevolucaoController) GerarFichaPDF() gin.HandlerFunc {
 		pdf, err := helper.CreatePdfDevolucao(devolucaoDados, auditoria, responsavel)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    err.Error(),
-				"detalhes": "erro na geração do pdf",
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 

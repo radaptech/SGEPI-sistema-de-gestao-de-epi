@@ -12,8 +12,8 @@ import (
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/service"
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/middleware"
 	"github.com/gin-gonic/gin"
-	"github.com/radaptech/ginmw"
 )
 
 type EntregasService interface {
@@ -21,9 +21,11 @@ type EntregasService interface {
 	ListaEntregas(ctx context.Context, f service.FiltroEntregas, tenantId int32) (service.EntregaPaginada, error)
 	CancelarEntrega(ctx context.Context, tenantId, id, iduser int) error
 	GerarDadosPdfService(ctx context.Context, matricula string, idEntrega, tenantId int32) (helper.DadosPdf, error)
-	BuscaEntregaDash(ctx context.Context, tenantId int32) ([]model.EntregaDashbord, error)
-	BuscaItemDash(ctx context.Context, tenantID int32) ([]model.EntregaItensDashBord, error)
+	BuscaEntregaDash(ctx context.Context, tenantId, unidade int32) ([]model.EntregaDashbord, error)
+	BuscaItemDash(ctx context.Context, tenantID, unidade int32) ([]model.EntregaItensDashBord, error)
 	TokenEntrega(ctx context.Context, tenantId, idFuncionario int32) (string, error)
+	ListarTrocasPendentes(ctx context.Context, tenantId, unidade int32, dias int) ([]model.TrocaPendenteDto, error)
+	ListarFaltasKit(ctx context.Context, tenantId, unidade int32) ([]model.FaltaKitDto, error)
 }
 
 type EntregaController struct {
@@ -62,14 +64,14 @@ func (e *EntregaController) Adicionar() gin.HandlerFunc {
 			return
 		}
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro interno de tenant"})
 			return
 		}
 
-		userId, ok := ginmw.UserID(ctx)
+		userId, ok := middleware.UserID(ctx)
 		if !ok {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"erro": "erro ao setar usuario",
@@ -80,19 +82,14 @@ func (e *EntregaController) Adicionar() gin.HandlerFunc {
 		// 1. Gera o Token de Auditoria
 		token, errToken := e.Service.TokenEntrega(ctx, tenantId, input.ID_funcionario)
 		if errToken != nil {
-			ctx.Error(errToken)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro ao gerar token de auditoria"})
+			responderErro(ctx, errToken, "erro ao gerar token de auditoria")
 			return
 		}
 
 		// 2. Faz o Upload da Assinatura para o Bucket
 		urlAssinatura, errA := helper.UploadAssinaturaSupabase(input.Assinatura_Digital, token, "entregas")
 		if errA != nil {
-			ctx.Error(errA)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error":    "falha ao salvar assinatura digital",
-				"detalhes": errA.Error(),
-			})
+			responderErro(ctx, errA, "falha ao salvar assinatura digital")
 			return
 		}
 
@@ -108,12 +105,23 @@ func (e *EntregaController) Adicionar() gin.HandlerFunc {
 				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "funcionario ou registro não encontrado"})
 				return
 			}
+			if errors.Is(err, helper.ErrCaVencido) {
+				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+				return
+			}
+			if errors.Is(err, helper.ErrUnidadeSemAcesso) {
+				ctx.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+				return
+			}
+			if errors.Is(err, helper.ErrUnidadeInvalida) {
+				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+				return
+			}
 			if strings.Contains(err.Error(), "estoque insuficiente") {
 				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 				return
 			}
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro ao salvar entrega", "detalhes": err.Error()})
+			responderErro(ctx, err, "erro ao salvar entrega")
 			return
 		}
 
@@ -138,7 +146,7 @@ func (e *EntregaController) ListarEntregas() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		var filtro service.FiltroEntregas
+		filtro := service.FiltroEntregas{IdUnidade: unidadeEscolhida(ctx)}
 
 		if err := ctx.ShouldBindQuery(&filtro); err != nil {
 
@@ -150,7 +158,7 @@ func (e *EntregaController) ListarEntregas() gin.HandlerFunc {
 			return
 		}
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -169,11 +177,7 @@ func (e *EntregaController) ListarEntregas() gin.HandlerFunc {
 		entregas, err := e.Service.ListaEntregas(ctx.Request.Context(), filtro, tenantId)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": "erro ao realizar buscar das entregas de epi",
-			})
+			responderErro(ctx, err, "erro ao realizar buscar das entregas de epi")
 			return
 		}
 
@@ -205,14 +209,14 @@ func (e *EntregaController) CancelarEntrega() gin.HandlerFunc {
 			return
 		}
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
 			return
 		}
 
-		idUser, existe := ginmw.UserID(ctx)
+		idUser, existe := middleware.UserID(ctx)
 		if !existe {
 			ctx.JSON(http.StatusUnauthorized, gin.H{
 
@@ -235,11 +239,7 @@ func (e *EntregaController) CancelarEntrega() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -277,7 +277,7 @@ func (e *EntregaController) GerarFichaEpiPDF() gin.HandlerFunc {
 		if matricula == "" {
 			matricula = "0"
 		}
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -307,12 +307,7 @@ func (e *EntregaController) GerarFichaEpiPDF() gin.HandlerFunc {
 		documento, err := helper.CreatePdf(entregaDadosPdf, auditoria, responsavel)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    err.Error(),
-				"detalhes": "erro na geração do pdf",
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 
 		}
@@ -320,6 +315,72 @@ func (e *EntregaController) GerarFichaEpiPDF() gin.HandlerFunc {
 		// Baixa o arquivo direto no navegador
 		ctx.Header("Content-Disposition", "attachment; filename=Ficha_EPI_"+matricula+".pdf")
 		ctx.Data(http.StatusOK, "application/pdf", documento.GetBytes()) // Extrai os bytes limpos!
+	}
+}
+
+// ListarTrocasPendentes godoc
+// @Summary      Trocas periódicas pendentes
+// @Description  EPIs em posse dos funcionários cuja vida útil já venceu ou vence nos próximos `dias` dias (padrão 30)
+// @Tags         Entregas
+// @Produce      json
+// @Param        dias  query    int  false  "Janela em dias a partir de hoje (0 a 365)"
+// @Success      200  {array}   model.TrocaPendenteDto
+// @Failure      400  {object}  helper.HTTPError "Parâmetro inválido"
+// @Failure      500  {object}  helper.HTTPError "Erro interno"
+// @Router       /trocas-pendentes [get]
+// @Security     BearerAuth
+func (e *EntregaController) ListarTrocasPendentes() gin.HandlerFunc {
+
+	return func(ctx *gin.Context) {
+
+		tenantId64, ok := middleware.TenantID(ctx)
+		if !ok {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro interno de tenant"})
+			return
+		}
+
+		dias, err := strconv.Atoi(ctx.DefaultQuery("dias", "30"))
+		if err != nil || dias < 0 || dias > 365 {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "parâmetro dias deve ser um número entre 0 e 365"})
+			return
+		}
+
+		trocas, err := e.Service.ListarTrocasPendentes(ctx, int32(tenantId64), unidadeEscolhida(ctx), dias)
+		if err != nil {
+			responderErro(ctx, err, "erro ao listar trocas pendentes")
+			return
+		}
+
+		ctx.JSON(http.StatusOK, trocas)
+	}
+}
+
+// ListarFaltasKit godoc
+// @Summary      Funcionários sem o EPI do kit
+// @Description  Funcionários ativos com menos EPI em posse (entregue − devolvido) do que o kit da função exige
+// @Tags         Entregas
+// @Produce      json
+// @Success      200  {array}   model.FaltaKitDto
+// @Failure      500  {object}  helper.HTTPError "Erro interno"
+// @Router       /faltas-kit [get]
+// @Security     BearerAuth
+func (e *EntregaController) ListarFaltasKit() gin.HandlerFunc {
+
+	return func(ctx *gin.Context) {
+
+		tenantId64, ok := middleware.TenantID(ctx)
+		if !ok {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro interno de tenant"})
+			return
+		}
+
+		faltas, err := e.Service.ListarFaltasKit(ctx, int32(tenantId64), unidadeEscolhida(ctx))
+		if err != nil {
+			responderErro(ctx, err, "erro ao listar faltas do kit")
+			return
+		}
+
+		ctx.JSON(http.StatusOK, faltas)
 	}
 }
 
@@ -336,7 +397,7 @@ func (e *EntregaController) BuscarEntregaDashbord() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -345,14 +406,10 @@ func (e *EntregaController) BuscarEntregaDashbord() gin.HandlerFunc {
 			return
 		}
 
-		entregas, err := e.Service.BuscaEntregaDash(ctx, tenantId)
+		entregas, err := e.Service.BuscaEntregaDash(ctx, tenantId, unidadeEscolhida(ctx))
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -374,7 +431,7 @@ func (e *EntregaController) BuscarEntregaItenDashbord() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -383,14 +440,10 @@ func (e *EntregaController) BuscarEntregaItenDashbord() gin.HandlerFunc {
 			return
 		}
 
-		itens, err := e.Service.BuscaItemDash(ctx, tenantId)
+		itens, err := e.Service.BuscaItemDash(ctx, tenantId, unidadeEscolhida(ctx))
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 

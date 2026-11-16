@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/radaptech/ginmw"
 )
 
 type chaveRequestID struct{}
@@ -61,10 +60,10 @@ func LogRequest() gin.HandlerFunc {
 			slog.Int64("duracao_ms", time.Since(inicio).Milliseconds()),
 			slog.String("ip", c.ClientIP()),
 		}
-		if tenant, ok := ginmw.TenantID(c); ok {
+		if tenant, ok := TenantID(c); ok {
 			attrs = append(attrs, slog.Int64("tenant", tenant))
 		}
-		if usuario, ok := ginmw.UserID(c); ok {
+		if usuario, ok := UserID(c); ok {
 			attrs = append(attrs, slog.Int64("usuario", usuario))
 		}
 		if len(c.Errors) > 0 {

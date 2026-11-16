@@ -67,6 +67,57 @@ func (q *Queries) DevolverItemAoEstoque(ctx context.Context, arg DevolverItemAoE
 	return err
 }
 
+const listarEpisCaVencido = `-- name: ListarEpisCaVencido :many
+SELECT e.id, e.nome, e.CA, e.validade_CA, COALESCE(c.situacao, '')::text AS situacao
+FROM epi e
+LEFT JOIN caepi c ON c.ca = ltrim(regexp_replace(e.CA, '\D', '', 'g'), '0')
+WHERE e.tenant_id = $1
+  AND e.id = ANY($2::int[])
+  AND (e.validade_CA < $3::date OR c.situacao IN ('CANCELADO', 'SUSPENSO'))
+`
+
+type ListarEpisCaVencidoParams struct {
+	TenantID    int32
+	Ids         []int32
+	DataEntrega pgtype.Date
+}
+
+type ListarEpisCaVencidoRow struct {
+	ID         int32
+	Nome       string
+	Ca         string
+	ValidadeCa pgtype.Date
+	Situacao   string
+}
+
+// Entregar EPI com CA vencido na data da entrega gera autuação (NR-6). CA cancelado ou suspenso
+// na base do MTE (caepi) também bloqueia, mesmo com a validade cadastrada ainda em dia.
+func (q *Queries) ListarEpisCaVencido(ctx context.Context, arg ListarEpisCaVencidoParams) ([]ListarEpisCaVencidoRow, error) {
+	rows, err := q.db.Query(ctx, listarEpisCaVencido, arg.TenantID, arg.Ids, arg.DataEntrega)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListarEpisCaVencidoRow
+	for rows.Next() {
+		var i ListarEpisCaVencidoRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Nome,
+			&i.Ca,
+			&i.ValidadeCa,
+			&i.Situacao,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listarEstoqueAtual = `-- name: ListarEstoqueAtual :many
 SELECT 
     e.id_epi, 
@@ -77,14 +128,16 @@ FROM entrada_epi_item e
 INNER JOIN epi p ON e.id_epi = p.id
 WHERE e.tenant_id = $3
   AND e.ativo = TRUE
+  AND ($4::int IS NULL OR e.id_unidade = $4::int)
 GROUP BY e.id_epi, p.nome
 LIMIT $1 OFFSET $2
 `
 
 type ListarEstoqueAtualParams struct {
-	Limit    int32
-	Offset   int32
-	TenantID int32
+	Limit     int32
+	Offset    int32
+	TenantID  int32
+	IDUnidade pgtype.Int4
 }
 
 type ListarEstoqueAtualRow struct {
@@ -95,7 +148,12 @@ type ListarEstoqueAtualRow struct {
 }
 
 func (q *Queries) ListarEstoqueAtual(ctx context.Context, arg ListarEstoqueAtualParams) ([]ListarEstoqueAtualRow, error) {
-	rows, err := q.db.Query(ctx, listarEstoqueAtual, arg.Limit, arg.Offset, arg.TenantID)
+	rows, err := q.db.Query(ctx, listarEstoqueAtual,
+		arg.Limit,
+		arg.Offset,
+		arg.TenantID,
+		arg.IDUnidade,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -125,6 +183,7 @@ FROM entrada_epi_item
 WHERE tenant_id = $1 
   AND id_epi = $2 
   AND id_tamanho = $3 
+  AND id_unidade = $4
   AND quantidade_atual > 0 
   AND data_validade >= CURRENT_DATE
   AND ativo = TRUE
@@ -136,6 +195,7 @@ type ListarLotesParaConsumoParams struct {
 	TenantID  int32
 	IDEpi     int32
 	IDTamanho int32
+	IDUnidade int32
 }
 
 type ListarLotesParaConsumoRow struct {
@@ -147,7 +207,12 @@ type ListarLotesParaConsumoRow struct {
 
 // O PostgreSQL usa FOR UPDATE para travar apenas as linhas desse cliente específico.
 func (q *Queries) ListarLotesParaConsumo(ctx context.Context, arg ListarLotesParaConsumoParams) ([]ListarLotesParaConsumoRow, error) {
-	rows, err := q.db.Query(ctx, listarLotesParaConsumo, arg.TenantID, arg.IDEpi, arg.IDTamanho)
+	rows, err := q.db.Query(ctx, listarLotesParaConsumo,
+		arg.TenantID,
+		arg.IDEpi,
+		arg.IDTamanho,
+		arg.IDUnidade,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +247,8 @@ FROM entrada_epi_item e
 INNER JOIN epi p ON e.id_epi = p.id
 WHERE e.tenant_id = $3
   AND e.ativo = TRUE
-  AND (p.fabricante = $4 OR $4 IS NULL)
+  AND ($4::int IS NULL OR e.id_unidade = $4::int)
+  AND (p.fabricante = $5 OR $5 IS NULL)
 GROUP BY e.id_epi, p.nome
 LIMIT $1 OFFSET $2
 `
@@ -191,6 +257,7 @@ type ListarSaldoEstoqueParams struct {
 	Limit      int32
 	Offset     int32
 	TenantID   int32
+	IDUnidade  pgtype.Int4
 	Fabricante pgtype.Text
 }
 
@@ -207,6 +274,7 @@ func (q *Queries) ListarSaldoEstoque(ctx context.Context, arg ListarSaldoEstoque
 		arg.Limit,
 		arg.Offset,
 		arg.TenantID,
+		arg.IDUnidade,
 		arg.Fabricante,
 	)
 	if err != nil {
@@ -286,4 +354,43 @@ func (q *Queries) ReporEstoqueLote(ctx context.Context, arg ReporEstoqueLotePara
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const saldoForaDaUnidade = `-- name: SaldoForaDaUnidade :one
+SELECT
+    (SELECT u.nome FROM unidade u WHERE u.id = $1 AND u.tenant_id = $2)::text AS unidade,
+    COALESCE(SUM(quantidade_atual), 0)::int AS saldo_fora
+FROM entrada_epi_item
+WHERE tenant_id = $2
+  AND id_epi = $3
+  AND id_tamanho = $4
+  AND id_unidade <> $1
+  AND quantidade_atual > 0
+  AND data_validade >= CURRENT_DATE
+  AND ativo = TRUE
+`
+
+type SaldoForaDaUnidadeParams struct {
+	IDUnidade int32
+	TenantID  int32
+	IDEpi     int32
+	IDTamanho int32
+}
+
+type SaldoForaDaUnidadeRow struct {
+	Unidade   string
+	SaldoFora int32
+}
+
+// Usada só quando falta estoque: diz o nome da unidade e quanto há nas outras.
+func (q *Queries) SaldoForaDaUnidade(ctx context.Context, arg SaldoForaDaUnidadeParams) (SaldoForaDaUnidadeRow, error) {
+	row := q.db.QueryRow(ctx, saldoForaDaUnidade,
+		arg.IDUnidade,
+		arg.TenantID,
+		arg.IDEpi,
+		arg.IDTamanho,
+	)
+	var i SaldoForaDaUnidadeRow
+	err := row.Scan(&i.Unidade, &i.SaldoFora)
+	return i, err
 }

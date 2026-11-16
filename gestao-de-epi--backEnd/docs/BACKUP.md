@@ -51,21 +51,24 @@ make backup-banco    # = go run . backup-banco
 ```
 
 **Mas o `pg_dump` provavelmente não existe na sua máquina** — ele vem do pacote
-`postgresql17-client` instalado no `Dockerfile` de produção. Então teste pela imagem:
+`postgresql17-client` instalado na imagem de produção (`Dockerfile` da raiz do monorepo). Então teste pela imagem:
 
 ```bash
+# Na raiz do monorepo. O build compila o Go e o front do zero e pesa na memória:
+# pare a stack de dev antes (docker compose -f docker-compose.dev.yml stop api front).
+
 # 1. Compila a imagem de produção (mesmo Dockerfile do deploy).
 #    É aqui que se descobre se o Go compila e se o pg_dump entrou na imagem.
-docker build -t sgeepi-backup-test .
+docker build -t sgepi-backup-test .
 
 # 2. Roda só o subcomando de backup e descarta o container.
-docker run --rm --network sgeepi-infra_default --env-file .env sgeepi-backup-test ./main backup-banco
+docker run --rm --network sgepi-sistema-de-getao-de-epi_default --env-file gestao-de-epi--backEnd/.env sgepi-backup-test ./main backup-banco
 ```
 
 - `--rm` — comando de uma vez, não é um serviço; some ao terminar.
-- `--network sgeepi-infra_default` — mesma rede do `postgres_container`, senão o
+- `--network sgepi-sistema-de-getao-de-epi_default` — mesma rede do `postgres_container`, senão o
   `DB_SERVER=postgres` do `.env` não resolve.
-- `--env-file .env` — injeta as variáveis como variáveis de **sistema**; o log vai dizer
+- `--env-file gestao-de-epi--backEnd/.env` — injeta as variáveis como variáveis de **sistema**; o log vai dizer
   "arquivo .env não encontrado, continuando com variáveis de sistema", que é exatamente o
   comportamento em produção.
 - `./main backup-banco` — sobrescreve o `CMD ["./main"]` da imagem. Sem o argumento, sobe a API inteira.

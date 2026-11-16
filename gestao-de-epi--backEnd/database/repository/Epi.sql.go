@@ -12,8 +12,8 @@ import (
 )
 
 const addEpi = `-- name: AddEpi :one
-INSERT INTO epi (tenant_id, nome, fabricante, CA, descricao, validade_CA, IdTipoProtecao, alerta_minimo) 
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO epi (tenant_id, nome, fabricante, CA, descricao, validade_CA, IdTipoProtecao, alerta_minimo, vida_util_dias) 
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NULLIF($9::int, 0))
 RETURNING id
 `
 
@@ -26,6 +26,7 @@ type AddEpiParams struct {
 	ValidadeCa     pgtype.Date
 	Idtipoprotecao int32
 	AlertaMinimo   int32
+	VidaUtilDias   int32
 }
 
 func (q *Queries) AddEpi(ctx context.Context, arg AddEpiParams) (int32, error) {
@@ -38,6 +39,7 @@ func (q *Queries) AddEpi(ctx context.Context, arg AddEpiParams) (int32, error) {
 		arg.ValidadeCa,
 		arg.Idtipoprotecao,
 		arg.AlertaMinimo,
+		arg.VidaUtilDias,
 	)
 	var id int32
 	err := row.Scan(&id)
@@ -63,17 +65,21 @@ func (q *Queries) AddEpiTamanho(ctx context.Context, arg AddEpiTamanhoParams) er
 }
 
 const buscaEpiDashbord = `-- name: BuscaEpiDashbord :many
-SELECT id, nome, alerta_minimo
-FROM epi
-WHERE tenant_id = $1 -- SEGURANÇA
-  AND ativo = TRUE
-ORDER BY nome
+SELECT e.id, e.nome, e.alerta_minimo, e.CA, e.validade_CA, COALESCE(c.situacao, '')::text AS situacao_ca
+FROM epi e
+LEFT JOIN caepi c ON c.ca = ltrim(regexp_replace(e.CA, '\D', '', 'g'), '0') -- caepi é global
+WHERE e.tenant_id = $1 -- SEGURANÇA
+  AND e.ativo = TRUE
+ORDER BY e.nome
 `
 
 type BuscaEpiDashbordRow struct {
 	ID           int32
 	Nome         string
 	AlertaMinimo int32
+	Ca           string
+	ValidadeCa   pgtype.Date
+	SituacaoCa   string
 }
 
 func (q *Queries) BuscaEpiDashbord(ctx context.Context, tenantID int32) ([]BuscaEpiDashbordRow, error) {
@@ -85,7 +91,14 @@ func (q *Queries) BuscaEpiDashbord(ctx context.Context, tenantID int32) ([]Busca
 	var items []BuscaEpiDashbordRow
 	for rows.Next() {
 		var i BuscaEpiDashbordRow
-		if err := rows.Scan(&i.ID, &i.Nome, &i.AlertaMinimo); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Nome,
+			&i.AlertaMinimo,
+			&i.Ca,
+			&i.ValidadeCa,
+			&i.SituacaoCa,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -277,7 +290,7 @@ func (q *Queries) BuscaTodosItensEntreguesDoTenant(ctx context.Context, tenantID
 const buscarEpi = `-- name: BuscarEpi :one
 SELECT 
     e.id, e.nome, e.fabricante, e.CA, e.descricao,
-    e.validade_CA, e.alerta_minimo, e.IdTipoProtecao, 
+    e.validade_CA, e.alerta_minimo, e.IdTipoProtecao, e.vida_util_dias,
     tp.nome as tipo_protecao_nome
 FROM epi e
 INNER JOIN tipo_protecao tp ON e.IdTipoProtecao = tp.id
@@ -300,6 +313,7 @@ type BuscarEpiRow struct {
 	ValidadeCa       pgtype.Date
 	AlertaMinimo     int32
 	Idtipoprotecao   int32
+	VidaUtilDias     pgtype.Int4
 	TipoProtecaoNome string
 }
 
@@ -315,6 +329,7 @@ func (q *Queries) BuscarEpi(ctx context.Context, arg BuscarEpiParams) (BuscarEpi
 		&i.ValidadeCa,
 		&i.AlertaMinimo,
 		&i.Idtipoprotecao,
+		&i.VidaUtilDias,
 		&i.TipoProtecaoNome,
 	)
 	return i, err
@@ -362,7 +377,7 @@ func (q *Queries) BuscarTamanhosPorEpi(ctx context.Context, arg BuscarTamanhosPo
 const buscarTodosEpisPaginado = `-- name: BuscarTodosEpisPaginado :many
 SELECT 
     e.id, e.nome, e.fabricante, e.CA, e.descricao,
-    e.validade_CA, e.alerta_minimo, e.IdTipoProtecao, 
+    e.validade_CA, e.alerta_minimo, e.IdTipoProtecao, e.vida_util_dias,
     tp.nome as tipo_protecao_nome,
     COUNT(*) OVER() as total_geral
 FROM epi e
@@ -400,6 +415,7 @@ type BuscarTodosEpisPaginadoRow struct {
 	ValidadeCa       pgtype.Date
 	AlertaMinimo     int32
 	Idtipoprotecao   int32
+	VidaUtilDias     pgtype.Int4
 	TipoProtecaoNome string
 	TotalGeral       int64
 }
@@ -431,6 +447,7 @@ func (q *Queries) BuscarTodosEpisPaginado(ctx context.Context, arg BuscarTodosEp
 			&i.ValidadeCa,
 			&i.AlertaMinimo,
 			&i.Idtipoprotecao,
+			&i.VidaUtilDias,
 			&i.TipoProtecaoNome,
 			&i.TotalGeral,
 		); err != nil {
@@ -527,9 +544,12 @@ SET
     descricao = COALESCE($4, descricao),
     validade_CA = COALESCE($5, validade_CA),
     IdTipoProtecao = COALESCE($6::int, IdTipoProtecao),
-    alerta_minimo = COALESCE($7::int, alerta_minimo)  
-    WHERE id = $8 
-  AND tenant_id = $9 -- SEGURANÇA: Obrigatório para update
+    alerta_minimo = COALESCE($7::int, alerta_minimo),
+    -- 0 desliga a troca periódica (NULL); não enviado mantém o valor atual
+    vida_util_dias = CASE WHEN $8::int IS NULL THEN vida_util_dias
+                          ELSE NULLIF($8::int, 0) END
+    WHERE id = $9 
+  AND tenant_id = $10 -- SEGURANÇA: Obrigatório para update
   AND ativo = TRUE
 `
 
@@ -541,6 +561,7 @@ type UpdateEpiCampoParams struct {
 	ValidadeCa     pgtype.Date
 	IDTipoProtecao pgtype.Int4
 	AlertaMinimo   pgtype.Int4
+	VidaUtilDias   pgtype.Int4
 	ID             int32
 	TenantID       int32
 }
@@ -554,6 +575,7 @@ func (q *Queries) UpdateEpiCampo(ctx context.Context, arg UpdateEpiCampoParams) 
 		arg.ValidadeCa,
 		arg.IDTipoProtecao,
 		arg.AlertaMinimo,
+		arg.VidaUtilDias,
 		arg.ID,
 		arg.TenantID,
 	)

@@ -1,11 +1,16 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"log/slog"
+	"sort"
 	"time"
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/configs"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/database/repository"
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
 	"github.com/gosimple/slug"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -13,10 +18,14 @@ import (
 
 type EmpresaRepository interface {
 	Salvar(ctx context.Context, arg repository.CriarEmpresaParams) error
-	ResumoDashboard(ctx context.Context) (int64, int64, int64, int64, int64, int64, int64, float64, error)
+	ResumoDashboard(ctx context.Context) (repository.ResumoMasterRow, error)
+	Alertas(ctx context.Context) ([]repository.AlertasMasterRow, error)
+	Limites(ctx context.Context) ([]repository.LimitesMasterRow, error)
 	EmpresasRecentes(ctx context.Context) ([]repository.EmpresasRecentesRow, error)
 	DadosEmpresas(ctx context.Context) ([]repository.DadosEmpresasRow, error)
 	EditarEmpresa(ctx context.Context, arg repository.EditarEmpresaParams) error
+	BuscarLogo(ctx context.Context, tenantId int32) (string, error)
+	DefinirLogo(ctx context.Context, tenantId int32, key string) error
 }
 
 type EmpresaService struct {
@@ -32,6 +41,13 @@ func NewEmpresaService(repo EmpresaRepository, repoPlano PlanosRepository) *Empr
 	}
 }
 
+// subdominiosReservados: endereços *.radaptech.com.br que o sistema usa ou pode usar; nenhuma empresa fica com eles.
+var subdominiosReservados = map[string]bool{
+	"www": true, "api": true, "app": true, "admin": true, "painel": true, "homolog": true,
+	"homologacao": true, "staging": true, "dev": true, "status": true, "mail": true,
+	"email": true, "smtp": true, "suporte": true, "docs": true, "blog": true, "traefik": true,
+}
+
 func (e *EmpresaService) Salvar(ctx context.Context, model model.EmpresaInserir) error {
 
 	plano, err := e.repoPlano.BuscarPlanoPorNome(ctx, model.Plano)
@@ -40,6 +56,9 @@ func (e *EmpresaService) Salvar(ctx context.Context, model model.EmpresaInserir)
 	}
 
 	subdominio := slug.Make(model.NomeFantasia)
+	if subdominio == "" || subdominiosReservados[subdominio] {
+		return helper.ErrSubdominioInvalido
+	}
 
 	err = e.repo.Salvar(ctx, repository.CriarEmpresaParams{
 		NomeFantasia: model.NomeFantasia,
@@ -65,23 +84,96 @@ func (e *EmpresaService) Salvar(ctx context.Context, model model.EmpresaInserir)
 
 func (e *EmpresaService) EmpresaDashboard(ctx context.Context) (model.ResumoDashboard, error) {
 
-	empresaA, empresaB, empresaT, Te, Tf, tep, tee, RM, err := e.repo.ResumoDashboard(ctx)
-
+	r, err := e.repo.ResumoDashboard(ctx)
 	if err != nil {
-
 		return model.ResumoDashboard{}, err
 	}
 
 	return model.ResumoDashboard{
-		EmpresasAtivas:     int(empresaA),
-		EmpresasBloqueadas: int(empresaB),
-		EmpresasEmTeste:    int(empresaT),
-		TotalEmpresas:      int(Te),
-		TotalFuncionarios:  int(Tf),
-		TotalEpis:          int(tep),
-		TotalEntregas:      int(tee),
-		ReceitaMensal:      RM,
+		EmpresasAtivas:     int(r.EmpresasAtivas),
+		EmpresasBloqueadas: int(r.EmpresasBloqueadas),
+		EmpresasEmTeste:    int(r.EmpresasEmTeste),
+		TotalEmpresas:      int(r.TotalEmpresas),
+		TotalFuncionarios:  int(r.TotalFuncionarios),
+		TotalEpis:          int(r.TotalEpis),
+		TotalEntregas:      int(r.TotalEntregas),
+		ReceitaMensal:      r.ReceitaMensal,
+		EmpresasVencidas:   int(r.EmpresasVencidas),
 	}, nil
+}
+
+// diasSemAcessoAlerta: a partir de quantos dias sem nenhum login a empresa aparece como "sem uso"
+const diasSemAcessoAlerta = 14
+
+// Alertas do painel master: vencimento passado e limite do plano esgotado (alto); vencimento em até 7 dias,
+// limite do plano em 80% ou mais e empresa sem uso (medio).
+// Os mais graves primeiro; dentro do nível, o mais urgente primeiro.
+func (e *EmpresaService) Alertas(ctx context.Context) ([]model.AlertaMaster, error) {
+
+	linhas, err := e.repo.Alertas(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	type alerta struct {
+		model.AlertaMaster
+		urgencia int32 // menor = mais urgente
+	}
+	lista := make([]alerta, 0, len(linhas))
+	for _, l := range linhas {
+		if l.TemVencimento && l.DiasParaVencer <= 7 {
+			a := alerta{AlertaMaster: model.AlertaMaster{
+				ID: fmt.Sprintf("venc-%d", l.ID), EmpresaID: l.ID, Tipo: "Vencimento", Nivel: "medio",
+			}, urgencia: l.DiasParaVencer}
+			switch {
+			case l.DiasParaVencer < 0:
+				a.Nivel, a.Mensagem = "alto", fmt.Sprintf("%s: venceu há %d dia(s)", l.NomeFantasia, -l.DiasParaVencer)
+			case l.DiasParaVencer == 0:
+				a.Mensagem = l.NomeFantasia + ": vence hoje"
+			default:
+				a.Mensagem = fmt.Sprintf("%s: vence em %d dia(s)", l.NomeFantasia, l.DiasParaVencer)
+			}
+			lista = append(lista, a)
+		}
+		if l.DiasSemAcesso >= diasSemAcessoAlerta {
+			msg := fmt.Sprintf("%s: ninguém acessa há %d dias", l.NomeFantasia, l.DiasSemAcesso)
+			if l.NuncaAcessou {
+				msg = fmt.Sprintf("%s: cadastrada há %d dias e nunca acessou", l.NomeFantasia, l.DiasSemAcesso)
+			}
+			// sem uso vem depois dos vencimentos da semana
+			lista = append(lista, alerta{AlertaMaster: model.AlertaMaster{
+				ID: fmt.Sprintf("uso-%d", l.ID), EmpresaID: l.ID, Tipo: "Sem uso", Nivel: "medio", Mensagem: msg,
+			}, urgencia: 1000 - l.DiasSemAcesso})
+		}
+	}
+
+	limites, err := e.repo.Limites(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, l := range limites {
+		a := alerta{AlertaMaster: model.AlertaMaster{
+			ID: fmt.Sprintf("lim-%d-%s", l.ID, l.Recurso), EmpresaID: l.ID, Tipo: "Limite do plano", Nivel: "medio",
+			Mensagem: fmt.Sprintf("%s: usando %d de %d %s do plano", l.NomeFantasia, l.Usado, l.Limite, l.Recurso),
+		}, urgencia: 200 - l.Usado*100/l.Limite} // depois dos vencimentos da semana, antes de sem uso
+		if l.Usado >= l.Limite {
+			a.Nivel, a.Mensagem = "alto", fmt.Sprintf("%s: chegou ao limite de %s do plano (%d de %d)", l.NomeFantasia, l.Recurso, l.Usado, l.Limite)
+		}
+		lista = append(lista, a)
+	}
+
+	sort.SliceStable(lista, func(i, j int) bool {
+		if (lista[i].Nivel == "alto") != (lista[j].Nivel == "alto") {
+			return lista[i].Nivel == "alto"
+		}
+		return lista[i].urgencia < lista[j].urgencia
+	})
+
+	dto := make([]model.AlertaMaster, len(lista))
+	for i, a := range lista {
+		dto[i] = a.AlertaMaster
+	}
+	return dto, nil
 }
 
 func (e *EmpresaService) EmpresaRecentes(ctx context.Context) ([]model.EmpresaRecente, error) {
@@ -125,20 +217,27 @@ func (e *EmpresaService) DadosEmpresas(ctx context.Context) ([]model.Empresa, er
 
 	for _, empresa := range empresas {
 
+		var limite *int32 // nil = ilimitado
+		if empresa.LimiteUnidades.Valid {
+			limite = &empresa.LimiteUnidades.Int32
+		}
+
 		ee := model.Empresa{
-			ID:           int64(empresa.ID),
-			Nome:         empresa.Nome,
-			CNPJ:         empresa.Cnpj,
-			Responsavel:  empresa.Responsavel.String,
-			Email:        empresa.Email.String,
-			Telefone:     empresa.Telefone.String,
-			Plano:        empresa.PlanoNome,
-			Funcionarios: int(empresa.Funcionarios),
-			EPIs:         int(empresa.Epis),
-			Mensalidade:  empresa.PMensalidade,
-			Vencimento:   *configs.NewDataBrPtr(empresa.Vencimento.Time),
-			Status:       empresa.Status,
-			Observacoes:  empresa.Observacoes.String,
+			ID:             int64(empresa.ID),
+			Nome:           empresa.Nome,
+			CNPJ:           empresa.Cnpj,
+			Responsavel:    empresa.Responsavel.String,
+			Email:          empresa.Email.String,
+			Telefone:       empresa.Telefone.String,
+			Plano:          empresa.PlanoNome,
+			Funcionarios:   int(empresa.Funcionarios),
+			EPIs:           int(empresa.Epis),
+			Unidades:       int(empresa.Unidades),
+			LimiteUnidades: limite,
+			Mensalidade:    empresa.PMensalidade,
+			Vencimento:     *configs.NewDataBrPtr(empresa.Vencimento.Time),
+			Status:         empresa.Status,
+			Observacoes:    empresa.Observacoes.String,
 		}
 
 		dto = append(dto, ee)
@@ -147,7 +246,7 @@ func (e *EmpresaService) DadosEmpresas(ctx context.Context) ([]model.Empresa, er
 	return dto, nil
 }
 
-func (e *EmpresaService) EditarEmpresa(ctx context.Context,  id int32, model model.EditarEmpresaRequest) error {
+func (e *EmpresaService) EditarEmpresa(ctx context.Context, id int32, model model.EditarEmpresaRequest) error {
 
 	err := e.repo.EditarEmpresa(ctx, repository.EditarEmpresaParams{
 		NomeFantasia: model.Nome,
@@ -159,15 +258,79 @@ func (e *EmpresaService) EditarEmpresa(ctx context.Context,  id int32, model mod
 		PlanoID:      pgtype.Int4{Int32: int32(model.PlanoID), Valid: int32(model.PlanoID) != 0},
 		Status:       model.Status,
 		Vencimento:   pgtype.Date{Time: time.Time(*configs.NewDataBrPtr(model.Vencimento.Time())), Valid: true},
-		Observacoes: pgtype.Text{String: model.Observacoes, Valid: model.Observacoes != ""},
-		ID: id,
+		Observacoes:  pgtype.Text{String: model.Observacoes, Valid: model.Observacoes != ""},
+		ID:           id,
 	})
 	if err != nil {
 
 		return err
 	}
 
-
 	return nil
 
+}
+
+// SalvarLogo troca a logo da empresa. A antiga só sai do bucket depois que o banco já aponta
+// para a nova; cada envio tem uma chave nova, então nenhum cache fica com a imagem velha.
+func (e *EmpresaService) SalvarLogo(ctx context.Context, tenantId int32, arquivo []byte) error {
+	bucket := helper.BucketLogos()
+	if bucket == "" {
+		return helper.ErrLogoSemArmazenamento
+	}
+	logo, err := helper.PrepararLogo(arquivo)
+	if err != nil {
+		return err
+	}
+	antiga, err := e.repo.BuscarLogo(ctx, tenantId)
+	if err != nil {
+		return err
+	}
+
+	key := fmt.Sprintf("logos/%d/%d.png", tenantId, time.Now().UnixNano())
+	if err := helper.UploadArquivo(ctx, bucket, key, bytes.NewReader(logo), "image/png"); err != nil {
+		return err
+	}
+	if err := e.repo.DefinirLogo(ctx, tenantId, key); err != nil {
+		e.apagarLogo(ctx, key)
+		return err
+	}
+	e.apagarLogo(ctx, antiga)
+	return nil
+}
+
+func (e *EmpresaService) RemoverLogo(ctx context.Context, tenantId int32) error {
+	antiga, err := e.repo.BuscarLogo(ctx, tenantId)
+	if err != nil {
+		return err
+	}
+	if err := e.repo.DefinirLogo(ctx, tenantId, ""); err != nil {
+		return err
+	}
+	e.apagarLogo(ctx, antiga)
+	return nil
+}
+
+// Logo devolve o PNG da logo, ou nil quando a empresa não tem. Com o R2 fora do ar também
+// devolve nil: os PDFs saem sem logo em vez de falhar, igual às fichas da API.
+func (e *EmpresaService) Logo(ctx context.Context, tenantId int32) ([]byte, error) {
+	key, err := e.repo.BuscarLogo(ctx, tenantId)
+	if err != nil || key == "" {
+		return nil, err
+	}
+	logo, err := helper.BaixarArquivo(ctx, helper.BucketLogos(), key)
+	if err != nil {
+		slog.WarnContext(ctx, "ler logo da empresa no R2", "tenant", tenantId, "key", key, "err", err)
+		return nil, nil
+	}
+	return logo, nil
+}
+
+// apagarLogo: objeto que sobrar no bucket não quebra nada, então a falha só vai para o log.
+func (e *EmpresaService) apagarLogo(ctx context.Context, key string) {
+	if key == "" {
+		return
+	}
+	if err := helper.ApagarArquivo(ctx, helper.BucketLogos(), key); err != nil {
+		slog.WarnContext(ctx, "apagar logo antiga do R2", "key", key, "err", err)
+	}
 }

@@ -7,10 +7,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-
 type TamanhosRepository struct {
-
-	q *Queries
+	q  *Queries
 	db *pgxpool.Pool
 }
 
@@ -30,19 +28,18 @@ func (t *TamanhosRepository) Adicionar(ctx context.Context, tamanho AddTamanhoPa
 	return nil
 }
 
-func (t *TamanhosRepository) ListarTamanho(ctx context.Context, arg BuscarTamanhoParams) (BuscarTamanhoRow, error){
+func (t *TamanhosRepository) ListarTamanho(ctx context.Context, arg BuscarTamanhoParams) (BuscarTamanhoRow, error) {
 
-
-	return  t.q.BuscarTamanho(ctx, arg)
+	return t.q.BuscarTamanho(ctx, arg)
 
 }
 
-func (t *TamanhosRepository) ListarTamanhos(ctx context.Context, tenantId int32) ([]BuscarTodosTamanhosRow, error){
+func (t *TamanhosRepository) ListarTamanhos(ctx context.Context, tenantId int32) ([]BuscarTodosTamanhosRow, error) {
 
-	tamanhos, err:= t.q.BuscarTodosTamanhos(ctx, tenantId)
+	tamanhos, err := t.q.BuscarTodosTamanhos(ctx, tenantId)
 	if err != nil {
 
-		return  []BuscarTodosTamanhosRow{}, helper.TraduzErroPostgres(err)
+		return []BuscarTodosTamanhosRow{}, helper.TraduzErroPostgres(err)
 	}
 
 	return tamanhos, nil
@@ -51,8 +48,8 @@ func (t *TamanhosRepository) ListarTamanhos(ctx context.Context, tenantId int32)
 
 func (t *TamanhosRepository) CancelarTamanho(ctx context.Context, arg DeletarTamanhoParams) (int64, error) {
 
-	linhasAfetadas, err:= t.q.DeletarTamanho(ctx, arg)
-		if err != nil {
+	linhasAfetadas, err := t.q.DeletarTamanho(ctx, arg)
+	if err != nil {
 
 		return 0, helper.TraduzErroPostgres(err)
 	}
@@ -60,27 +57,24 @@ func (t *TamanhosRepository) CancelarTamanho(ctx context.Context, arg DeletarTam
 	return linhasAfetadas, nil
 }
 
-func (t *TamanhosRepository) BuscarTamanhoPorIdePI(ctx context.Context, arg BuscarTamanhosPorIdEpiParams) ([]BuscarTamanhosPorIdEpiRow, error){
+func (t *TamanhosRepository) BuscarTamanhoPorIdePI(ctx context.Context, arg BuscarTamanhosPorIdEpiParams) ([]BuscarTamanhosPorIdEpiRow, error) {
 
-	Tamanhos, err:= t.q.BuscarTamanhosPorIdEpi(ctx, arg)
+	Tamanhos, err := t.q.BuscarTamanhosPorIdEpi(ctx, arg)
 	if err != nil {
 
-		return  []BuscarTamanhosPorIdEpiRow{}, helper.TraduzErroPostgres(err)
+		return []BuscarTamanhosPorIdEpiRow{}, helper.TraduzErroPostgres(err)
 	}
 
 	return Tamanhos, nil
 }
 
+func (t *TamanhosRepository) BuscarTamanhoPorEstoque(ctx context.Context, arg BuscarTamanhosComEstoquePorEpiParams) ([]BuscarTamanhosComEstoquePorEpiRow, error) {
 
-func (t *TamanhosRepository) BuscarTamanhoPorEstoque(ctx context.Context, arg BuscarTamanhosComEstoquePorEpiParams) ([]BuscarTamanhosComEstoquePorEpiRow, error){
-
-
-	tamanhos, err:= t.q.BuscarTamanhosComEstoquePorEpi(ctx, arg)
+	tamanhos, err := t.q.BuscarTamanhosComEstoquePorEpi(ctx, arg)
 	if err != nil {
 
 		return []BuscarTamanhosComEstoquePorEpiRow{}, helper.TraduzErroPostgres(err)
 	}
-
 
 	return tamanhos, nil
 }

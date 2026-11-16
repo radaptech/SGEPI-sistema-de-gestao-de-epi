@@ -1,598 +1,293 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { X, ShieldPlus, ShieldAlert, CheckCircle2, Loader2, PenLine } from "lucide-react";
 import { api } from "../../services/api";
-import {
-  X, ShieldPlus, ShieldAlert, CheckCircle2,
-  AlertCircle, Loader2, Plus, PenLine
-} from "lucide-react";
+import Dialogo from "../Dialogo";
+import Selecao from "../Selecao";
+import Campo, { inputClass } from "../Campo";
+import formatarData from "../../utils/DatasFormater";
+import CampoCa from "./epi/CampoCa";
+import GradeTamanhos from "./epi/GradeTamanhos";
 
-const PROTECOES_PADRAO = [
-  "Cabeça",
-  "Olhos e Rosto",
-  "Auditiva",
-  "Respiratória",
-  "Mãos e Braços",
-  "Pés e Pernas",
-  "Corpo Inteiro",
-  "Quedas",
-];
+// dd/mm/aaaa (API) -> aaaa-mm-dd (input date)
+const paraInput = (dataBR) => {
+  if (!dataBR || !dataBR.includes("/")) return "";
+  const [d, m, a] = dataBR.split("/");
+  return `${a}-${m}-${d}`;
+};
 
-const TAMANHOS_SUGERIDOS = [
-  "Único", "PP", "P", "M", "G", "GG", "EXG",
-  "34", "35", "36", "37", "38", "39", "40",
-  "41", "42", "43", "44", "45", "46",
-];
+const FORM_VAZIO = {
+  nome: "",
+  fabricante: "",
+  ca: "",
+  descricao: "",
+  data_validade_ca: "",
+  id_tamanho: [],
+  id_protecao: "",
+  alerta_minimo: "",
+  vida_util_dias: "",
+};
+
+function validar(form) {
+  const erros = {};
+  if (!form.nome.trim()) erros.nome = "Informe o nome do EPI.";
+  if (!form.id_protecao) erros.id_protecao = "Selecione o tipo de proteção.";
+  if (!form.fabricante.trim()) erros.fabricante = "Informe o fabricante.";
+  if (!String(form.ca).replace(/\D/g, "")) erros.ca = "Informe o número do CA.";
+  if (!form.data_validade_ca) erros.data_validade_ca = "Informe a validade do CA.";
+  if (!form.id_tamanho.length) erros.id_tamanho = "Selecione pelo menos um tamanho.";
+  if (form.alerta_minimo !== "" && form.alerta_minimo !== null && Number(form.alerta_minimo) < 0) {
+    erros.alerta_minimo = "O alerta mínimo não pode ser negativo.";
+  }
+  const vida = Number(form.vida_util_dias);
+  if (form.vida_util_dias !== "" && !(Number.isInteger(vida) && vida >= 0)) {
+    erros.vida_util_dias = "Informe a vida útil em dias inteiros (vazio = sem troca periódica).";
+  }
+  return erros;
+}
 
 function ModalNovoEpi({ onClose, onSalvar, epiParaEditar }) {
   const [carregandoDados, setCarregandoDados] = useState(true);
   const [salvando, setSalvando] = useState(false);
-
   const [tiposProtecao, setTiposProtecao] = useState([]);
-  const [tamanhosDisponiveis, setTamanhosDisponiveis] = useState([]);
-
-  const [mostrandoAddProtecao, setMostrandoAddProtecao] = useState(false);
-  const [novoTipoNome, setNovoTipoNome] = useState("");
-  const [salvandoNovoTipo, setSalvandoNovoTipo] = useState(false);
-
-  const [mostrandoAddTamanho, setMostrandoAddTamanho] = useState(false);
-  const [novoTamanhoNome, setNovoTamanhoNome] = useState("");
-  const [salvandoNovoTamanho, setSalvandoNovoTamanho] = useState(false);
-
+  const [tamanhos, setTamanhos] = useState([]);
   const [erros, setErros] = useState({});
-  const [toast, setToast] = useState(null);
-
-  const [form, setForm] = useState({
-    nome: "",
-    fabricante: "",
-    ca: "",
-    descricao: "",
-    data_validade_ca: "",
-    id_tamanho: [],
-    id_protecao: "",
-    alerta_minimo: "",
-  });
+  const [infoCa, setInfoCa] = useState(null);
+  const [form, setForm] = useState(FORM_VAZIO);
 
   useEffect(() => {
-    async function carregarConfiguracoes() {
+    (async () => {
       setCarregandoDados(true);
-
       try {
-        const [resProtecoes, resTamanhos] = await Promise.all([
-          api.get("/protecoes"),
-          api.get("/tamanhos"),
-        ]);
-
+        const [resProtecoes, resTamanhos] = await Promise.all([api.get("/protecoes"), api.get("/tamanhos")]);
         setTiposProtecao(Array.isArray(resProtecoes) ? resProtecoes : []);
-        setTamanhosDisponiveis(Array.isArray(resTamanhos) ? resTamanhos : []);
-
+        setTamanhos(Array.isArray(resTamanhos) ? resTamanhos : []);
         if (epiParaEditar) {
-          const formatarDataParaInput = (dataBR) => {
-            if (!dataBR || !dataBR.includes("/")) return "";
-            const [d, m, a] = dataBR.split("/");
-            return `${a}-${m}-${d}`;
-          };
-
           setForm({
             nome: epiParaEditar.nome || "",
             fabricante: epiParaEditar.fabricante || "",
             ca: epiParaEditar.ca || "",
             descricao: epiParaEditar.descricao || "",
-            data_validade_ca: formatarDataParaInput(
-              epiParaEditar.data_validadeCa
-            ),
+            data_validade_ca: paraInput(epiParaEditar.data_validadeCa),
             id_protecao: epiParaEditar.protecao?.id || "",
             id_tamanho: epiParaEditar.tamanhos?.map((t) => t.id) || [],
             alerta_minimo: epiParaEditar.alerta_minimo || "",
+            vida_util_dias: epiParaEditar.vida_util_dias || "",
           });
         }
-      } catch (erro) {
-        console.error("Erro ao carregar configurações do EPI:", erro);
-        mostrarToast("Erro ao carregar dados do formulário.", "erro");
+      } catch {
+        // o api.js já mostrou o erro
       } finally {
         setCarregandoDados(false);
       }
-    }
-
-    carregarConfiguracoes();
+    })();
   }, [epiParaEditar]);
 
-  const mostrarToast = (mensagem, tipo = "sucesso") => {
-    setToast({ mensagem, tipo });
-    setTimeout(() => {
-      setToast(null);
-    }, 3500);
-  };
-
-  const campoComErro = (campo) => {
-    return erros[campo]
-      ? "border-red-400 dark:border-red-500/50 focus:ring-red-500/20 focus:border-red-500"
-      : "border-slate-200/60 dark:border-slate-700/60 focus:ring-blue-500/20 focus:border-blue-500";
-  };
-
-  const limparErroCampo = (campo) => {
-    if (!erros[campo]) return;
-    setErros((errosAtuais) => {
-      const novosErros = { ...errosAtuais };
-      delete novosErros[campo];
-      return novosErros;
+  const limparErros = (campos) =>
+    setErros((atuais) => {
+      const novos = { ...atuais };
+      campos.forEach((c) => delete novos[c]);
+      return novos;
     });
+
+  // campos pode ser função do form atual: usado depois de await, quando o form da renderização já pode estar velho
+  const atualizar = (campos, chaves = Object.keys(campos)) => {
+    setForm((atual) => ({ ...atual, ...(typeof campos === "function" ? campos(atual) : campos) }));
+    limparErros(chaves);
   };
 
-  const atualizarCampo = (campo, valor) => {
-    setForm((prev) => ({
-      ...prev,
-      [campo]: valor,
-    }));
-    limparErroCampo(campo);
-  };
-
-  const alternarTamanho = (id) => {
-    setForm((prev) => {
-      const jaSelecionado = prev.id_tamanho.includes(id);
-      return {
-        ...prev,
-        id_tamanho: jaSelecionado
-          ? prev.id_tamanho.filter((i) => i !== id)
-          : [...prev.id_tamanho, id],
-      };
-    });
-    limparErroCampo("id_tamanho");
-  };
-
-  const validarFormulario = () => {
-    const novosErros = {};
-    const caApenasNumeros = String(form.ca).replace(/\D/g, "");
-
-    if (!form.nome.trim()) novosErros.nome = "Informe o nome do EPI.";
-    if (!form.id_protecao) novosErros.id_protecao = "Selecione o tipo de proteção.";
-    if (!form.fabricante.trim()) novosErros.fabricante = "Informe o fabricante.";
-    if (!caApenasNumeros) novosErros.ca = "Informe o número do CA.";
-    if (!form.data_validade_ca) novosErros.data_validade_ca = "Informe a validade do CA.";
-    if (!form.id_tamanho.length) novosErros.id_tamanho = "Selecione pelo menos um tamanho.";
-    if (
-      form.alerta_minimo !== "" &&
-      form.alerta_minimo !== null &&
-      Number(form.alerta_minimo) < 0
-    ) {
-      novosErros.alerta_minimo = "O alerta mínimo não pode ser negativo.";
+  // Preenche nome, fabricante e validade com o que está na base do MTE
+  const consultarCa = async () => {
+    if (!form.ca) return setInfoCa(null);
+    setInfoCa("carregando");
+    try {
+      const dados = await api.get(`/gerencial/caepi/${form.ca}`); // 204 (null) = fora da base
+      if (!dados) return setInfoCa("nao-encontrado");
+      atualizar(
+        (atual) => ({
+          nome: dados.equipamento,
+          fabricante: dados.fabricante.slice(0, 100), // limite do back; há razão social maior na base
+          data_validade_ca: paraInput(dados.validade),
+          // grupo da NR-6 deduzido do nome do equipamento; sem sugestão, mantém o que já estava
+          id_protecao: dados.id_protecao_sugerida ?? atual.id_protecao,
+        }),
+        ["nome", "fabricante", "data_validade_ca", "id_protecao"]
+      );
+      setInfoCa(dados);
+    } catch {
+      setInfoCa(null); // o api já mostrou o erro
     }
+  };
 
+  const alternarTamanho = (id) =>
+    atualizar(({ id_tamanho }) => ({ id_tamanho: id_tamanho.includes(id) ? id_tamanho.filter((i) => i !== id) : [...id_tamanho, id] }), ["id_tamanho"]);
+
+  const salvar = async () => {
+    const novosErros = validar(form);
     setErros(novosErros);
-    return Object.keys(novosErros).length === 0;
-  };
+    if (Object.keys(novosErros).length) return;
 
-  async function handleAddNovoTipo() {
-    if (!novoTipoNome) {
-      mostrarToast("Selecione uma categoria para adicionar.", "erro");
-      return;
-    }
-    try {
-      setSalvandoNovoTipo(true);
-      const res = await api.post("/gerencial/cadastro-protecao", {
-        nome: novoTipoNome,
-      });
-      const nova = res?.protecao || res;
-
-      if (nova && (nova.id || nova.Id)) {
-        const novoItem = {
-          id: nova.id || nova.Id,
-          nome: nova.nome || nova.Nome,
-        };
-        setTiposProtecao((prev) => [...prev, novoItem]);
-        atualizarCampo("id_protecao", novoItem.id);
-        setNovoTipoNome("");
-        setMostrandoAddProtecao(false);
-        mostrarToast("Tipo de proteção adicionado com sucesso!", "sucesso");
-      }
-    } catch (erro) {
-      console.error("Erro ao salvar proteção:", erro);
-      mostrarToast("Erro ao salvar tipo de proteção.", "erro");
-    } finally {
-      setSalvandoNovoTipo(false);
-    }
-  }
-
-  async function handleAddNovoTamanho() {
-    if (!novoTamanhoNome) {
-      mostrarToast("Selecione um tamanho para adicionar.", "erro");
-      return;
-    }
-    try {
-      setSalvandoNovoTamanho(true);
-      const res = await api.post("/gerencial/cadastro-tamanho", {
-        tamanho: novoTamanhoNome,
-      });
-      const novo = res?.tamanho_criado || res?.data?.tamanho_criado || res;
-
-      if (novo && (novo.id || novo.Id || novo.ID)) {
-        const novoItem = {
-          id: novo.id || novo.Id || novo.ID,
-          tamanho: novo.tamanho || novo.Tamanho || novo.nome || novoTamanhoNome,
-        };
-        setTamanhosDisponiveis((prev) => [...prev, novoItem]);
-        setForm((prev) => ({
-          ...prev,
-          id_tamanho: [...prev.id_tamanho, novoItem.id],
-        }));
-        setNovoTamanhoNome("");
-        setMostrandoAddTamanho(false);
-        limparErroCampo("id_tamanho");
-        mostrarToast("Tamanho adicionado com sucesso!", "sucesso");
-      } else {
-        const listaAtualizada = await api.get("/tamanhos");
-        setTamanhosDisponiveis(Array.isArray(listaAtualizada) ? listaAtualizada : []);
-        setMostrandoAddTamanho(false);
-      }
-    } catch (erro) {
-      console.error("Erro ao salvar tamanho:", erro);
-      mostrarToast("Erro ao salvar tamanho.", "erro");
-    } finally {
-      setSalvandoNovoTamanho(false);
-    }
-  }
-
-  const nomesTamanhosSelecionados = useMemo(() => {
-    if (!form.id_tamanho.length) return "Nenhum selecionado";
-    return tamanhosDisponiveis
-      .filter((t) => form.id_tamanho.includes(t.id))
-      .map((t) => t.tamanho || t.nome)
-      .join(", ");
-  }, [form.id_tamanho, tamanhosDisponiveis]);
-
-  async function salvarEpi() {
-    const formularioValido = validarFormulario();
-    if (!formularioValido) return;
+    const comum = {
+      nome: form.nome.trim(),
+      fabricante: form.fabricante.trim(),
+      ca: String(form.ca).replace(/\D/g, ""),
+      descricao: form.descricao || "",
+      id_protecao: Number(form.id_protecao),
+      alerta_minimo: Number(form.alerta_minimo || 0),
+      vida_util_dias: Number(form.vida_util_dias || 0), // 0 = sem troca periódica
+    };
+    const validade = formatarData(form.data_validade_ca);
+    const tamanhosIds = form.id_tamanho.map(Number);
 
     try {
       setSalvando(true);
-      const caApenasNumeros = String(form.ca).replace(/\D/g, "");
-
-      const formatarDataParaBR = (dataEstrangeira) => {
-        if (!dataEstrangeira) return "";
-        const [ano, mes, dia] = dataEstrangeira.split("-");
-        return `${dia}/${mes}/${ano}`;
-      };
-
-      const payload = {
-        nome: form.nome.trim(),
-        fabricante: form.fabricante.trim(),
-        ca: caApenasNumeros,
-        descricao: form.descricao || "",
-        data_validade_ca: formatarDataParaBR(form.data_validade_ca),
-        id_protecao: Number(form.id_protecao),
-        id_tamanho: form.id_tamanho.map((id) => Number(id)),
-        alerta_minimo: Number(form.alerta_minimo || 0),
-      };
-
-      const payloadAtualizarEpi = {
-        nome: form.nome.trim(),
-        fabricante: form.fabricante.trim(),
-        ca: caApenasNumeros,
-        descricao: form.descricao || "",
-        validade_ca: formatarDataParaBR(form.data_validade_ca),
-        id_protecao: Number(form.id_protecao),
-        tamanhos: form.id_tamanho.map((id) => Number(id)),
-        alerta_minimo: Number(form.alerta_minimo || 0),
-      };
-
+      // cadastro e edição usam nomes diferentes para validade e tamanhos
       if (epiParaEditar) {
-        await api.patch(`/gerencial/epi/${epiParaEditar.id}`, payloadAtualizarEpi);
+        await api.patch(`/gerencial/epi/${epiParaEditar.id}`, { ...comum, validade_ca: validade, tamanhos: tamanhosIds });
       } else {
-        await api.post("/gerencial/cadastro-epi", payload);
+        await api.post("/gerencial/cadastro-epi", { ...comum, data_validade_ca: validade, id_tamanho: tamanhosIds });
       }
-
-      if (onSalvar) onSalvar();
+      onSalvar?.();
       onClose();
-    } catch (erro) {
-      console.error("Erro ao salvar EPI:", erro);
-      mostrarToast("Não foi possível salvar o EPI. Verifique os dados informados.", "erro");
+    } catch {
+      // o api.js já mostrou o erro
     } finally {
       setSalvando(false);
     }
-  }
+  };
 
-  const baseInputClass = "w-full px-4 py-3 rounded-xl text-sm font-medium outline-none transition-all disabled:opacity-50 bg-white dark:bg-slate-900 border focus:ring-2 dark:text-white placeholder-slate-400";
-  const labelClass = "block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 transition-colors";
+  const campoTexto = (campo, props) => (
+    <input id={`novoepi-${campo}`} value={form[campo]} onChange={(e) => atualizar({ [campo]: e.target.value })} className={inputClass(erros[campo])} {...props} />
+  );
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 text-slate-700 dark:text-slate-300 animate-fade-in">
-      {toast && (
-        <div className={`fixed top-5 left-1/2 z-[9999] w-[90%] max-w-sm -translate-x-1/2 rounded-2xl border px-5 py-4 shadow-xl flex items-start gap-3 transition-colors sm:left-auto sm:right-5 sm:translate-x-0 animate-fade-in ${toast.tipo === "sucesso"
-            ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300"
-            : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/50 text-red-800 dark:text-red-300"
-          }`}>
-          {toast.tipo === "sucesso" ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
-          <div className="flex-1">
-            <p className="text-sm font-bold">{toast.tipo === "sucesso" ? "Sucesso!" : "Atenção!"}</p>
-            <p className="text-sm mt-0.5 leading-relaxed">{toast.mensagem}</p>
-          </div>
-          <button onClick={() => setToast(null)} className="opacity-60 hover:opacity-100 transition-opacity">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
-      <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-3xl shadow-2xl border border-slate-200/60 dark:border-slate-800 overflow-hidden flex flex-col max-h-[95vh] transition-colors duration-300">
-        <div className="px-6 sm:px-8 py-6 border-b border-slate-100 dark:border-slate-800/60 flex items-start justify-between shrink-0 transition-colors duration-300">
+    <Dialogo onClose={onClose} className="fixed inset-0 z-50 bg-overlay flex items-center justify-center p-4 sm:p-6 text-ink">
+      <div className="bg-surface w-full max-w-4xl rounded-md shadow-modal border border-line overflow-hidden flex flex-col max-h-[95vh]">
+        <div className="px-6 sm:px-8 py-6 border-b border-line flex items-start justify-between shrink-0">
           <div className="flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors ${epiParaEditar ? "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" : "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-              }`}>
+            <div className={`w-12 h-12 rounded-md flex items-center justify-center shrink-0 ${epiParaEditar ? "bg-atencao-soft text-atencao" : "bg-sunken text-ink"}`}>
               {epiParaEditar ? <PenLine className="w-6 h-6" strokeWidth={2.5} /> : <ShieldPlus className="w-6 h-6" strokeWidth={2.5} />}
             </div>
             <div>
-              <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight transition-colors">
-                {epiParaEditar ? `Editar: ${epiParaEditar.nome}` : "Cadastrar Novo EPI"}
-              </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 transition-colors">
-                Gestão de Equipamentos de Proteção.
-              </p>
+              <h3 className="text-2xl font-bold text-ink tracking-tight">{epiParaEditar ? `Editar: ${epiParaEditar.nome}` : "Cadastrar Novo EPI"}</h3>
+              <p className="text-sm text-ink-2 mt-1">Gestão de Equipamentos de Proteção.</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
+          <button onClick={onClose} className="p-2.5 text-ink-3 hover:text-ink-2 hover:bg-sunken rounded-md transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 sm:px-8 bg-slate-50/50 dark:bg-slate-900/50 custom-scrollbar transition-colors">
+        <div className="flex-1 overflow-y-auto p-6 sm:px-8 bg-sunken custom-scrollbar">
           {carregandoDados ? (
-            <div className="h-full flex flex-col items-center justify-center py-12 animate-fade-in">
-              <Loader2 className="w-8 h-8 animate-spin text-slate-400 dark:text-slate-500 mb-4" />
-              <p className="text-slate-500 dark:text-slate-400 font-medium">Carregando dados do formulário...</p>
+            <div className="h-full flex flex-col items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-ink-3 mb-4" />
+              <p className="text-ink-2 font-medium">Carregando dados do formulário...</p>
             </div>
           ) : (
-            <div className="space-y-8 animate-fade-in">
-              <section className="bg-white dark:bg-slate-800/80 p-6 sm:p-7 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm transition-colors">
+            <div className="space-y-8">
+              <section className="bg-surface p-6 sm:p-7 rounded-md border border-line">
                 <div className="flex items-center gap-2 mb-6">
-                  <ShieldAlert className="w-4 h-4 text-slate-400" />
-                  <h4 className="text-sm font-extrabold tracking-widest text-slate-500 dark:text-slate-400 uppercase">
-                    Identificação
-                  </h4>
+                  <ShieldAlert className="w-4 h-4 text-ink-3" />
+                  <h4 className="text-sm font-bold tracking-wide text-ink-2 uppercase">Identificação</h4>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
-                  <div className="md:col-span-2">
-                    <label className={labelClass}>
-                      Nome do EPI <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={form.nome}
-                      onChange={(e) => atualizarCampo("nome", e.target.value)}
-                      className={`${baseInputClass} ${campoComErro("nome")}`}
-                      placeholder="Ex: Capacete de segurança"
-                    />
-                    {erros.nome && <p className="text-xs font-medium text-red-500 mt-1.5">{erros.nome}</p>}
-                  </div>
-
-                  <div>
-                    <label className="flex justify-between items-end mb-1.5 transition-colors">
-                      <span className={labelClass.replace("mb-1.5", "")}>
-                        Tipo de Proteção <span className="text-red-500">*</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setMostrandoAddProtecao(!mostrandoAddProtecao)}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-[10px] uppercase tracking-widest font-bold flex items-center gap-1 transition-colors"
-                      >
-                        {mostrandoAddProtecao ? <><X className="w-3 h-3" /> Voltar</> : <><Plus className="w-3 h-3" /> Nova Categoria</>}
-                      </button>
-                    </label>
-
-                    {!mostrandoAddProtecao ? (
-                      <>
-                        <select
-                          value={form.id_protecao}
-                          onChange={(e) => atualizarCampo("id_protecao", e.target.value)}
-                          className={`${baseInputClass} ${campoComErro("id_protecao")}`}
-                        >
-                          <option value="">Selecione...</option>
-                          {tiposProtecao.map((t) => (
-                            <option key={t.id} value={t.id}>{t.nome}</option>
-                          ))}
-                        </select>
-                        {erros.id_protecao && <p className="text-xs font-medium text-red-500 mt-1.5">{erros.id_protecao}</p>}
-                      </>
-                    ) : (
-                      <div className="flex gap-2 animate-fade-in">
-                        <select
-                          autoFocus
-                          value={novoTipoNome}
-                          onChange={(e) => setNovoTipoNome(e.target.value)}
-                          className={`${baseInputClass} !border-blue-300 dark:!border-blue-700/50 !bg-blue-50/50 dark:!bg-blue-900/10 focus:!ring-blue-500/20`}
-                        >
-                          <option value="">Escolha...</option>
-                          {PROTECOES_PADRAO.map((p) => (
-                            <option key={p} value={p}>{p}</option>
-                          ))}
-                        </select>
-                        <button
-                          onClick={handleAddNovoTipo}
-                          disabled={salvandoNovoTipo}
-                          className="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-all shadow-sm shadow-blue-600/20 disabled:opacity-50"
-                        >
-                          {salvandoNovoTipo ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add"}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className={labelClass}>
-                      Fabricante <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={form.fabricante}
-                      onChange={(e) => atualizarCampo("fabricante", e.target.value)}
-                      className={`${baseInputClass} ${campoComErro("fabricante")}`}
-                      placeholder="Ex: 3M"
-                    />
-                    {erros.fabricante && <p className="text-xs font-medium text-red-500 mt-1.5">{erros.fabricante}</p>}
-                  </div>
+                  <Campo id="novoepi-nome" rotulo="Nome do EPI" obrigatorio erro={erros.nome} className="md:col-span-2">
+                    {campoTexto("nome", { type: "text", placeholder: "Ex: Capacete de segurança" })}
+                  </Campo>
+                  <Campo id="novoepi-protecao" rotulo="Tipo de Proteção" obrigatorio erro={erros.id_protecao}>
+                    <Selecao
+                      id="novoepi-protecao"
+                      value={form.id_protecao}
+                      onChange={(e) => atualizar({ id_protecao: e.target.value })}
+                      className={inputClass(erros.id_protecao)}
+                    >
+                      <option value="">Selecione...</option>
+                      {tiposProtecao.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.nome}
+                        </option>
+                      ))}
+                    </Selecao>
+                  </Campo>
+                  <Campo id="novoepi-fabricante" rotulo="Fabricante" obrigatorio erro={erros.fabricante}>
+                    {campoTexto("fabricante", { type: "text", placeholder: "Ex: 3M" })}
+                  </Campo>
                 </div>
               </section>
 
-              <section className="bg-white dark:bg-slate-800/80 p-6 sm:p-7 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm transition-colors">
+              <section className="bg-surface p-6 sm:p-7 rounded-md border border-line">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
-                  <div>
-                    <label className={labelClass}>
-                      Número do CA <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={form.ca}
-                      onChange={(e) => atualizarCampo("ca", e.target.value.replace(/\D/g, ""))}
-                      className={`${baseInputClass} ${campoComErro("ca")} font-mono`}
-                      placeholder="Apenas números"
-                    />
-                    {erros.ca && <p className="text-xs font-medium text-red-500 mt-1.5">{erros.ca}</p>}
-                  </div>
-
-                  <div>
-                    <label className={labelClass}>
-                      Validade do CA <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      value={form.data_validade_ca}
-                      onChange={(e) => atualizarCampo("data_validade_ca", e.target.value)}
-                      className={`${baseInputClass} ${campoComErro("data_validade_ca")}`}
-                    />
-                    {erros.data_validade_ca && <p className="text-xs font-medium text-red-500 mt-1.5">{erros.data_validade_ca}</p>}
-                  </div>
-
-                  <div>
-                    <label className={labelClass}>
-                      Alerta Estoque Mín.
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={form.alerta_minimo}
-                      onChange={(e) => atualizarCampo("alerta_minimo", e.target.value)}
-                      className={`${baseInputClass} ${campoComErro("alerta_minimo")}`}
-                      placeholder="Ex: 10"
-                    />
-                    {erros.alerta_minimo && <p className="text-xs font-medium text-red-500 mt-1.5">{erros.alerta_minimo}</p>}
-                  </div>
-
-                  <div className="md:col-span-3">
-                    <label className={labelClass}>
-                      Descrição do Equipamento
-                    </label>
+                  <CampoCa
+                    valor={form.ca}
+                    onChange={(ca) => {
+                      atualizar({ ca });
+                      setInfoCa(null); // a situação mostrada era do CA anterior
+                    }}
+                    onBuscar={consultarCa}
+                    info={infoCa}
+                    erro={erros.ca}
+                  />
+                  <Campo id="novoepi-data_validade_ca" rotulo="Validade do CA" obrigatorio erro={erros.data_validade_ca}>
+                    {campoTexto("data_validade_ca", { type: "date" })}
+                  </Campo>
+                  <Campo id="novoepi-alerta_minimo" rotulo="Alerta Estoque Mín." erro={erros.alerta_minimo}>
+                    {campoTexto("alerta_minimo", { type: "number", min: "0", placeholder: "Ex: 10" })}
+                  </Campo>
+                  <Campo id="novoepi-vida_util_dias" rotulo="Vida Útil (dias)" erro={erros.vida_util_dias}>
+                    {campoTexto("vida_util_dias", { type: "number", min: "0", step: "1", placeholder: "Ex: 180 (vazio = sem troca)" })}
+                  </Campo>
+                  <Campo id="novoepi-descricao" rotulo="Descrição do Equipamento" className="md:col-span-3">
                     <textarea
+                      id="novoepi-descricao"
                       value={form.descricao}
-                      onChange={(e) => atualizarCampo("descricao", e.target.value)}
-                      className={`${baseInputClass} min-h-[100px] resize-none border-slate-200/60 dark:border-slate-700/60 focus:ring-blue-500/20 focus:border-blue-500`}
+                      onChange={(e) => atualizar({ descricao: e.target.value })}
+                      className={`${inputClass()} !h-auto py-3 min-h-[100px] resize-none`}
                       maxLength={250}
                       placeholder="Observações ou detalhes adicionais do equipamento..."
                     />
-                  </div>
+                  </Campo>
                 </div>
               </section>
 
-              <section className="bg-white dark:bg-slate-800/80 p-6 sm:p-7 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm transition-colors">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-5 gap-3">
-                  <div>
-                    <h4 className="text-sm font-extrabold tracking-widest text-slate-500 dark:text-slate-400 uppercase">
-                      Grade de Tamanhos <span className="text-red-500">*</span>
-                    </h4>
-                    <p className="text-xs font-medium text-slate-400 dark:text-slate-500 mt-1">
-                      Selecionados: <span className="text-slate-700 dark:text-slate-300 font-bold">{nomesTamanhosSelecionados}</span>
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setMostrandoAddTamanho(!mostrandoAddTamanho)}
-                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-[10px] uppercase tracking-widest font-bold flex items-center gap-1 transition-colors w-fit"
-                  >
-                    {mostrandoAddTamanho ? <><X className="w-3 h-3" /> Cancelar</> : <><Plus className="w-3 h-3" /> Novo Tamanho</>}
-                  </button>
-                </div>
-
-                {mostrandoAddTamanho && (
-                  <div className="mb-6 p-4 sm:p-5 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 rounded-2xl flex flex-col sm:flex-row gap-3 animate-fade-in transition-colors">
-                    <select
-                      value={novoTamanhoNome}
-                      onChange={(e) => setNovoTamanhoNome(e.target.value)}
-                      className={`${baseInputClass} !border-blue-300 dark:!border-blue-700/50 !bg-white dark:!bg-slate-900 focus:!ring-blue-500/20`}
-                    >
-                      <option value="">Selecione da lista...</option>
-                      {TAMANHOS_SUGERIDOS.map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={handleAddNovoTamanho}
-                      disabled={salvandoNovoTamanho}
-                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-all shadow-sm shadow-blue-600/20 disabled:opacity-50"
-                    >
-                      {salvandoNovoTamanho ? <Loader2 className="w-4 h-4 animate-spin" /> : "Adicionar"}
-                    </button>
-                  </div>
-                )}
-
-                <div className={`rounded-2xl p-5 border ${erros.id_tamanho ? "border-red-300 dark:border-red-500/50 bg-red-50/30 dark:bg-red-900/10" : "border-slate-200/60 dark:border-slate-700/60 bg-slate-50/50 dark:bg-slate-900/30"} transition-colors`}>
-                  {tamanhosDisponiveis.length === 0 ? (
-                    <p className="text-sm font-medium text-slate-400 dark:text-slate-500 italic text-center py-2">
-                      Nenhum tamanho disponível.
-                    </p>
-                  ) : (
-                    <div className="flex flex-wrap gap-2.5">
-                      {tamanhosDisponiveis.map((tam) => {
-                        const isSelected = form.id_tamanho.includes(tam.id);
-                        return (
-                          <button
-                            key={tam.id}
-                            type="button"
-                            onClick={() => alternarTamanho(tam.id)}
-                            className={`min-w-[56px] h-[42px] px-4 rounded-xl border text-sm font-bold transition-all duration-200 ${isSelected
-                                ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/20"
-                                : "bg-white dark:bg-slate-800 border-slate-200/60 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-blue-300 dark:hover:border-blue-700"
-                              }`}
-                          >
-                            {tam.tamanho || tam.nome}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-                {erros.id_tamanho && <p className="text-xs font-medium text-red-500 mt-2">{erros.id_tamanho}</p>}
-              </section>
-
+              <GradeTamanhos
+                tamanhos={tamanhos}
+                setTamanhos={setTamanhos}
+                selecionados={form.id_tamanho}
+                onAlternar={alternarTamanho}
+                onAdicionado={(id) => atualizar(({ id_tamanho }) => ({ id_tamanho: [...id_tamanho, id] }), ["id_tamanho"])}
+                erro={erros.id_tamanho}
+              />
             </div>
           )}
         </div>
 
-        <div className="px-6 sm:px-8 py-5 border-t border-slate-100 dark:border-slate-800/60 flex flex-col sm:flex-row sm:justify-end gap-3 bg-white dark:bg-slate-900 shrink-0 rounded-b-3xl transition-colors duration-300">
+        <div className="px-6 sm:px-8 py-5 border-t border-line flex flex-col sm:flex-row sm:justify-end gap-3 bg-surface shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors w-full sm:w-auto order-2 sm:order-1"
+            className="px-6 py-2.5 bg-sunken text-ink text-sm font-bold rounded-md hover:bg-line transition-colors w-full sm:w-auto order-2 sm:order-1"
           >
             Cancelar
           </button>
           <button
             type="button"
-            onClick={salvarEpi}
+            onClick={salvar}
             disabled={salvando || carregandoDados}
-            className={`px-8 py-2.5 flex items-center justify-center gap-2 text-white font-bold rounded-xl text-sm transition-all shadow-sm w-full sm:w-auto order-1 sm:order-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] ${epiParaEditar
-                ? "bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-500 shadow-amber-500/20"
-                : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 shadow-blue-600/20"
-              }`}
+            className="px-8 py-2.5 flex items-center justify-center gap-2 bg-action hover:bg-action-hover text-on-action font-bold rounded-md text-sm transition-all w-full sm:w-auto order-1 sm:order-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {salvando ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Salvando...</>
-            ) : epiParaEditar ? (
-              <><CheckCircle2 className="w-4 h-4" /> Atualizar EPI</>
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Salvando...
+              </>
             ) : (
-              <><CheckCircle2 className="w-4 h-4" /> Salvar Equipamento</>
+              <>
+                <CheckCircle2 className="w-4 h-4" /> {epiParaEditar ? "Atualizar EPI" : "Salvar Equipamento"}
+              </>
             )}
           </button>
         </div>
-
       </div>
-    </div>
+    </Dialogo>
   );
 }
 

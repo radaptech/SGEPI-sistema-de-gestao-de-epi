@@ -4,7 +4,9 @@ VALUES ($1, $2, $3);
 
 -- name: BuscarSessao :one
 -- Só devolve sessão válida de usuário ativo: desativar o usuário derruba a sessão na hora.
-SELECT u.id, u.tenant_id, u.nome, u.role
+-- unidades: as que o usuário pode ver (vazio = todas, Fase 6 do PLANO-UNIDADES)
+SELECT u.id, u.tenant_id, u.nome, u.role,
+    ARRAY(SELECT uu.id_unidade FROM usuario_unidade uu WHERE uu.usuario_id = u.id ORDER BY uu.id_unidade)::int[] AS unidades
 FROM sessoes s
 INNER JOIN usuarios u ON u.id = s.usuario_id
 WHERE s.token_hash = $1

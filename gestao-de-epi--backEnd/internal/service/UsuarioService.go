@@ -45,9 +45,9 @@ type UsuarioService struct {
 func NewUsuarioService(repo UsuarioRepository, emailSrv EmailService, db *pgxpool.Pool) *UsuarioService {
 
 	return &UsuarioService{
-		repo: repo, 
-		db: db,
-		emailService: emailSrv,}
+		repo:         repo,
+		db:           db,
+		emailService: emailSrv}
 }
 
 func (u *UsuarioService) Registrar(ctx context.Context, model model.Usuario) error {
@@ -70,7 +70,8 @@ func (u *UsuarioService) Registrar(ctx context.Context, model model.Usuario) err
 		return err
 	}
 
-	if totalUsuarioAtual >= int64(totalUsuariosPlanos.LimiteUsuarios.Int32) {
+	// limite NULL = ilimitado
+	if totalUsuariosPlanos.LimiteUsuarios.Valid && totalUsuarioAtual >= int64(totalUsuariosPlanos.LimiteUsuarios.Int32) {
 
 		return helper.ErrLimiteExcedido
 	}
@@ -100,7 +101,7 @@ func (u *UsuarioService) Registrar(ctx context.Context, model model.Usuario) err
 		Role:      pgtype.Text{String: model.Role, Valid: model.Role != ""},
 	}
 
-	err = u.repo.Cadastrar(ctx, qtx ,arg)
+	err = u.repo.Cadastrar(ctx, qtx, arg)
 	if err != nil {
 
 		if errors.Is(err, helper.ErrDadoDuplicado) {
@@ -211,8 +212,10 @@ func (u *UsuarioService) RecuperacaoSenha(ctx context.Context, rl model.Recupera
 		Email:    rl.Email,
 		TenantID: pgtype.Int4{Int32: int32(rl.TenantId), Valid: true},
 	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil // e-mail desconhecido responde igual ao conhecido: a rota não pode revelar quem tem cadastro
+	}
 	if err != nil {
-
 		return err
 	}
 

@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	
+
 	"fmt"
 	"math"
 	"strings"
@@ -10,7 +10,7 @@ import (
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/database/repository"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
-	
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -20,6 +20,8 @@ type FuncaoRepository interface {
 	CancelarFuncao(ctx context.Context, arg repository.DeletarFuncaoParams) (int64, error)
 	AtualizarFuncao(ctx context.Context, arg repository.UpdateFuncaoParams) (int64, error)
 	MapDepartamentosParaFuncao(ctx context.Context, tenantId int32) ([]repository.BuscaDepartamentosMapRow, error)
+	ListarKit(ctx context.Context, arg repository.ListarKitFuncaoParams) ([]repository.ListarKitFuncaoRow, error)
+	SalvarKit(ctx context.Context, arg repository.SalvarKitFuncaoParams) error
 }
 
 type FuncaoService struct {
@@ -47,8 +49,6 @@ func (f *FuncaoService) SalvarFuncao(ctx context.Context, model model.Funcao, te
 	return nil
 }
 
-
-
 type FiltroFuncao struct {
 	Id_funcao        int32  `form:"idFuncao"`
 	Nome             string `form:"nome"`
@@ -61,7 +61,7 @@ type FuncaoPaginado struct {
 	Funcao      []model.FuncaoDto `json:"funcoes"`
 	Total       int64             `json:"total"`
 	Pagina      int32             `json:"pagina"`
-	PaginaFinal int32             `json:"paginaFinal"`
+	PaginaFinal int32             `json:"pagina_final"`
 }
 
 func (fu *FuncaoService) ListasTodasFuncao(ctx context.Context, f FiltroFuncao, tenantId int32) (FuncaoPaginado, error) {
@@ -107,9 +107,9 @@ func (fu *FuncaoService) ListasTodasFuncao(ctx context.Context, f FiltroFuncao, 
 	ultimaPagina := int32(math.Ceil(float64(total) / float64(p.Limit)))
 
 	return FuncaoPaginado{
-		Funcao: dto,
-		Total: total,
-		Pagina: p.PaginaAtual,
+		Funcao:      dto,
+		Total:       total,
+		Pagina:      p.PaginaAtual,
 		PaginaFinal: ultimaPagina,
 	}, nil
 
@@ -171,28 +171,76 @@ func (f *FuncaoService) AtualizarFuncao(ctx context.Context, id int, funcao stri
 	return nil
 }
 
+func (f *FuncaoService) BuscaDepartamentosParaFuncao(ctx context.Context, tenantId int32) (map[string]int, error) {
 
-func (f *FuncaoService) BuscaDepartamentosParaFuncao(ctx context.Context, tenantId int32) (map[string]int, error){
-
-	deps, err:= f.repo.MapDepartamentosParaFuncao(ctx, tenantId)
+	deps, err := f.repo.MapDepartamentosParaFuncao(ctx, tenantId)
 	if err != nil {
 
 		return nil, err
 	}
 
-	mapsDeps:= make(map[string]int, len(deps))
+	mapsDeps := make(map[string]int, len(deps))
 
+	for _, dep := range deps {
 
-	for _, dep:= range deps {
-
-		key:= strings.ToLower(strings.TrimSpace(dep.Nome))
-		if key != ""{
+		key := strings.ToLower(strings.TrimSpace(dep.Nome))
+		if key != "" {
 			mapsDeps[key] = int(dep.ID)
 		}
-		
+
 	}
 
+	return mapsDeps, nil
 
-	return mapsDeps, nil 
+}
 
+func (f *FuncaoService) ListarKit(ctx context.Context, idFuncao int, tenantId int32) ([]model.KitItem, error) {
+
+	if idFuncao <= 0 {
+		return nil, helper.ErrId
+	}
+
+	rows, err := f.repo.ListarKit(ctx, repository.ListarKitFuncaoParams{TenantID: tenantId, IDFuncao: int32(idFuncao)})
+	if err != nil {
+		return nil, fmt.Errorf("erro ao listar kit da funcao, %w", err)
+	}
+
+	kit := make([]model.KitItem, 0, len(rows))
+	for _, r := range rows {
+		kit = append(kit, model.KitItem{IdEpi: r.IDEpi, Quantidade: r.Quantidade, Nome: r.Nome, CA: r.Ca})
+	}
+
+	return kit, nil
+}
+
+// SalvarKit troca o kit inteiro da função. EPI repetido na lista é rejeitado,
+// porque o upsert do Postgres não aceita a mesma chave duas vezes na mesma instrução.
+func (f *FuncaoService) SalvarKit(ctx context.Context, idFuncao int, itens []model.KitItem, tenantId int32) error {
+
+	if idFuncao <= 0 {
+		return helper.ErrId
+	}
+
+	arg := repository.SalvarKitFuncaoParams{
+		TenantID:    tenantId,
+		IDFuncao:    int32(idFuncao),
+		IdsEpi:      make([]int32, 0, len(itens)),
+		Quantidades: make([]int32, 0, len(itens)),
+	}
+
+	vistos := make(map[int32]bool, len(itens))
+	for _, it := range itens {
+		if vistos[it.IdEpi] {
+			return helper.ErrDadoDuplicado
+		}
+		vistos[it.IdEpi] = true
+		arg.IdsEpi = append(arg.IdsEpi, it.IdEpi)
+		arg.Quantidades = append(arg.Quantidades, it.Quantidade)
+	}
+
+	if err := f.repo.SalvarKit(ctx, arg); err != nil {
+		return fmt.Errorf("erro ao salvar kit da funcao, %w", err)
+	}
+
+	return nil
 }

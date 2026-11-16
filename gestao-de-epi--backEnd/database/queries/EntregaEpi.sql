@@ -1,9 +1,9 @@
 -- name: AddEntregaEpi :one
 INSERT INTO entrega_epi (
     tenant_id, 
-    IdFuncionario, data_entrega, assinatura, IdTroca, token_validacao, id_usuario_entrega
+    IdFuncionario, data_entrega, assinatura, IdTroca, token_validacao, id_usuario_entrega, id_unidade
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING id;
 
 -- name: AddItemEntregue :one
@@ -40,6 +40,7 @@ WHERE
     )
     AND (sqlc.narg('id_entrega')::int IS NULL OR ee.id = sqlc.narg('id_entrega'))
     AND (sqlc.narg('idfuncionario')::int IS NULL OR ee.idfuncionario = sqlc.narg('idfuncionario'))
+    AND (sqlc.narg('id_unidade')::int IS NULL OR ee.id_unidade = sqlc.narg('id_unidade')::int)
 ORDER BY ee.data_entrega DESC
 LIMIT $1 OFFSET $2;
 
@@ -87,18 +88,23 @@ WHERE IdTroca = $1
 RETURNING id;
 
 -- name: ListarHistoricoEntregasPorMatricula :many
+-- Dados da ficha de entrega (PDF): uma linha por lote consumido.
 SELECT 
-    emp.razao_social as razao_social,
+    emp.razao_social as razao_social, emp.cnpj, COALESCE(emp.logo_key, '')::text as logo_key,
     f.id as func_id, f.nome as func_nome, f.cpf ,f.matricula,
     d.id as dep_id, d.nome as dep_nome,
     ff.id as funcao_id, ff.nome as funcao_nome,
-    ee.data_entrega, i.quantidade, e.ca, e.nome AS epi_nome, e.descricao,
+    ee.id as entrega_id, ee.data_entrega, ee.token_validacao,
+    un.nome as unidade_nome, COALESCE(u.nome, '')::text as entregue_por,
+    i.quantidade, e.ca, e.nome AS epi_nome, e.descricao,
     i.id_tamanho, t.tamanho, ee.assinatura
 FROM entrega_epi ee
 INNER JOIN empresas emp ON ee.tenant_id = emp.id
 INNER JOIN funcionario f ON ee.IdFuncionario = f.id
 INNER JOIN departamento d ON f.IdDepartamento = d.id
 INNER JOIN funcao ff ON f.IdFuncao = ff.id
+INNER JOIN unidade un ON un.id = ee.id_unidade AND un.tenant_id = ee.tenant_id
+LEFT JOIN usuarios u ON u.id = ee.id_usuario_entrega
 INNER JOIN epis_entregues i ON i.id_entrega_cabecalho = ee.id
 INNER JOIN epi e ON e.id = i.id_epi
 INNER JOIN tamanho t ON t.id = i.id_tamanho
@@ -106,20 +112,25 @@ WHERE f.matricula = $1
 AND ee.tenant_id = $2
 and ee.id = $3
 AND ee.ativo = TRUE
-ORDER BY ee.data_entrega DESC, ee.id DESC;
+ORDER BY i.id;
 
 -- name: EntregaDashbord :many
 SELECT
     id, IdFuncionario, data_entrega,
-    assinatura, token_validacao
+    assinatura, token_validacao, id_unidade
 FROM entrega_epi
-WHERE tenant_id = $1 AND ativo = TRUE;
+WHERE tenant_id = sqlc.arg('tenant_id') AND ativo = TRUE
+  AND (sqlc.narg('id_unidade')::int IS NULL OR id_unidade = sqlc.narg('id_unidade')::int);
 
 -- name: EntregaItensDashbord :many
 SELECT
     id, id_entrega_cabecalho, id_epi, id_tamanho, quantidade
-FROM epis_entregues
-WHERE tenant_id = $1 AND ativo = TRUE;
+FROM epis_entregues ie
+WHERE ie.tenant_id = sqlc.arg('tenant_id') AND ie.ativo = TRUE
+  AND (sqlc.narg('id_unidade')::int IS NULL OR EXISTS (
+      SELECT 1 FROM entrega_epi ee
+      WHERE ee.id = ie.id_entrega_cabecalho AND ee.tenant_id = ie.tenant_id AND ee.id_unidade = sqlc.narg('id_unidade')::int
+  ));
 -- name: BuscaTodasEntregasDoTenant :many
 SELECT 
     id, 
@@ -128,3 +139,66 @@ SELECT
     assinatura
 FROM entrega_epi
 WHERE tenant_id = $1 AND ativo = TRUE;
+-- name: ListarTrocasPendentes :many
+-- EPIs com vida útil cadastrada que o funcionário ainda tem em posse (entregue − devolvido > 0)
+-- e cuja última entrega + vida_util_dias vence até a data informada. A troca na devolução gera
+-- uma entrega nova, então ela reinicia a contagem.
+WITH entregue AS (
+    SELECT ee.idfuncionario, ie.id_epi, SUM(ie.quantidade)::int AS quantidade, MAX(ee.data_entrega)::date AS ultima_entrega
+    FROM entrega_epi ee
+    JOIN epis_entregues ie ON ie.id_entrega_cabecalho = ee.id AND ie.tenant_id = ee.tenant_id AND ie.ativo = TRUE
+    WHERE ee.tenant_id = sqlc.arg('tenant_id') AND ee.ativo = TRUE
+    GROUP BY ee.idfuncionario, ie.id_epi
+), devolvido AS (
+    SELECT d.idfuncionario, d.idepi, SUM(d.quantidadeadevolver)::int AS quantidade
+    FROM devolucao d
+    WHERE d.tenant_id = sqlc.arg('tenant_id') AND d.ativo = TRUE
+    GROUP BY d.idfuncionario, d.idepi
+)
+SELECT
+    f.id AS funcionario_id, f.nome AS funcionario_nome, f.matricula,
+    e.id AS epi_id, e.nome AS epi_nome,
+    (en.quantidade - COALESCE(dv.quantidade, 0))::int AS em_posse,
+    en.ultima_entrega,
+    (en.ultima_entrega + e.vida_util_dias)::date AS vence_em
+FROM entregue en
+JOIN epi e ON e.id = en.id_epi AND e.tenant_id = sqlc.arg('tenant_id') AND e.ativo = TRUE AND e.vida_util_dias IS NOT NULL
+JOIN funcionario f ON f.id = en.idfuncionario AND f.tenant_id = sqlc.arg('tenant_id') AND f.ativo = TRUE
+LEFT JOIN devolvido dv ON dv.idfuncionario = en.idfuncionario AND dv.idepi = en.id_epi
+WHERE en.quantidade - COALESCE(dv.quantidade, 0) > 0
+  AND (sqlc.narg('id_unidade')::int IS NULL OR f.id_unidade = sqlc.narg('id_unidade')::int)
+  AND en.ultima_entrega + e.vida_util_dias <= sqlc.arg('ate')::date
+ORDER BY vence_em, f.nome;
+
+-- name: ListarFaltasKit :many
+-- Funcionários ativos com menos EPI em posse (entregue − devolvido) do que o kit da função pede.
+-- Quem nunca recebeu o EPI aparece com em_posse = 0.
+WITH entregue AS (
+    SELECT ee.idfuncionario, ie.id_epi, SUM(ie.quantidade)::int AS quantidade
+    FROM entrega_epi ee
+    JOIN epis_entregues ie ON ie.id_entrega_cabecalho = ee.id AND ie.tenant_id = ee.tenant_id AND ie.ativo = TRUE
+    WHERE ee.tenant_id = sqlc.arg('tenant_id') AND ee.ativo = TRUE
+    GROUP BY ee.idfuncionario, ie.id_epi
+), devolvido AS (
+    SELECT d.idfuncionario, d.idepi, SUM(d.quantidadeadevolver)::int AS quantidade
+    FROM devolucao d
+    WHERE d.tenant_id = sqlc.arg('tenant_id') AND d.ativo = TRUE
+    GROUP BY d.idfuncionario, d.idepi
+)
+SELECT
+    f.id AS funcionario_id, f.nome AS funcionario_nome, f.matricula,
+    fn.nome AS funcao_nome,
+    e.id AS epi_id, e.nome AS epi_nome,
+    fe.quantidade AS exigido,
+    (COALESCE(en.quantidade, 0) - COALESCE(dv.quantidade, 0))::int AS em_posse
+FROM funcionario f
+JOIN funcao fn ON fn.id = f.idfuncao AND fn.tenant_id = sqlc.arg('tenant_id')
+JOIN funcao_epi fe ON fe.id_funcao = f.idfuncao AND fe.tenant_id = sqlc.arg('tenant_id')
+JOIN epi e ON e.id = fe.id_epi AND e.tenant_id = sqlc.arg('tenant_id') AND e.ativo = TRUE
+LEFT JOIN entregue en ON en.idfuncionario = f.id AND en.id_epi = fe.id_epi
+LEFT JOIN devolvido dv ON dv.idfuncionario = f.id AND dv.idepi = fe.id_epi
+WHERE f.tenant_id = sqlc.arg('tenant_id') -- SEGURANÇA
+  AND f.ativo = TRUE
+  AND (sqlc.narg('id_unidade')::int IS NULL OR f.id_unidade = sqlc.narg('id_unidade')::int)
+  AND COALESCE(en.quantidade, 0) - COALESCE(dv.quantidade, 0) < fe.quantidade
+ORDER BY f.nome, e.nome;

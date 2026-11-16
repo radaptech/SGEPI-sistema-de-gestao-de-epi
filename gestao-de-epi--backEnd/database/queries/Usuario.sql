@@ -78,4 +78,5 @@ WHERE id = @id;
 
 
 -- name: TotalDeUsuario :one
-select count(id) from usuarios where tenant_id = @id::int;
+-- conta para o limite do plano: desativado libera a vaga
+select count(id) from usuarios where tenant_id = @id::int and ativo = true;

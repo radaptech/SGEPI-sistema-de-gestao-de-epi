@@ -8,6 +8,14 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Caepi struct {
+	Ca          string
+	Validade    pgtype.Date
+	Situacao    string
+	Fabricante  string
+	Equipamento string
+}
+
 type Departamento struct {
 	ID         int32
 	TenantID   int32
@@ -36,6 +44,15 @@ type Devolucao struct {
 	TokenValidacao                 pgtype.Text
 	HouveTroca                     pgtype.Bool
 	Observacao                     pgtype.Text
+	IDUnidade                      int32
+}
+
+type DevolucaoLote struct {
+	ID            int32
+	TenantID      int32
+	IDDevolucao   int32
+	IDEntradaItem int32
+	Quantidade    int32
 }
 
 type Empresa struct {
@@ -52,6 +69,7 @@ type Empresa struct {
 	Responsavel  pgtype.Text
 	Email        pgtype.Text
 	Telefone     pgtype.Text
+	LogoKey      pgtype.Text
 }
 
 type EntradaEpiItem struct {
@@ -70,6 +88,9 @@ type EntradaEpiItem struct {
 	Ativo                 bool
 	IDUsuarioCriacao      int32
 	IDUsuarioCancelamento pgtype.Int4
+	IDUnidade             int32
+	IDLoteOrigem          pgtype.Int4
+	IDTransferencia       pgtype.Int4
 }
 
 type EntradaNf struct {
@@ -84,6 +105,7 @@ type EntradaNf struct {
 	IDUsuarioCancelamento pgtype.Int4
 	CanceladaEm           pgtype.Timestamp
 	Idfornecedor          int32
+	IDUnidade             int32
 }
 
 type EntregaEpi struct {
@@ -98,6 +120,7 @@ type EntregaEpi struct {
 	TokenValidacao               pgtype.Text
 	IDUsuarioEntrega             pgtype.Int4
 	IDUsuarioEntregaCancelamento pgtype.Int4
+	IDUnidade                    int32
 }
 
 type Epi struct {
@@ -112,6 +135,7 @@ type Epi struct {
 	AlertaMinimo   int32
 	Ativo          bool
 	DeletadoEm     pgtype.Timestamp
+	VidaUtilDias   pgtype.Int4
 }
 
 type EpisEntregue struct {
@@ -146,6 +170,13 @@ type Funcao struct {
 	DeletadoEm     pgtype.Timestamp
 }
 
+type FuncaoEpi struct {
+	TenantID   int32
+	IDFuncao   int32
+	IDEpi      int32
+	Quantidade int32
+}
+
 type Funcionario struct {
 	ID             int32
 	TenantID       int32
@@ -156,14 +187,12 @@ type Funcionario struct {
 	Ativo          bool
 	DeletadoEm     pgtype.Timestamp
 	Cpf            pgtype.Text
+	IDUnidade      int32
 }
 
 type MotivoDevolucao struct {
 	ID           int32
-	TenantID     int32
 	Motivo       string
-	Ativo        bool
-	DeletadoEm   pgtype.Timestamp
 	GeraDescarte bool
 }
 
@@ -173,10 +202,10 @@ type Plano struct {
 	Mensalidade        pgtype.Numeric
 	LimiteFuncionarios pgtype.Int4
 	LimiteUsuarios     pgtype.Int4
-	LimiteEpis         pgtype.Int4
 	Status             pgtype.Text
 	Descricao          string
 	CriadoEm           pgtype.Timestamp
+	LimiteUnidades     pgtype.Int4
 }
 
 type Sesso struct {
@@ -204,11 +233,30 @@ type TamanhosEpi struct {
 }
 
 type TipoProtecao struct {
+	ID     int32
+	Nome   string
+	Codigo string
+}
+
+type Transferencium struct {
+	ID                    int32
+	TenantID              int32
+	IDUnidadeOrigem       int32
+	IDUnidadeDestino      int32
+	IDUsuario             int32
+	Observacao            string
+	CriadoEm              pgtype.Timestamp
+	CanceladaEm           pgtype.Timestamp
+	IDUsuarioCancelamento pgtype.Int4
+}
+
+type Unidade struct {
 	ID         int32
 	TenantID   int32
 	Nome       string
 	Ativo      bool
 	DeletadoEm pgtype.Timestamp
+	CriadoEm   pgtype.Timestamp
 }
 
 type Usuario struct {
@@ -222,4 +270,10 @@ type Usuario struct {
 	TokenRecuperacaoSenha pgtype.Text
 	TokenExpiracao        pgtype.Timestamp
 	UltimoAcesso          pgtype.Timestamp
+}
+
+type UsuarioUnidade struct {
+	UsuarioID int32
+	IDUnidade int32
+	TenantID  int32
 }

@@ -2,10 +2,10 @@ package repository
 
 import (
 	"context"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"golang.org/x/sync/errgroup"
 )
 
 type EmpresaRepository struct {
@@ -32,83 +32,31 @@ func (e *EmpresaRepository) Salvar(ctx context.Context, arg CriarEmpresaParams) 
 	return nil
 }
 
-func (e *EmpresaRepository) ResumoDashboard(ctx context.Context) (int64, int64, int64, int64, int64, int64, int64, float64, error) {
+func (e *EmpresaRepository) ResumoDashboard(ctx context.Context) (ResumoMasterRow, error) {
 
-	var (
-		EmpresasAtivas     int64
-		EmpresasBloqueadas int64
-		EmpresasEmTeste    int64
-		TotalFuncionarios  int64
-		TotalEpis          int64
-		TotalEntregas      int64
-		ReceitaMensal      float64
-	)
-
-	eg, gctx := errgroup.WithContext(ctx)
-
-	eg.Go(func() error {
-
-		var err error
-		EmpresasAtivas, err = e.q.EmpresasAtivas(gctx)
-		return err
-
-	})
-
-	eg.Go(func() error {
-
-		var err error
-		EmpresasBloqueadas, err = e.q.EmpresasBloqueadas(gctx)
-		return err
-
-	})
-
-	eg.Go(func() error {
-
-		var err error
-		EmpresasEmTeste, err = e.q.EmpresaEmTeste(gctx)
-		return err
-
-	})
-
-	eg.Go(func() error {
-
-		var err error
-		TotalFuncionarios, err = e.q.TotalFuncionarios(gctx)
-		return err
-
-	})
-
-	eg.Go(func() error {
-
-		var err error
-		TotalEpis, err = e.q.TotalEpis(gctx)
-		return err
-
-	})
-
-	eg.Go(func() error {
-
-		var err error
-		TotalEntregas, err = e.q.TotalEntregas(gctx)
-		return err
-
-	})
-
-	eg.Go(func() error {
-
-		var err error
-		ReceitaMensal, err = e.q.ReceitaMensal(gctx)
-		return err
-	})
-
-	if err:= eg.Wait(); err != nil {
-
-		return 0,0,0,0,0,0,0,0,err
+	resumo, err := e.q.ResumoMaster(ctx)
+	if err != nil {
+		return ResumoMasterRow{}, helper.TraduzErroPostgres(err)
 	}
+	return resumo, nil
+}
 
-	TotalEmpresas := EmpresasAtivas + EmpresasEmTeste + EmpresasBloqueadas
-	return EmpresasAtivas, EmpresasBloqueadas, EmpresasEmTeste, TotalEmpresas, TotalFuncionarios, TotalEpis, TotalEntregas, ReceitaMensal, nil
+func (e *EmpresaRepository) Alertas(ctx context.Context) ([]AlertasMasterRow, error) {
 
+	alertas, err := e.q.AlertasMaster(ctx)
+	if err != nil {
+		return nil, helper.TraduzErroPostgres(err)
+	}
+	return alertas, nil
+}
+
+func (e *EmpresaRepository) Limites(ctx context.Context) ([]LimitesMasterRow, error) {
+
+	limites, err := e.q.LimitesMaster(ctx)
+	if err != nil {
+		return nil, helper.TraduzErroPostgres(err)
+	}
+	return limites, nil
 }
 
 func (e *EmpresaRepository) EmpresasRecentes(ctx context.Context) ([]EmpresasRecentesRow, error) {
@@ -142,13 +90,29 @@ func (e *EmpresaRepository) EditarEmpresa(ctx context.Context, arg EditarEmpresa
 
 func (e *EmpresaRepository) ValidaTotalFuncionario(ctx context.Context, id int32) (ValidaTotalFuncionariosRow, error) {
 
-	total, err:= e.q.ValidaTotalFuncionarios(ctx, id)
+	total, err := e.q.ValidaTotalFuncionarios(ctx, id)
 	if err != nil {
 
-		return ValidaTotalFuncionariosRow{},helper.TraduzErroPostgres(err)
+		return ValidaTotalFuncionariosRow{}, helper.TraduzErroPostgres(err)
 	}
-
 
 	return total, nil
 
+}
+
+func (e *EmpresaRepository) BuscarLogo(ctx context.Context, tenantId int32) (string, error) {
+	key, err := e.q.BuscarLogoEmpresa(ctx, tenantId)
+	if err != nil {
+		return "", helper.TraduzErroPostgres(err)
+	}
+	return key, nil
+}
+
+// DefinirLogo grava a chave da logo no bucket; key vazia tira a logo.
+func (e *EmpresaRepository) DefinirLogo(ctx context.Context, tenantId int32, key string) error {
+	err := e.q.DefinirLogoEmpresa(ctx, DefinirLogoEmpresaParams{ID: tenantId, LogoKey: pgtype.Text{String: key, Valid: key != ""}})
+	if err != nil {
+		return helper.TraduzErroPostgres(err)
+	}
+	return nil
 }

@@ -9,13 +9,14 @@ import {
 import {
   normalizarEpiEntrega,
   normalizarFuncionarioEntrega,
-  normalizarTamanhoEntrega, // 🌟 Normalizer de volta à ativa
+  normalizarTamanhoEntrega,
 } from "../utils/entregaNormalizers";
 import {
   montarItemEntrega,
-  resolverIdEntrega,
   validarQuantidade,
 } from "../utils/entregaHelpers";
+import { toast } from "react-toastify";
+import { unidadeAtual } from "../services/unidadeAtual";
 
 export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
   const [funcionarios, setFuncionarios] = useState([]);
@@ -40,6 +41,8 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
   const [idTamanhoTemp, setIdTamanhoTemp] = useState("");
   const [qtdTemp, setQtdTemp] = useState(1);
 
+  const [kitFuncao, setKitFuncao] = useState([]);
+
   const [carregando, setCarregando] = useState(false);
   const [carregandoDados, setCarregandoDados] = useState(true);
 
@@ -58,6 +61,7 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
         setEpis(listaEpis.map(normalizarEpiEntrega));
       } catch (erro) {
         console.error("Erro ao carregar dados iniciais:", erro);
+        toast.error("Não foi possível carregar funcionários e EPIs. Feche e abra a entrega de novo.");
       } finally {
         if (ativo) setCarregandoDados(false);
       }
@@ -66,7 +70,12 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
     return () => { ativo = false; };
   }, []);
 
-  // 🌟 2. BUSCA DE TAMANHOS POR EPI (DINÂMICA)
+  // 2. Tamanhos do EPI escolhido, com o saldo de cada um na unidade do funcionário
+  // (é dela que a entrega sai; sem funcionário escolhido, soma todas)
+  // com uma loja escolhida no topo, a entrega sai dela; em "todas", da unidade do funcionário (D2)
+  const unidadeEscolhida = unidadeAtual();
+  const unidadeFuncionario =
+    unidadeEscolhida || funcionarios.find((item) => Number(item.id) === Number(funcionario))?.unidadeId;
   useEffect(() => {
     let ativo = true;
     async function buscarTamanhos() {
@@ -77,21 +86,15 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
 
       try {
         setCarregandoTamanhos(true);
-        const response = await api.get(`/tamanhos-id-epi/${idEpiTemp}`);
+        const filtro = unidadeFuncionario ? `?id_unidade=${unidadeFuncionario}` : "";
+        const response = await api.get(`/tamanhos-id-epi/${idEpiTemp}${filtro}`);
         
         if (!ativo) return;
         
-        // 🛡️ Captura protegida: Aceita response.data ou o próprio response (caso haja interceptor)
-        const dadosBrutos = response?.data || response || [];
-        
-        // 🔄 Aplica a normalização para garantir que o objeto use sempre 'tamanho' minúsculo
-        const dadosNormalizados = Array.isArray(dadosBrutos) 
-          ? dadosBrutos.map(normalizarTamanhoEntrega)
-          : [];
-
-        setTamanhosFiltrados(dadosNormalizados);
+        setTamanhosFiltrados((response ?? []).map(normalizarTamanhoEntrega));
       } catch (erro) {
         console.error("Erro ao buscar tamanhos por EPI:", erro);
+        toast.error("Não foi possível carregar os tamanhos deste EPI.");
         setTamanhosFiltrados([]);
       } finally {
         if (ativo) setCarregandoTamanhos(false);
@@ -100,7 +103,7 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
 
     buscarTamanhos();
     return () => { ativo = false; };
-  }, [idEpiTemp]);
+  }, [idEpiTemp, unidadeFuncionario]);
 
   // 3. Memos para performance e busca de objetos
   const funcionarioSelecionado = useMemo(() => {
@@ -124,15 +127,43 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
     return tamanhosFiltrados.find((item) => Number(item.id) === Number(idTamanhoTemp)) || null;
   }, [tamanhosFiltrados, idTamanhoTemp]);
 
+  // Kit de EPI da função do funcionário selecionado
+  const funcaoId = funcionarioSelecionado?.funcaoId;
+  useEffect(() => {
+    let ativo = true;
+    setKitFuncao([]);
+    if (!funcaoId) return;
+    api.get(`/funcao/${funcaoId}/kit`)
+      .then((kit) => ativo && setKitFuncao(kit ?? []))
+      .catch((erro) => {
+        console.error("Erro ao buscar kit da função:", erro);
+        toast.error("Não foi possível carregar o kit da função.");
+      });
+    return () => { ativo = false; };
+  }, [funcaoId]);
+
+  // Itens do kit que ainda não foram adicionados à entrega
+  const kitPendente = useMemo(() => {
+    const adicionados = new Set(itensParaEntregar.map((item) => Number(item.idEpi)));
+    return kitFuncao.filter((item) => !adicionados.has(Number(item.id_epi)));
+  }, [kitFuncao, itensParaEntregar]);
+
+  // Um clique no item do kit preenche EPI e quantidade; falta só o tamanho
+  function usarItemKit(item) {
+    setIdEpiTemp(String(item.id_epi));
+    setIdTamanhoTemp("");
+    setQtdTemp(Number(item.quantidade) || 1);
+  }
+
   // 4. Ações do Formulário
   function adicionarItem() {
     if (!idEpiTemp || !idTamanhoTemp || !qtdTemp) {
-      alert("Selecione o EPI, o tamanho e a quantidade.");
+      toast.warning("Selecione o EPI, o tamanho e a quantidade.");
       return;
     }
 
     if (!validarQuantidade(qtdTemp)) {
-      alert("Informe uma quantidade válida.");
+      toast.warning("Informe uma quantidade válida.");
       return;
     }
 
@@ -143,13 +174,13 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
     );
 
     if (itemDuplicado) {
-      alert("Esse item com esse tamanho já foi adicionado à entrega.");
+      toast.warning("Esse item com esse tamanho já foi adicionado à entrega.");
       return;
     }
 
     // Trava de segurança extra no botão "Adicionar"
     if (tamanhoSelecionadoObj?.saldo_atual !== undefined && qtdTemp > tamanhoSelecionadoObj.saldo_atual) {
-      alert(`Você só tem ${tamanhoSelecionadoObj.saldo_atual} unidades deste tamanho no estoque.`);
+      toast.warning(`Você só tem ${tamanhoSelecionadoObj.saldo_atual} unidades deste tamanho no estoque.`);
       return;
     }
 
@@ -170,9 +201,9 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
   }
 
   async function salvarEntrega() {
-    if (!funcionario) return alert("Selecione o funcionário.");
-    if (itensParaEntregar.length === 0) return alert("Adicione pelo menos um item.");
-    if (!assinaturaPreview) return alert("Peça a assinatura do colaborador.");
+    if (!funcionario) return toast.warning("Selecione o funcionário.");
+    if (itensParaEntregar.length === 0) return toast.warning("Adicione pelo menos um item.");
+    if (!assinaturaPreview) return toast.warning("Peça a assinatura do funcionário.");
 
     setCarregando(true);
 
@@ -180,6 +211,7 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
       id_funcionario: Number(funcionario),
       data_entrega: formatarData(dataEntrega),
       assinatura_digital: assinaturaPreview,
+      ...(unidadeEscolhida && { id_unidade: Number(unidadeEscolhida) }),
       itens: itensParaEntregar.map((item) => ({
         id_epi: Number(item.idEpi),
         id_tamanho: Number(item.idTamanho),
@@ -188,15 +220,12 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
     };
 
     try {
-      const respostaEntrega = await criarEntrega(payloadEntregaBase);
-      const idEntregaFinal = resolverIdEntrega(respostaEntrega);
-
-      if (onSalvar) {
-        await onSalvar({ ...payloadEntregaBase, id: idEntregaFinal || Date.now() });
-      }
+      await criarEntrega(payloadEntregaBase);
+      toast.success("Entrega registrada.");
+      if (onSalvar) await onSalvar();
       onClose();
-    } catch (erro) {
-      alert(erro?.message || "Erro ao registrar a entrega.");
+    } catch {
+      // o api.js já mostrou o erro do servidor
     } finally {
       setCarregando(false);
     }
@@ -224,7 +253,9 @@ export function useModalEntrega({ assinaturaPreview, onClose, onSalvar }) {
     carregandoDados,
     funcionarioSelecionado,
     funcionariosFiltrados,
-    tamanhoSelecionadoObj, // 🌟 EXPORTADO AQUI PARA A TELA USAR
+    tamanhoSelecionadoObj,
+    kitPendente,
+    usarItemKit,
     adicionarItem,
     removerItem,
     salvarEntrega,

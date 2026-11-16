@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
 
@@ -9,7 +10,6 @@ import (
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/routers"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/middleware"
 	"github.com/go-playground/validator/v10"
-	"github.com/radaptech/ginmw"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -40,6 +40,10 @@ func main() {
 		ExecutarBackupBanco(os.Args[2:])
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "atualizar-caepi" {
+		ExecutarAtualizacaoCaepi(os.Args[2:])
+		return
+	}
 
 	postgressConnection := configs.ConexaoDbPostgres{}
 
@@ -53,13 +57,13 @@ func main() {
 
 	// Só confia em requisições encaminhadas pela rede interna do proxy (Traefik).
 	// Sem isso, o Gin confia em QUALQUER X-Forwarded-For, permitindo que o
-	// cliente forje seu próprio IP e burle o rate limit por IP (ver ginmw.RateLimit).
+	// cliente forje seu próprio IP e burle o rate limit por IP (ver middleware.RateLimit).
 	// Ajuste o CIDR se a rede de produção do proxy reverso for diferente.
 	if err := router.SetTrustedProxies([]string{"172.16.0.0/12"}); err != nil {
 		fatal("configurar proxies confiáveis", err)
 	}
 
-	router.Use(ginmw.CORS("radaptech.com.br"), ginmw.SecurityHeaders())
+	router.Use(middleware.CORS("radaptech.com.br"), middleware.SecurityHeaders())
 
 	db, err := init.InitAplicattion()
 	if err != nil {
@@ -86,11 +90,20 @@ func main() {
 		}
 	}
 
+	// Cliente do R2 para a logo das empresas. Fica depois do InitAplicattion, que é quem
+	// carrega o .env; sem as credenciais, só a logo deixa de funcionar.
+	helper.InitR2_cloudflare(context.Background())
+
 	container := routers.NewContainer(db)
 
 	routers.ConfigurarRotas(router, container, db)
 
-	if err := router.Run(":8080"); err != nil {
+	// o Railway diz a porta em PORT; fora dele, 8080
+	porta := os.Getenv("PORT")
+	if porta == "" {
+		porta = "8080"
+	}
+	if err := router.Run(":" + porta); err != nil {
 		fatal("subir servidor", err)
 	}
 }

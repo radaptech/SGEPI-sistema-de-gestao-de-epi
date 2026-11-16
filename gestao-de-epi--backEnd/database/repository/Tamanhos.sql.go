@@ -7,6 +7,8 @@ package repository
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const addTamanho = `-- name: AddTamanho :exec
@@ -104,13 +106,14 @@ SELECT
         WHERE eei.id_epi = te.IdEpi 
           AND eei.id_tamanho = t.id
           AND eei.tenant_id = $1
+          AND ($2::int IS NULL OR eei.id_unidade = $2::int)
           AND eei.ativo = TRUE
           AND eei.quantidade_atual > 0
           AND eei.data_validade >= CURRENT_DATE
     ), 0)::int AS saldo_atual
 FROM tamanho t
 INNER JOIN tamanhos_epis te ON t.id = te.IdTamanho
-WHERE te.IdEpi = $2 
+WHERE te.IdEpi = $3 
   AND te.tenant_id = $1 
   AND te.ativo = TRUE
   AND t.tenant_id = $1 
@@ -119,8 +122,9 @@ ORDER BY t.tamanho ASC
 `
 
 type BuscarTamanhosPorIdEpiParams struct {
-	TenantID int32
-	IDEpi    int32
+	TenantID  int32
+	IDUnidade pgtype.Int4
+	IDEpi     int32
 }
 
 type BuscarTamanhosPorIdEpiRow struct {
@@ -131,7 +135,7 @@ type BuscarTamanhosPorIdEpiRow struct {
 }
 
 func (q *Queries) BuscarTamanhosPorIdEpi(ctx context.Context, arg BuscarTamanhosPorIdEpiParams) ([]BuscarTamanhosPorIdEpiRow, error) {
-	rows, err := q.db.Query(ctx, buscarTamanhosPorIdEpi, arg.TenantID, arg.IDEpi)
+	rows, err := q.db.Query(ctx, buscarTamanhosPorIdEpi, arg.TenantID, arg.IDUnidade, arg.IDEpi)
 	if err != nil {
 		return nil, err
 	}

@@ -1,36 +1,27 @@
+import { toast } from "react-toastify";
 import { api } from "../services/api";
 
+function salvarArquivo(blob, nome) {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", nome);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
 
+// Fichas geradas pela API. Erro do servidor: o api.js já mostra o toast e o erro sobe para quem chamou.
 export const baixarFichaPDF = async (matricula, idEntrega) => {
   if (!matricula || matricula === "-") {
-    alert("Matrícula não encontrada para este funcionário.");
-    // Retornamos false ou lançamos um erro para avisar quem chamou que falhou
-    return false; 
+    toast.warning("Matrícula não encontrada para este funcionário.");
+    return false;
   }
-
-  try {
-    const response = await api.get(`/gerencial/${matricula}/ficha-pdf/${idEntrega}`);
-
-    // 👇 O PULO DO GATO mantido
-    const arquivoByte = response.data ? response.data : response;
-
-    const url = window.URL.createObjectURL(new Blob([arquivoByte], { type: 'application/pdf' }));
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `Ficha_EPI_${matricula}.pdf`);
-    document.body.appendChild(link);
-    link.click();
-    
-    link.parentNode.removeChild(link);
-    window.URL.revokeObjectURL(url);
-    
-    return true; // Sucesso!
-    
-  } catch (error) {
-    console.error("Erro ao baixar o PDF:", error);
-    alert("Não foi possível baixar o PDF desta entrega.");
-    throw error; // Repassa o erro para quem chamou a função poder tratar
-  }
+  salvarArquivo(await api.get(`/gerencial/${matricula}/ficha-pdf/${idEntrega}`), `Ficha_Entrega_EPI_${idEntrega}.pdf`);
+  return true;
 };
 
+export const baixarFichaDevolucao = async (idDevolucao) => {
+  salvarArquivo(await api.get(`/gerencial/devolucoes/${idDevolucao}/pdf`), `Ficha_Devolucao_EPI_${idDevolucao}.pdf`);
+};

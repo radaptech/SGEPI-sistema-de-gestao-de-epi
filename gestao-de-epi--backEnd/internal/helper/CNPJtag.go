@@ -1,14 +1,14 @@
 package helper
 
 import (
+	"github.com/go-playground/validator/v10" // Importante: v10
 	"regexp"
 	"strconv"
-	"github.com/go-playground/validator/v10" // Importante: v10
 )
 
 func IsCNPJ(cnpj string) bool {
-   
-		// 1. Remove caracteres não numéricos
+
+	// 1. Remove caracteres não numéricos
 	reg := regexp.MustCompile("[^0-9]")
 	cnpj = reg.ReplaceAllString(cnpj, "")
 
@@ -79,11 +79,8 @@ func IsCNPJ(cnpj string) bool {
 	return resultado == digito2
 }
 
-
 // ValidateCNPJ é a função que o Gin vai chamar
 func ValidateCNPJ(fl validator.FieldLevel) bool {
-	
-	return  IsCNPJ(fl.Field().String())
+
+	return IsCNPJ(fl.Field().String())
 }
-
-

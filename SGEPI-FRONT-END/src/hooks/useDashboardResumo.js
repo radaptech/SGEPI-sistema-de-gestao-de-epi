@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { api } from "../services/api";
+import { listar } from "../services/listas";
 
-import { obterHojeISO, formatarData } from "../utils/dashboardFormatters";
+import { obterHojeISO, diasAte } from "../utils/dashboardFormatters";
+import { estoqueBaixo } from "../utils/indicadores";
 
 import {
   normalizarEpi,
@@ -10,26 +11,11 @@ import {
   normalizarEntrada,
   normalizarEntrega,
   normalizarItemEntregue,
-  normalizarDevolucao, // <-- Descomentado
+  normalizarDevolucao,
 } from "../utils/dashboardNormalizers";
 
-function extrairLista(resp, fallback = []) {
-  const dados = resp?.data ?? resp ?? fallback;
-  return Array.isArray(dados) ? dados : fallback;
-}
-
-async function buscarPrimeiraLista(rotas) {
-  for (const rota of rotas) {
-    try {
-      const resp = await api.get(rota);
-      const lista = extrairLista(resp, []);
-      if (Array.isArray(lista)) return lista;
-    } catch (erro) {
-      // tenta próxima rota
-    }
-  }
-  return [];
-}
+export const DIAS_ALERTA_CA = 30;
+export const DIAS_ALERTA_TROCA = 7;
 
 export function useDashboardResumo() {
   const [epis, setEpis] = useState([]);
@@ -38,7 +24,10 @@ export function useDashboardResumo() {
   const [entradas, setEntradas] = useState([]);
   const [entregas, setEntregas] = useState([]);
   const [itensEntregues, setItensEntregues] = useState([]);
-  const [devolucoes, setDevolucoes] = useState([]); // <-- Descomentado
+  const [devolucoes, setDevolucoes] = useState([]);
+  const [trocas, setTrocas] = useState([]);
+  const [faltasKit, setFaltasKit] = useState([]);
+  const [unidades, setUnidades] = useState([]);
   const [carregandoResumo, setCarregandoResumo] = useState(true);
 
   const carregarResumo = async () => {
@@ -53,27 +42,32 @@ export function useDashboardResumo() {
         listaEntregas,
         listaItensEntregues,
         listaDevolucoes,
+        listaTrocas,
+        listaFaltasKit,
+        listaUnidades,
       ] = await Promise.all([
-        api.get("/epis-dashbord").catch(() => []),
-        api.get("/tamanhos").catch(() => []),
-        api.get("/funcionarios-dashbord").catch(() => []),
-        api.get("/entradas-dashbord").catch(() => []),
-        api.get("/entregas-dashbord").catch(() => []),
-        api.get("/entrega-itens-dashbord").catch(() => []),
-        api.get("/devolucao").catch(() => {
-          console.warn("Rota /devolucoes ainda não implementada no Back-end");
-          return []; // Retorna lista vazia e o código continua rodando
-        }),
+        listar("/epis-dashbord"),
+        listar("/tamanhos"),
+        listar("/funcionarios-dashbord"),
+        listar("/entradas-dashbord"),
+        listar("/entregas-dashbord"),
+        listar("/entrega-itens-dashbord"),
+        listar("/devolucao"),
+        listar(`/trocas-pendentes?dias=${DIAS_ALERTA_TROCA}`),
+        listar("/faltas-kit"),
+        listar("/unidades"),
       ]);
       
-      setEpis((listaEpis || []).map(normalizarEpi));
-      setTamanhos((listaTamanhos || []).map(normalizarTamanho));
-      setFuncionarios((listaFuncionarios || []).map(normalizarFuncionario));
-      setEntradas((listaEntradas || []).map(normalizarEntrada));
-      setEntregas((listaEntregas || []).map(normalizarEntrega));
-      setItensEntregues((listaItensEntregues || []).map(normalizarItemEntregue));
-      setDevolucoes((listaDevolucoes || []).map(normalizarDevolucao)); // <-- Descomentado
-
+      setEpis(listaEpis.map(normalizarEpi));
+      setTamanhos(listaTamanhos.map(normalizarTamanho));
+      setFuncionarios(listaFuncionarios.map(normalizarFuncionario));
+      setEntradas(listaEntradas.map(normalizarEntrada));
+      setEntregas(listaEntregas.map(normalizarEntrega));
+      setItensEntregues(listaItensEntregues.map(normalizarItemEntregue));
+      setDevolucoes(listaDevolucoes.map(normalizarDevolucao));
+      setTrocas(listaTrocas);
+      setFaltasKit(listaFaltasKit);
+      setUnidades(listaUnidades);
     } finally {
       setCarregandoResumo(false);
     }
@@ -166,7 +160,7 @@ export function useDashboardResumo() {
 
     entregasDoMes.forEach((entrega) => {
       const idEnt = String(entrega.id);
-      const idFunc = String(entrega.idFuncionario || entrega.funcionario?.id || 0);
+      const idFunc = String(entrega.idFuncionario);
       const funcionario = funcionariosMap[idFunc];
       const itensDaEntrega = itensEntreguesPorEntrega[idEnt] || [];
 
@@ -194,15 +188,15 @@ export function useDashboardResumo() {
           data: entrega.data_entrega,
           funcionario: funcionario?.nome || "Desconhecido",
           matricula: funcionario?.matricula || "--",
-          item: epi?.nome || item.epiNome || `EPI #${idEpi}`,
-          tamanho: tam?.tamanho || item.tamanhoTexto || "?",
+          item: epi?.nome || `EPI #${idEpi}`,
+          tamanho: tam?.tamanho || "?",
           quantidade: Number(item.quantidade || 0),
         });
       });
     });
 
     return lines.sort((a, b) => a.funcionario.localeCompare(b.funcionario));
-  }, [entradas, funcionariosMap, itensEntreguesPorEntrega, episMap, tamanhosMap]);
+  }, [entregas, funcionariosMap, itensEntreguesPorEntrega, episMap, tamanhosMap]);
 
   // ======= BLOCO: entregasTodasDetalhadas (Para o Filtro do Modal) =======
   const entregasTodasDetalhadas = useMemo(() => {
@@ -210,7 +204,7 @@ export function useDashboardResumo() {
 
     entregas.forEach((entrega) => {
       const idEnt = String(entrega.id);
-      const idFunc = String(entrega.idFuncionario || entrega.funcionario?.id || 0);
+      const idFunc = String(entrega.idFuncionario);
       const funcionario = funcionariosMap[idFunc];
       const itensDaEntrega = itensEntreguesPorEntrega[idEnt] || [];
 
@@ -238,8 +232,8 @@ export function useDashboardResumo() {
           data: entrega.data_entrega,
           funcionario: funcionario?.nome || "Desconhecido",
           matricula: funcionario?.matricula || "--",
-          item: epi?.nome || item.epiNome || `EPI #${idEpi}`,
-          tamanho: tam?.tamanho || item.tamanhoTexto || "?",
+          item: epi?.nome || `EPI #${idEpi}`,
+          tamanho: tam?.tamanho || "?",
           quantidade: Number(item.quantidade || 0),
         });
       });
@@ -249,37 +243,54 @@ export function useDashboardResumo() {
   }, [entregas, funcionariosMap, itensEntreguesPorEntrega, episMap, tamanhosMap]);
 
  
+  // estoque baixo por unidade, EPI e tamanho (soma dos lotes contra o alerta mínimo do EPI)
   const alertasDetalhados = useMemo(() => {
-    return entradas
-      .map((entrada) => {
-        const epi = episMap[Number(entrada.idEpi)];
-        const tamanho = tamanhosMap[Number(entrada.idTamanho)];
-        
-        const alertaMinimo = Number(
-          epi?.alerta_minimo || 
-          epi?.alertaMinimo || 
-          0
-        );
+    const nomeUnidade = Object.fromEntries(unidades.map((u) => [Number(u.id), u.nome]));
+    return estoqueBaixo(entradas, epis).map((s) => ({
+      ...s,
+      item: episMap[s.idEpi]?.nome || `EPI #${s.idEpi}`,
+      tamanho: tamanhosMap[s.idTamanho]?.tamanho || "Sem tamanho",
+      unidade: nomeUnidade[s.idUnidade] || "--",
+    }));
+  }, [entradas, epis, unidades, episMap, tamanhosMap]);
 
-        const quantidadeAtual = Number(entrada.quantidadeAtual || 0);
+  // CA vencido, vencendo nos próximos DIAS_ALERTA_CA dias, ou cancelado/suspenso no MTE
+  const caVencendoDetalhado = useMemo(() => {
+    return epis
+      .map((epi) => ({
+        id: epi.id, item: epi.nome, ca: epi.ca, validade: epi.validade_ca, dias: diasAte(epi.validade_ca),
+        bloqueadoMte: ["CANCELADO", "SUSPENSO"].includes(epi.situacao_ca) ? epi.situacao_ca : null,
+      }))
+      .filter((item) => item.bloqueadoMte || (item.dias !== null && item.dias <= DIAS_ALERTA_CA))
+      .sort((a, b) => Boolean(b.bloqueadoMte) - Boolean(a.bloqueadoMte) || a.dias - b.dias);
+  }, [epis]);
 
-        return {
-          id: `entrada-${entrada.id}`,
-          item: epi?.nome || `EPI #${entrada.idEpi}`,
-          tamanho: tamanho?.tamanho || "Sem tamanho",
-          quantidade: quantidadeAtual,
-          alertaMinimo,
-          lote: entrada.lote || "Sem lote", // 🌟 Captura o lote da entrada
-        };
-      })
-      .filter(
-        (item) =>
-          Number(item.alertaMinimo) > 0 && 
-          Number(item.quantidade) > 0 && // 🌟 Remove os lotes que já estão ZERADOS
-          Number(item.quantidade) <= Number(item.alertaMinimo) // Mantém apenas os que estão abaixo/no limite
-      )
-      .sort((a, b) => a.quantidade - b.quantidade);
-  }, [entradas, episMap, tamanhosMap]);
+  // já vem filtrado e ordenado pelo back-end (/trocas-pendentes)
+  const trocasDetalhadas = useMemo(() => {
+    return trocas.map((t) => ({
+      id: `${t.funcionario_id}-${t.epi_id}`,
+      funcionario: t.funcionario_nome,
+      matricula: t.matricula,
+      item: t.epi_nome,
+      emPosse: t.em_posse,
+      ultimaEntrega: t.ultima_entrega,
+      venceEm: t.vence_em,
+      dias: diasAte(t.vence_em),
+    }));
+  }, [trocas]);
+
+  // funcionários com menos EPI em posse do que o kit da função pede (/faltas-kit)
+  const faltasKitDetalhadas = useMemo(() => {
+    return faltasKit.map((f) => ({
+      id: `${f.funcionario_id}-${f.epi_id}`,
+      funcionario: f.funcionario_nome,
+      matricula: f.matricula,
+      funcao: f.funcao_nome,
+      item: f.epi_nome,
+      exigido: f.exigido,
+      emPosse: f.em_posse,
+    }));
+  }, [faltasKit]);
 
   const valorEstoqueDetalhado = useMemo(() => {
     const mapa = {};
@@ -356,20 +367,30 @@ export function useDashboardResumo() {
       entregasMes, 
       devolucoesHoje,
       alertas,
+      caVencendo: caVencendoDetalhado.length,
+      trocas: trocasDetalhadas.length,
+      faltasKit: new Set(faltasKitDetalhadas.map((f) => f.funcionario)).size,
       valorTotal,
     };
-  }, [entradas, entregas, devolucoes, alertasDetalhados]);
+  }, [entradas, entregas, devolucoes, alertasDetalhados, caVencendoDetalhado, trocasDetalhadas, faltasKitDetalhadas]);
 
   return {
     epis,
     entradas,
     funcionarios,
+    entregas,
+    itensEntregues,
+    faltasKit,
+    unidades,
     carregandoResumo,
     resumo,
     estoqueDetalhado,
     entregasMesDetalhadas, 
     entregasTodasDetalhadas, 
     alertasDetalhados,
+    caVencendoDetalhado,
+    trocasDetalhadas,
+    faltasKitDetalhadas,
     valorEstoqueDetalhado,
     carregarResumo,
   };

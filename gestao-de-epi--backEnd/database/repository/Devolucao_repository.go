@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -63,9 +64,9 @@ func (d *DevolucaoRepository) Cancelar(ctx context.Context, qtx *Queries, arg Ca
 	return id, nil
 }
 
-func (d *DevolucaoRepository) Listar(ctx context.Context, tenantId int32) ([]ListarDevolucoesRow, error) {
+func (d *DevolucaoRepository) Listar(ctx context.Context, tenantId, unidade int32) ([]ListarDevolucoesRow, error) {
 
-	devolucoes, err := d.q.ListarDevolucoes(ctx, tenantId)
+	devolucoes, err := d.q.ListarDevolucoes(ctx, ListarDevolucoesParams{TenantID: tenantId, IDUnidade: pgtype.Int4{Int32: unidade, Valid: unidade > 0}})
 	if err != nil {
 
 		return []ListarDevolucoesRow{}, helper.TraduzErroPostgres(err)
@@ -74,8 +75,8 @@ func (d *DevolucaoRepository) Listar(ctx context.Context, tenantId int32) ([]Lis
 	return devolucoes, nil
 }
 
-func (d *DevolucaoRepository) DadosPdfDevolucao(ctx context.Context, arg BuscarDadosPdfDevolucaoParams)(BuscarDadosPdfDevolucaoRow, error){
-	devs, err:= d.q.BuscarDadosPdfDevolucao(ctx, arg)
+func (d *DevolucaoRepository) DadosPdfDevolucao(ctx context.Context, arg BuscarDadosPdfDevolucaoParams) (BuscarDadosPdfDevolucaoRow, error) {
+	devs, err := d.q.BuscarDadosPdfDevolucao(ctx, arg)
 	if err != nil {
 
 		return BuscarDadosPdfDevolucaoRow{}, helper.TraduzErroPostgres(err)

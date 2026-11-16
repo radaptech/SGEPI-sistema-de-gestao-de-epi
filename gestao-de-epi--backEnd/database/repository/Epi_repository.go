@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -96,6 +97,18 @@ func (e *EpiRepository) BuscaEpiDashbord(ctx context.Context, tenant int32) ([]B
 	return epis, nil
 }
 
+// BuscarCaepi consulta a base pública de CAs do MTE (tabela global, sem tenant)
+func (e *EpiRepository) BuscarCaepi(ctx context.Context, ca string) (BuscarCaepiRow, error) {
+	c, err := e.q.BuscarCaepi(ctx, ca)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return BuscarCaepiRow{}, helper.ErrNaoEncontrado
+		}
+		return BuscarCaepiRow{}, helper.TraduzErroPostgres(err)
+	}
+	return c, nil
+}
+
 func (e *EpiRepository) BuscaEpiTenant(ctx context.Context, tenant int32) ([]BuscaTodosItensEntreguesDoTenantRow, error) {
 	// Chamada da "Chave Mestra" refatorada anteriormente
 	epi, err := e.q.BuscaTodosItensEntreguesDoTenant(ctx, tenant)
@@ -105,11 +118,10 @@ func (e *EpiRepository) BuscaEpiTenant(ctx context.Context, tenant int32) ([]Bus
 	return epi, nil
 }
 
-func ( e *EpiRepository) BuscaEpiFuncionario(ctx context.Context, idfuncionario, tenantId int32)([]BuscaItensEntreguesPorFuncionarioRow, error){
+func (e *EpiRepository) BuscaEpiFuncionario(ctx context.Context, idfuncionario, tenantId int32) ([]BuscaItensEntreguesPorFuncionarioRow, error) {
 
-
-	epi, err:= e.q.BuscaItensEntreguesPorFuncionario(ctx,BuscaItensEntreguesPorFuncionarioParams{
-		TenantID: tenantId,
+	epi, err := e.q.BuscaItensEntreguesPorFuncionario(ctx, BuscaItensEntreguesPorFuncionarioParams{
+		TenantID:      tenantId,
 		Idfuncionario: idfuncionario,
 	})
 

@@ -1,8 +1,3 @@
-export function extrairLista(resp) {
-  const dados = resp?.data ?? resp ?? [];
-  return Array.isArray(dados) ? dados : [];
-}
-
 export function normalizarFuncionario(item) {
   const entregas = Array.isArray(item?.entregas) ? item.entregas : [];
   const devolucoes = Array.isArray(item?.devolucoes) ? item.devolucoes : [];
@@ -29,15 +24,15 @@ export function normalizarFuncionario(item) {
 export function normalizarDepartamento(item) {
   return {
     id: Number(item?.id ?? 0),
-    nome: item?.departamento ?? item?.nome ?? "", 
+    nome: item.departamento,
   };
 }
 
 export function normalizarFuncao(item) {
   return {
     id: Number(item?.id ?? 0),
-    nome: item?.cargo ?? item?.nome ?? "", 
-    idDepartamento: Number(item?.departamento?.id ?? item?.idDepartamento ?? 0),
+    nome: item.cargo,
+    idDepartamento: item.departamento.id,
   };
 }
 

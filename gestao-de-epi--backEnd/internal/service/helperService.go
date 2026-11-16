@@ -11,9 +11,9 @@ type PaginacaoStruct struct {
 	Offset      int32
 }
 
-func Paginacao(f FiltroPaginacao) (PaginacaoStruct) {
+func Paginacao(f FiltroPaginacao) PaginacaoStruct {
 
-	//quantidade de itens que o usuario que ver 
+	//quantidade de itens que o usuario que ver
 	limit := f.Quantidade
 	if limit <= 0 {
 		limit = 1
@@ -29,14 +29,14 @@ func Paginacao(f FiltroPaginacao) (PaginacaoStruct) {
 		paginaAtual = 1
 	}
 
-	//Calcula o offset, que é o número de registros que 
+	//Calcula o offset, que é o número de registros que
 	// o banco de dados precisa "ignorar"
 	// ou "pular" antes de começar a retornar os resultados.
 	offset := max((paginaAtual-1)*limit, 0)
 
 	return PaginacaoStruct{
-		Limit: limit,
+		Limit:       limit,
 		PaginaAtual: paginaAtual,
-		Offset: offset,
+		Offset:      offset,
 	}
 }

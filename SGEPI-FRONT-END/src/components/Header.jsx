@@ -1,41 +1,16 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import SeletorUnidade from "./SeletorUnidade";
 
 function Header({ paginaAtual, setPagina, onLogout, usuario }) {
   const [menuAberto, setMenuAberto] = useState(false);
   const [menuMaisAberto, setMenuMaisAberto] = useState(false);
   const menuMaisRef = useRef(null);
 
-  const perfilUsuario = useMemo(() => {
-    return (
-      usuario?.tipo ||
-      usuario?.perfil ||
-      usuario?.role ||
-      usuario?.nivelAcesso ||
-      usuario?.usuario?.tipo ||
-      usuario?.usuario?.perfil ||
-      usuario?.usuario?.role ||
-      "FUNCIONARIO"
-    );
-  }, [usuario]);
-
-  const nomeUsuario = useMemo(() => {
-    return usuario?.nome || usuario?.usuario?.nome || "Usuário";
-  }, [usuario]);
-
-  const perfilNormalizado = String(perfilUsuario).toUpperCase();
-
-  const isSuperAdmin =
-    perfilNormalizado === "SUPER_ADMIN" ||
-    perfilNormalizado === "MASTER" ||
-    perfilNormalizado === "ADMIN_MASTER";
-
-  const isAdminEmpresa =
-    perfilNormalizado === "ADMIN_EMPRESA" ||
-    perfilNormalizado === "ADMIN";
-
-  const isFuncionario =
-    perfilNormalizado === "FUNCIONARIO" ||
-    perfilNormalizado === "COLABORADOR";
+  const nomeUsuario = usuario?.nome || "Usuário";
+  const isSuperAdmin = usuario?.role === "super_admin";
+  const isAdminEmpresa = usuario?.role === "admin";
+  const restrito = usuario?.unidades?.length > 0; // limitado a algumas unidades (Fase 6)
+  const perfilNormalizado = String(usuario?.role ?? "").toUpperCase();
 
   useEffect(() => {
     function handleClickFora(event) {
@@ -59,16 +34,16 @@ function Header({ paginaAtual, setPagina, onLogout, usuario }) {
           setMenuMaisAberto(false);
           if (isMobile) setMenuAberto(false);
         }}
+        aria-current={ativo ? "page" : undefined}
         className={`
-          shrink-0 flex items-center gap-2.5 font-medium transition-all duration-200
-          ${isMobile ? "w-full justify-start px-4 py-3 text-sm rounded-xl" : "px-5 py-2.5 text-sm rounded-full"}
-          ${ativo
-            ? "bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm ring-1 ring-slate-200/50 dark:ring-slate-700"
-            : "text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/30"
+          shrink-0 flex items-center gap-2 text-sm transition-colors duration-150
+          ${isMobile
+            ? `w-full justify-start px-3 py-3 rounded-md ${ativo ? "bg-sunken text-ink font-semibold" : "text-ink-2 hover:bg-sunken hover:text-ink"}`
+            : `h-14 px-3 border-b-2 -mb-px ${ativo ? "border-ink text-ink font-semibold" : "border-transparent text-ink-2 hover:text-ink hover:border-line-strong"}`
           }
         `}
       >
-        <span className={`shrink-0 transition-colors ${ativo ? "text-blue-600 dark:text-blue-400" : "text-slate-400 dark:text-slate-500"}`}>{icone}</span>
+        <span className={`shrink-0 transition-colors ${isMobile ? "" : "hidden xl:inline"} ${ativo ? "text-ink " : "text-ink-3 "}`}>{icone}</span>
         <span>{label}</span>
       </button>
     );
@@ -163,14 +138,15 @@ function Header({ paginaAtual, setPagina, onLogout, usuario }) {
   ];
 
   const itensAdminEmpresa = [
+    // operação do dia a dia na barra; cadastros de apoio no "Mais"
     { label: "Dashboard", nome: "Dashboard", principal: true, icon: IconDashboard },
+    { label: "Entregas", nome: "Entregas", principal: true, icon: IconEntregas },
+    { label: "Devoluções", nome: "Devoluções", principal: true, icon: IconDevolucoes },
     { label: "Estoque", nome: "Estoque", principal: true, icon: IconEstoque },
+    { label: "Entradas", nome: "Entradas", principal: true, icon: IconEntradas },
     { label: "Funcionários", nome: "Funcionários", principal: true, icon: IconFuncionarios },
-    { label: "Departamentos", nome: "Departamentos", principal: true, icon: IconDepartamentos },
-    { label: "Fornecedores", nome: "Fornecedores", principal: true, icon: IconFornecedores },
-    { label: "Entradas", nome: "Entradas", icon: IconEntradas },
-    { label: "Entregas", nome: "Entregas", icon: IconEntregas },
-    { label: "Devoluções", nome: "Devoluções", icon: IconDevolucoes },
+    { label: "Departamentos", nome: "Departamentos", icon: IconDepartamentos },
+    { label: "Fornecedores", nome: "Fornecedores", icon: IconFornecedores },
     { label: "Administração", nome: "Administracao", icon: IconAdmin },
   ];
 
@@ -180,39 +156,53 @@ function Header({ paginaAtual, setPagina, onLogout, usuario }) {
     { label: "Devoluções", nome: "Devoluções", principal: true, icon: IconDevolucoes },
   ];
 
-  const navItems = useMemo(() => {
-    if (isSuperAdmin) return itensSuperAdmin;
-    if (isAdminEmpresa) return itensAdminEmpresa;
-    if (isFuncionario) return itensFuncionario;
-    return itensFuncionario;
-  }, [isSuperAdmin, isAdminEmpresa, isFuncionario]);
+  const irParaInicio = () => {
+    setPagina(isSuperAdmin ? "DashboardMaster" : "Dashboard");
+    setMenuAberto(false);
+    setMenuMaisAberto(false);
+  };
+
+  const navItems = isSuperAdmin ? itensSuperAdmin : isAdminEmpresa ? itensAdminEmpresa : itensFuncionario;
 
   const menuPrincipal = navItems.filter((item) => item.principal);
   const menuSecundario = navItems.filter((item) => !item.principal);
   const paginaNoMenuSecundario = menuSecundario.some((item) => item.nome === paginaAtual);
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-slate-200 dark:border-slate-800 shadow-sm transition-colors duration-300">
-      <div className="max-w-[1600px] mx-auto px-4 lg:px-8 py-3">
-        <div className="hidden lg:grid grid-cols-[auto_1fr_auto] items-center gap-8">
+    <header className="sticky top-0 z-50 bg-surface border-b border-line">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-2 lg:py-0">
+        <div className="hidden lg:grid grid-cols-[auto_1fr_auto] items-center gap-4 xl:gap-8">
+          {/* com 2+ unidades, o seletor de unidade toma o lugar do subtítulo: na barra não cabe mais nada */}
           <div className="flex items-center gap-3 shrink-0">
-            <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-xl flex items-center justify-center shadow-md shadow-blue-600/20 dark:shadow-blue-900/40 transition-colors">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button
+              type="button"
+              onClick={irParaInicio}
+              title="Ir para o início"
+              className="w-9 h-9 bg-action rounded flex items-center justify-center hover:opacity-90 transition-opacity"
+            >
+              <svg className="w-5 h-5 text-on-action" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white leading-none transition-colors">
+              <span className="sr-only">Ir para o início</span>
+            </button>
+            <div className="flex flex-col items-start">
+              <button
+                type="button"
+                onClick={irParaInicio}
+                className="text-lg font-bold tracking-tight text-ink leading-none hover:text-ink-2 transition-colors"
+              >
                 SGEPI
-              </h1>
-              <p className="text-[10px] text-blue-600 dark:text-blue-400 uppercase tracking-widest font-bold mt-1 transition-colors">
-                {isSuperAdmin ? "Painel Master" : "Gestão de Estoque"}
-              </p>
+              </button>
+              {isSuperAdmin ? (
+                <span className="text-xs text-ink-3 mt-0.5">Painel Master</span>
+              ) : (
+                <SeletorUnidade compacto restrito={restrito} semUnidades={<span className="text-xs text-ink-3 mt-0.5">Gestão de Estoque</span>} />
+              )}
             </div>
           </div>
 
           <div className="flex justify-center min-w-0">
-            <nav className="flex items-center gap-1.5 p-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-full transition-colors">
+            <nav className="flex items-center gap-1">
               {menuPrincipal.map((item) => (
                 <Botao key={item.nome} label={item.label} nomePagina={item.nome} icone={item.icon} />
               ))}
@@ -222,22 +212,23 @@ function Header({ paginaAtual, setPagina, onLogout, usuario }) {
                   <button
                     type="button"
                     onClick={() => setMenuMaisAberto((prev) => !prev)}
+                    aria-expanded={menuMaisAberto}
                     className={`
-                      shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200
-                      ${paginaNoMenuSecundario || menuMaisAberto
-                        ? "bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm ring-1 ring-slate-200/50 dark:ring-slate-700"
-                        : "text-slate-500 dark:text-slate-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400"
+                      shrink-0 flex items-center gap-1.5 h-14 px-3 border-b-2 -mb-px text-sm transition-colors duration-150
+                      ${paginaNoMenuSecundario
+                        ? "border-ink text-ink font-semibold"
+                        : "border-transparent text-ink-2 hover:text-ink hover:border-line-strong"
                       }
                     `}
                   >
                     <span>Mais</span>
-                    <svg className={`w-4 h-4 transition-transform duration-300 ${menuMaisAberto ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className={`w-4 h-4 transition-transform duration-150 ${menuMaisAberto ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
 
                   {menuMaisAberto && (
-                    <div className="absolute top-[calc(100%+12px)] left-1/2 -translate-x-1/2 min-w-[220px] rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl p-1.5 animate-fade-in transition-colors">
+                    <div className="absolute top-full right-0 min-w-[220px] rounded-md border border-line bg-surface shadow-modal p-1">
                       <div className="flex flex-col gap-0.5">
                         {menuSecundario.map((item) => {
                           const ativo = paginaAtual === item.nome;
@@ -250,14 +241,14 @@ function Header({ paginaAtual, setPagina, onLogout, usuario }) {
                                 setMenuMaisAberto(false);
                               }}
                               className={`
-                                w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-left transition-colors
+                                w-full flex items-center gap-3 px-4 py-2.5 rounded-md text-sm text-left transition-colors
                                 ${ativo
-                                  ? "bg-blue-50/80 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-semibold"
-                                  : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-blue-600 dark:hover:text-blue-400"
+                                  ? "bg-sunken text-ink font-semibold"
+                                  : "text-ink-2 hover:bg-sunken hover:text-ink "
                                 }
                               `}
                             >
-                              <span className={ativo ? "text-blue-600 dark:text-blue-400" : "text-slate-400 dark:text-slate-500"}>{item.icon}</span>
+                              <span className={ativo ? "text-ink " : "text-ink-3 "}>{item.icon}</span>
                               <span>{item.label}</span>
                             </button>
                           );
@@ -272,50 +263,56 @@ function Header({ paginaAtual, setPagina, onLogout, usuario }) {
 
           <div className="flex items-center justify-end gap-5 shrink-0">
             <div className="hidden 2xl:flex flex-col items-end justify-center">
-              <span className="text-sm text-slate-700 dark:text-slate-300 transition-colors">
-                Olá, <b className="font-semibold text-slate-900 dark:text-white transition-colors">{nomeUsuario}</b>
+              <span className="text-sm text-ink">
+                Olá, <b className="font-semibold text-ink">{nomeUsuario}</b>
               </span>
-              <span className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5 font-bold transition-colors">
+              <span className="font-mono text-xs text-ink-3 mt-0.5">
                 {perfilNormalizado}
               </span>
             </div>
             
-            <div className="w-px h-8 bg-slate-200 dark:bg-slate-700 hidden 2xl:block transition-colors"></div>
+            <div className="w-px h-8 bg-line hidden 2xl:block"></div>
 
             <button
               type="button"
               onClick={onLogout}
-              className="flex items-center gap-2 text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-100 dark:hover:border-red-800/50 p-2.5 pr-4 rounded-full font-medium transition-all text-sm whitespace-nowrap group"
+              className="flex items-center gap-2 h-9 px-3 rounded-md border border-line text-sm text-ink-2 hover:text-erro hover:border-erro-line hover:bg-erro-soft transition-colors whitespace-nowrap"
             >
-              <div className="w-6 h-6 rounded-full bg-white dark:bg-slate-900 flex items-center justify-center shadow-sm text-current group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
               <span>Sair</span>
             </button>
           </div>
         </div>
 
         <div className="flex lg:hidden items-center justify-between">
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-xl flex items-center justify-center shadow-md shadow-blue-600/20 dark:shadow-blue-900/40 transition-colors">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <button
+            type="button"
+            onClick={irParaInicio}
+            title="Ir para o início"
+            className="flex items-center gap-3 shrink-0 text-left rounded-md -m-1 p-1 hover:bg-sunken transition-colors"
+          >
+            <span className="w-9 h-9 bg-action rounded flex items-center justify-center">
+              <svg className="w-5 h-5 text-on-action" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white leading-none transition-colors">SGEPI</h1>
-              <p className="text-[10px] text-blue-600 dark:text-blue-400 uppercase tracking-widest font-bold mt-1 transition-colors">
+            </span>
+            <span className="flex flex-col">
+              <span className="text-lg font-bold tracking-tight text-ink leading-none">SGEPI</span>
+              <span className="text-xs text-ink-3 mt-0.5">
                 {isSuperAdmin ? "Painel Master" : "Gestão de Estoque"}
-              </p>
-            </div>
-          </div>
+              </span>
+            </span>
+            <span className="sr-only">, ir para o início</span>
+          </button>
 
           <button
             type="button"
             onClick={() => setMenuAberto((prev) => !prev)}
-            className="p-2 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-colors shrink-0"
+            aria-expanded={menuAberto}
+            aria-label={menuAberto ? "Fechar menu" : "Abrir menu"}
+            className="p-2 text-ink-2 hover:text-ink hover:bg-sunken rounded-md transition-colors shrink-0"
           >
             {menuAberto ? (
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -330,14 +327,15 @@ function Header({ paginaAtual, setPagina, onLogout, usuario }) {
         </div>
 
         {menuAberto && (
-          <div className="lg:hidden mt-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xl animate-fade-in transition-colors">
-            <div className="px-2 pb-4 mb-4 border-b border-slate-100 dark:border-slate-800 transition-colors">
-              <p className="text-sm text-slate-700 dark:text-slate-300">
-                Olá, <b className="font-semibold text-slate-900 dark:text-white">{nomeUsuario}</b>
+          <div className="lg:hidden mt-4 rounded-md border border-line bg-surface p-4 shadow-modal">
+            <div className="px-2 pb-4 mb-4 border-b border-line">
+              <p className="text-sm text-ink">
+                Olá, <b className="font-semibold text-ink">{nomeUsuario}</b>
               </p>
-              <p className="text-[11px] uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-1 font-bold">
-                Perfil: {perfilNormalizado}
+              <p className="font-mono text-xs text-ink-3 mt-1">
+                {perfilNormalizado}
               </p>
+              {!isSuperAdmin && <SeletorUnidade id="seletor-unidade-mobile" className="mt-3" restrito={restrito} />}
             </div>
 
             <nav className="flex flex-col gap-1">
@@ -346,11 +344,11 @@ function Header({ paginaAtual, setPagina, onLogout, usuario }) {
               ))}
             </nav>
 
-            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 transition-colors">
+            <div className="mt-4 pt-4 border-t border-line">
               <button
                 type="button"
                 onClick={onLogout}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-600 hover:text-white dark:hover:bg-red-700 dark:hover:text-white transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-md font-medium text-erro bg-erro-soft hover:bg-erro-solid hover:text-white transition-colors"
               >
                 <span>Sair do Sistema</span>
               </button>

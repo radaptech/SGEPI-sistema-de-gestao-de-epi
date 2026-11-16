@@ -3,16 +3,6 @@ export function validarQuantidade(valor) {
   return !Number.isNaN(numero) && numero > 0;
 }
 
-export function resolverIdEntrega(respostaEntrega) {
-  return Number(
-    respostaEntrega?.id ??
-      respostaEntrega?.ID ??
-      respostaEntrega?.entrega?.id ??
-      respostaEntrega?.entregaId ??
-      0
-  );
-}
-
 export function montarItemEntrega(
   item,
   epiSelecionadoObj,

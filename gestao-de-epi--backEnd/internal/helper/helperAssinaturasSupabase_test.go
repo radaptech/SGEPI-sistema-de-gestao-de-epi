@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -44,4 +45,13 @@ func TestUploadAssinaturaRejeitaFormatoNaoSuportado(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "formato de imagem não suportado")
+}
+
+func TestUploadAssinaturaSemBucketPulaUpload(t *testing.T) {
+	t.Setenv("SUPABASE_BUCKET", "")
+
+	caminho, err := UploadAssinaturaSupabase("data:image/png;base64,iVBORw0KGgo=", "ENT-123", "entregas")
+
+	assert.NoError(t, err)
+	assert.True(t, strings.HasPrefix(caminho, "sem-upload://entregas/ENT-123_"), caminho)
 }

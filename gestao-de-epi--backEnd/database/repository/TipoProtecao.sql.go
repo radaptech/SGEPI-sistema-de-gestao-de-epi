@@ -9,62 +9,11 @@ import (
 	"context"
 )
 
-const addProtecao = `-- name: AddProtecao :one
-INSERT INTO tipo_protecao (tenant_id, nome) 
-VALUES ($1, $2)
-RETURNING id, tenant_id, nome, ativo, deletado_em
-`
-
-type AddProtecaoParams struct {
-	TenantID int32
-	Nome     string
-}
-
-func (q *Queries) AddProtecao(ctx context.Context, arg AddProtecaoParams) (TipoProtecao, error) {
-	row := q.db.QueryRow(ctx, addProtecao, arg.TenantID, arg.Nome)
-	var i TipoProtecao
-	err := row.Scan(
-		&i.ID,
-		&i.TenantID,
-		&i.Nome,
-		&i.Ativo,
-		&i.DeletadoEm,
-	)
-	return i, err
-}
-
-const buscarProtecao = `-- name: BuscarProtecao :one
-SELECT id, nome 
-FROM tipo_protecao 
-WHERE id = $1 
-  AND tenant_id = $2 -- SEGURANÇA
-  AND ativo = TRUE 
-LIMIT 1
-`
-
-type BuscarProtecaoParams struct {
-	ID       int32
-	TenantID int32
-}
-
-type BuscarProtecaoRow struct {
-	ID   int32
-	Nome string
-}
-
-func (q *Queries) BuscarProtecao(ctx context.Context, arg BuscarProtecaoParams) (BuscarProtecaoRow, error) {
-	row := q.db.QueryRow(ctx, buscarProtecao, arg.ID, arg.TenantID)
-	var i BuscarProtecaoRow
-	err := row.Scan(&i.ID, &i.Nome)
-	return i, err
-}
-
 const buscarTodasProtecoes = `-- name: BuscarTodasProtecoes :many
-SELECT id, nome 
-FROM tipo_protecao 
-WHERE tenant_id = $1 -- SEGURANÇA: Lista apenas do cliente logado
-  AND ativo = TRUE
-ORDER BY nome ASC
+
+SELECT id, nome
+FROM tipo_protecao
+ORDER BY codigo
 `
 
 type BuscarTodasProtecoesRow struct {
@@ -72,8 +21,9 @@ type BuscarTodasProtecoesRow struct {
 	Nome string
 }
 
-func (q *Queries) BuscarTodasProtecoes(ctx context.Context, tenantID int32) ([]BuscarTodasProtecoesRow, error) {
-	rows, err := q.db.Query(ctx, buscarTodasProtecoes, tenantID)
+// tipo_protecao é global (grupos do Anexo I da NR-6, migração 000040): não filtra tenant_id de propósito.
+func (q *Queries) BuscarTodasProtecoes(ctx context.Context) ([]BuscarTodasProtecoesRow, error) {
+	rows, err := q.db.Query(ctx, buscarTodasProtecoes)
 	if err != nil {
 		return nil, err
 	}
@@ -90,48 +40,4 @@ func (q *Queries) BuscarTodasProtecoes(ctx context.Context, tenantID int32) ([]B
 		return nil, err
 	}
 	return items, nil
-}
-
-const deletarProtecao = `-- name: DeletarProtecao :execrows
-UPDATE tipo_protecao
-SET ativo = FALSE,
-    deletado_em = current_date
-WHERE id = $1 
-  AND tenant_id = $2 -- SEGURANÇA
-  AND ativo = TRUE
-`
-
-type DeletarProtecaoParams struct {
-	ID       int32
-	TenantID int32
-}
-
-func (q *Queries) DeletarProtecao(ctx context.Context, arg DeletarProtecaoParams) (int64, error) {
-	result, err := q.db.Exec(ctx, deletarProtecao, arg.ID, arg.TenantID)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected(), nil
-}
-
-const updateProtecao = `-- name: UpdateProtecao :execrows
-UPDATE tipo_protecao
-SET nome = $2
-WHERE id = $1 
-  AND tenant_id = $3 -- SEGURANÇA
-  AND ativo = TRUE
-`
-
-type UpdateProtecaoParams struct {
-	ID       int32
-	Nome     string
-	TenantID int32
-}
-
-func (q *Queries) UpdateProtecao(ctx context.Context, arg UpdateProtecaoParams) (int64, error) {
-	result, err := q.db.Exec(ctx, updateProtecao, arg.ID, arg.Nome, arg.TenantID)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected(), nil
 }

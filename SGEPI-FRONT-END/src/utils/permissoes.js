@@ -19,25 +19,5 @@ export const PERMISSOES = {
 };
 
 export function temPermissao(usuario, permissao) {
-  if (!usuario) return false;
-
-  const perfilUsuario =
-    usuario?.perfil ||
-    usuario?.role ||
-    usuario?.tipo ||
-    usuario?.cargo ||
-    "";
-
-  const perfilNormalizado = String(perfilUsuario).toLowerCase().trim();
-
-  const perfisPermitidos = PERMISSOES[permissao] || [];
-
-  if (
-    usuario?.email === "adm@gmail.com" ||
-    usuario?.login === "adm@gmail.com"
-  ) {
-    return true;
-  }
-
-  return perfisPermitidos.includes(perfilNormalizado);
+  return (PERMISSOES[permissao] || []).includes(usuario?.role);
 }

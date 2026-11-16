@@ -9,8 +9,8 @@ import (
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/service"
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/middleware"
 	"github.com/gin-gonic/gin"
-	"github.com/radaptech/ginmw"
 )
 
 type EpiService interface {
@@ -21,6 +21,7 @@ type EpiService interface {
 	AtualizaEpi(ctx context.Context, model model.UpdateEpiInput, id, tenantId int32) error
 	ListarEpiDashbord(ctx context.Context, tenantId int32) ([]model.EpiDashBord, error)
 	BuscarEpiDoFuncionario(ctx context.Context, tenantId, IdFuncionario int32) ([]model.EpiDtoDevolucao, error)
+	BuscarCaepi(ctx context.Context, ca string) (model.CaepiDto, error)
 }
 
 type EpiController struct {
@@ -73,7 +74,7 @@ func (e *EpiController) AdicionarEpi() gin.HandlerFunc {
 			AlertaMinimo:   input.AlertaMinimo,
 		}
 
-		tenantID64, ok := ginmw.TenantID(ctx)
+		tenantID64, ok := middleware.TenantID(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -111,11 +112,7 @@ func (e *EpiController) AdicionarEpi() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -141,7 +138,7 @@ func (e *EpiController) ListarEpis() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 
@@ -168,10 +165,7 @@ func (e *EpiController) ListarEpis() gin.HandlerFunc {
 
 		epis, err := e.service.ListarEpis(ctx, filtro, tenantId)
 		if err != nil {
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -202,7 +196,7 @@ func (e *EpiController) ListarEpiPorId() gin.HandlerFunc {
 			})
 		}
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -223,15 +217,43 @@ func (e *EpiController) ListarEpiPorId() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
 		ctx.JSON(http.StatusOK, epi)
+	}
+}
+
+// BuscarCaepi godoc
+// @Summary      Consultar CA na base do MTE
+// @Description  Busca o CA na base pública CAEPI (atualizada por `./main atualizar-caepi`) para preencher o cadastro do EPI
+// @Tags         EPIs
+// @Param        ca   path      string  true  "Número do CA"
+// @Produce      json
+// @Success      200  {object}  model.CaepiDto
+// @Success      204  "CA não está na base do MTE (sem corpo, para o front não tratar como erro)"
+// @Failure      500  {object}  helper.HTTPError "Erro interno"
+// @Router       /gerencial/caepi/{ca} [get]
+// @Security     BearerAuth
+func (e *EpiController) BuscarCaepi() gin.HandlerFunc {
+
+	return func(ctx *gin.Context) {
+
+		ca, err := e.service.BuscarCaepi(ctx, ctx.Param("ca"))
+		if err != nil {
+
+			// CA fora da base é caso normal no cadastro: 204 em vez de 404, que o front mostra como erro
+			if errors.Is(err, helper.ErrNaoEncontrado) {
+				ctx.Status(http.StatusNoContent)
+				return
+			}
+
+			responderErro(ctx, err, "erro ao consultar o CA")
+			return
+		}
+
+		ctx.JSON(http.StatusOK, ca)
 	}
 }
 
@@ -257,7 +279,7 @@ func (e *EpiController) DeletarEpi() gin.HandlerFunc {
 			})
 		}
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -277,11 +299,7 @@ func (e *EpiController) DeletarEpi() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 
 			return
 		}
@@ -319,7 +337,7 @@ func (e *EpiController) AtualizaEpi() gin.HandlerFunc {
 			return
 		}
 
-		tenantID64, ok := ginmw.TenantID(ctx)
+		tenantID64, ok := middleware.TenantID(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -381,12 +399,7 @@ func (e *EpiController) AtualizaEpi() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    err.Error(),
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -407,7 +420,7 @@ func (e *EpiController) ListarEpiDashborController() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -416,10 +429,7 @@ func (e *EpiController) ListarEpiDashborController() gin.HandlerFunc {
 
 		epis, err := e.service.ListarEpiDashbord(ctx, tenantId)
 		if err != nil {
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -450,7 +460,7 @@ func (e *EpiController) ListarEpiFuncionario() gin.HandlerFunc {
 			})
 		}
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -460,10 +470,7 @@ func (e *EpiController) ListarEpiFuncionario() gin.HandlerFunc {
 		epis, err := e.service.BuscarEpiDoFuncionario(ctx, tenantId, int32(IdFuncionario))
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 

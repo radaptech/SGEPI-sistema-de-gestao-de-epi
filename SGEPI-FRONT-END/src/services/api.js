@@ -1,16 +1,15 @@
 import { toast } from "react-toastify";
+import { unidadeAtual } from "./unidadeAtual";
 
-const DEFAULT_BASE_URL = "https://homolog.radaptech.com.br/api";
+// Em produção o front e a API saem da mesma imagem e do mesmo endereço: "/api" relativo.
+// REACT_APP_API_URL só é usada em dev, onde o Vite e a API rodam separados.
+let envUrl = import.meta.env.REACT_APP_API_URL || "/api";
 
-let envUrl = process.env.REACT_APP_API_URL || DEFAULT_BASE_URL;
-
-if (envUrl && !envUrl.startsWith("http")) {
+if (!envUrl.startsWith("http") && !envUrl.startsWith("/")) {
     envUrl = `https://${envUrl}`;
 }
 
 export const BASE_URL = envUrl.replace(/\/+$/, "");
-
-console.log("BASE_URL configurada para:", BASE_URL);
 
 function normalizarRota(rota = "") {
     if (!rota) return "";
@@ -36,6 +35,12 @@ function montarHeaders(headersExtras = {}, body = null) {
 
     if (!isFormData(body) && !headers["Content-Type"]) {
         headers["Content-Type"] = "application/json";
+    }
+
+    // loja escolhida no topo: listas, estoque e dashboard mostram só ela (sem o header, todas)
+    const unidade = unidadeAtual();
+    if (unidade) {
+        headers["X-Unidade-ID"] = unidade;
     }
 
     if (tenantId) {
@@ -89,7 +94,8 @@ async function lerCorpoResposta(resposta) {
 
     if (
         contentType.includes("application/pdf") ||
-        contentType.includes("application/octet-stream")
+        contentType.includes("application/octet-stream") ||
+        contentType.startsWith("image/")
     ) {
         try {
             return await resposta.blob();
@@ -113,6 +119,11 @@ async function tratarResposta(
     const dados = await lerCorpoResposta(resposta);
 
     if (!resposta.ok) {
+        // /me sem sessão é o caso normal de quem ainda não entrou: sem aviso nem redirecionamento
+        if (resposta.status === 401 && rota === "/me") {
+            throw new Error("Sem sessão");
+        }
+
         if (resposta.status === 401) {
             console.warn("Sessão expirada ou token inválido.");
 
@@ -173,14 +184,15 @@ async function request(
             : JSON.stringify(dados);
     }
 
-    console.log(
-        `[Requisição API] Disparando ${method} para: ${url}`
-    );
-
-    const resposta = await fetch(
-        url,
-        opcoes
-    );
+    // erro HTTP e de rede sempre viram aviso aqui: quem chama não precisa repetir o toast
+    let resposta;
+    try {
+        resposta = await fetch(url, opcoes);
+    } catch {
+        const mensagem = "Sem conexão com o servidor. Verifique a internet e tente de novo.";
+        toast.error(mensagem);
+        throw new Error(mensagem);
+    }
 
     return await tratarResposta(
         resposta,

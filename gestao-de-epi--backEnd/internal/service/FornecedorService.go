@@ -60,10 +60,10 @@ type FiltroFornecedores struct {
 }
 
 type FornecedoresPaginados struct {
-	Fornecedores []model.FornecedorDto
-	Total        int64
-	Pagina       int32
-	PaginaFinal  int32
+	Fornecedores []model.FornecedorDto `json:"fornecedores"`
+	Total        int64                 `json:"total"`
+	Pagina       int32                 `json:"pagina"`
+	PaginaFinal  int32                 `json:"pagina_final"`
 }
 
 func (f *FornecedorService) ListarFornecedor(ctx context.Context, filt FiltroFornecedores, tenantId int32) (FornecedoresPaginados, error) {
@@ -79,12 +79,12 @@ func (f *FornecedorService) ListarFornecedor(ctx context.Context, filt FiltroFor
 	offset := max((paginaAtual-1)*limit, 0)
 
 	filtro := repository.ListarFornecedoresParams{
-		TenantID:   tenantId,
-		Nome:       pgtype.Text{String: filt.Nome, Valid: filt.Nome != ""},
-		Cnpj:       pgtype.Text{String: filt.Cnpj, Valid: filt.Cnpj != ""},
-		Canceladas: false,
-		Offset:     offset,
-		Limit:      limit,
+		TenantID:               tenantId,
+		Nome:                   pgtype.Text{String: filt.Nome, Valid: filt.Nome != ""},
+		Cnpj:                   pgtype.Text{String: filt.Cnpj, Valid: filt.Cnpj != ""},
+		Canceladas:             false,
+		Offset:                 offset,
+		Limit:                  limit,
 		IgnorarFiltroCancelado: pgtype.Bool{Bool: false, Valid: false},
 	}
 

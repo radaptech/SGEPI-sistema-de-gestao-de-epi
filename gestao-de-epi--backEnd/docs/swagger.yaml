@@ -7,6 +7,58 @@ definitions:
       message:
         type: string
     type: object
+  model.AcessoUnidadeDto:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      nome:
+        type: string
+      role:
+        type: string
+      unidades:
+        items:
+          type: integer
+        type: array
+    type: object
+  model.AcessoUnidadeInserir:
+    properties:
+      unidades:
+        items:
+          type: integer
+        type: array
+    type: object
+  model.AlertaMaster:
+    properties:
+      empresa_id:
+        type: integer
+      id:
+        type: string
+      mensagem:
+        type: string
+      nivel:
+        type: string
+      tipo:
+        type: string
+    type: object
+  model.CaepiDto:
+    properties:
+      ca:
+        type: string
+      equipamento:
+        type: string
+      fabricante:
+        type: string
+      id_protecao_sugerida:
+        description: grupo da NR-6 deduzido do nome do equipamento; nil quando nenhuma
+          regra bate
+        type: integer
+      situacao:
+        type: string
+      validade:
+        type: string
+    type: object
   model.Departamento:
     properties:
       departamento:
@@ -32,34 +84,34 @@ definitions:
         type: string
       houve_troca:
         type: boolean
-      idEpi:
+      id_epi:
         type: integer
-      idEpiNovo:
+      id_epi_novo:
         description: Campos de Troca (Podem ser nulos no JS)
         type: integer
-      idFuncionario:
+      id_funcionario:
         description: Campos Obrigatórios (binding:"required")
         type: integer
-      idMotivo:
+      id_motivo:
         type: integer
-      idTamanho:
+      id_tamanho:
         type: integer
-      idTamanhoNovo:
+      id_tamanho_novo:
         type: integer
       observacao:
         type: string
-      quantidadeADevolver:
+      quantidade_a_devolver:
         type: integer
-      quantidadeNova:
+      quantidade_nova:
         type: integer
     required:
     - assinatura_digital
     - data_devolucao
-    - idEpi
-    - idFuncionario
-    - idMotivo
-    - idTamanho
-    - quantidadeADevolver
+    - id_epi
+    - id_funcionario
+    - id_motivo
+    - id_tamanho
+    - quantidade_a_devolver
     type: object
   model.DevolucaoResponse:
     properties:
@@ -69,34 +121,34 @@ definitions:
       data_devolucao:
         description: Formato ISO ou DD/MM/YYYY
         type: string
-      epiNome:
+      epi_nome:
         type: string
-      epiNovoNome:
+      epi_novo_nome:
         description: Ponteiro pois pode ser null se não houver troca
         type: string
-      funcionarioMatricula:
+      funcionario_matricula:
         type: integer
-      funcionarioNome:
+      funcionario_nome:
         type: string
-      houveTroca:
+      houve_troca:
         type: boolean
       id:
         type: integer
-      idFuncionario:
+      id_funcionario:
         type: integer
-      motivoNome:
+      motivo_nome:
         type: string
       observacao:
         description: Ponteiro pois é opcional
         type: string
-      quantidadeADevolver:
+      quantidade_a_devolver:
         type: integer
-      quantidadeNova:
+      quantidade_nova:
         description: Ponteiro pois pode ser null
         type: integer
-      tamanhoNome:
+      tamanho_nome:
         type: string
-      tamanhoNovoNome:
+      tamanho_novo_nome:
         description: Ponteiro pois pode ser null
         type: string
       token_validacao:
@@ -113,7 +165,7 @@ definitions:
         type: string
       observacoes:
         type: string
-      planoId:
+      plano_id:
         type: integer
       responsavel:
         type: string
@@ -126,7 +178,7 @@ definitions:
     required:
     - email
     - nome
-    - planoId
+    - plano_id
     - responsavel
     - status
     type: object
@@ -142,6 +194,9 @@ definitions:
         type: integer
       id:
         type: integer
+      limite_unidades:
+        description: do plano; nil = ilimitado
+        type: integer
       mensalidade:
         type: number
       nome:
@@ -156,6 +211,8 @@ definitions:
         type: string
       telefone:
         type: string
+      unidades:
+        type: integer
       vencimento:
         type: string
     type: object
@@ -216,28 +273,33 @@ definitions:
     type: object
   model.EntradaDashbord:
     properties:
-      dataEntrada:
-        description: Usa o helper para garantir o ponteiro da data formatada
+      data_entrada:
         type: string
       id:
         type: integer
-      idEpi:
+      id_epi:
         type: integer
-      idTamanho:
+      id_tamanho:
+        type: integer
+      id_unidade:
         type: integer
       lote:
         type: string
       quantidade:
         type: integer
-      quantidadeAtual:
+      quantidade_atual:
         type: integer
-      valorUnitario:
+      valor_unitario:
         type: number
     type: object
   model.EntradaEpiDto:
     properties:
       data_entrada:
         description: 2. Linha do tempo
+        type: string
+      data_fabricacao:
+        type: string
+      data_validade:
         type: string
       epi:
         allOf:
@@ -275,6 +337,10 @@ definitions:
     properties:
       data_emissao:
         type: string
+      id_unidade:
+        description: obrigatório com 2+ unidades
+        minimum: 1
+        type: integer
       idfornecedor:
         type: integer
       itens:
@@ -352,6 +418,8 @@ definitions:
         type: integer
       id_funcionario:
         type: integer
+      id_unidade:
+        type: integer
       token_validacao:
         type: string
     type: object
@@ -412,6 +480,10 @@ definitions:
       id_troca:
         description: Usei ponteiro para aceitar nulo
         type: integer
+      id_unidade:
+        description: sem ela, sai da unidade do funcionário
+        minimum: 1
+        type: integer
       id_user:
         type: integer
       itens:
@@ -429,9 +501,16 @@ definitions:
     properties:
       alerta_minimo:
         type: integer
+      ca:
+        type: string
       id:
         type: integer
       nome:
+        type: string
+      situacao_ca:
+        description: situação na base do MTE; vazio se o CA não está nela
+        type: string
+      validade_ca:
         type: string
     type: object
   model.EpiDto:
@@ -457,6 +536,9 @@ definitions:
         type: array
       validade_ca:
         type: string
+      vida_util_dias:
+        description: 0 = sem troca periódica
+        type: integer
     type: object
   model.EpiDtoDevolucao:
     properties:
@@ -474,7 +556,7 @@ definitions:
         type: string
       protecao:
         $ref: '#/definitions/model.TipoProtecaoDto'
-      saldoAtual:
+      saldo_atual:
         type: integer
       tamanhos:
         description: Slive de objetos Tamanho (id e nome)
@@ -486,7 +568,7 @@ definitions:
     type: object
   model.EpiDtoEstoque:
     properties:
-      alertaMinimo:
+      alerta_minimo:
         type: integer
       ca:
         type: string
@@ -500,7 +582,7 @@ definitions:
         type: string
       protecao:
         $ref: '#/definitions/model.TipoProtecaoDto'
-      validadeCa:
+      validade_ca:
         type: string
     type: object
   model.EpiInserir:
@@ -529,8 +611,11 @@ definitions:
         type: array
       nome:
         type: string
+      vida_util_dias:
+        description: 0 = sem troca periódica
+        minimum: 0
+        type: integer
     required:
-    - alerta_minimo
     - ca
     - data_validade_ca
     - fabricante
@@ -568,8 +653,29 @@ definitions:
       nome:
         type: string
     type: object
+  model.FaltaKitDto:
+    properties:
+      em_posse:
+        type: integer
+      epi_id:
+        type: integer
+      epi_nome:
+        type: string
+      exigido:
+        type: integer
+      funcao_nome:
+        type: string
+      funcionario_id:
+        type: integer
+      funcionario_nome:
+        type: string
+      matricula:
+        type: integer
+    type: object
   model.FornecedorSimples:
     properties:
+      cnpj:
+        type: string
       id:
         type: integer
       nome_fantasia:
@@ -607,9 +713,11 @@ definitions:
       id:
         type: integer
       matricula:
-        type: string
+        type: integer
       nome:
         type: string
+      unidade:
+        $ref: '#/definitions/model.UnidadeResumo'
     type: object
   model.FuncionarioCompletoDto:
     properties:
@@ -624,16 +732,20 @@ definitions:
       id:
         type: integer
       matricula:
-        type: string
+        type: integer
       nome:
         type: string
+      unidade:
+        $ref: '#/definitions/model.UnidadeResumo'
     type: object
   model.FuncionarioDashbord:
     properties:
       id:
         type: integer
+      id_unidade:
+        type: integer
       matricula:
-        type: string
+        type: integer
       nome:
         type: string
     type: object
@@ -645,6 +757,10 @@ definitions:
         minimum: 1
         type: integer
       id_funcao:
+        minimum: 1
+        type: integer
+      id_unidade:
+        description: sem ele, vai para a primeira unidade
         minimum: 1
         type: integer
       nome:
@@ -684,23 +800,59 @@ definitions:
     - id_tamanho
     - quantidade
     type: object
+  model.KitFuncaoInserir:
+    properties:
+      itens:
+        items:
+          $ref: '#/definitions/model.KitItem'
+        type: array
+    type: object
+  model.KitItem:
+    properties:
+      ca:
+        type: string
+      id_epi:
+        minimum: 1
+        type: integer
+      nome:
+        type: string
+      quantidade:
+        minimum: 1
+        type: integer
+    required:
+    - id_epi
+    - quantidade
+    type: object
+  model.MotivoDevolucaoEpiDto:
+    properties:
+      gera_descarte:
+        description: 'true: o EPI devolvido não volta ao estoque'
+        type: boolean
+      id:
+        type: integer
+      motivo:
+        type: string
+    type: object
   model.ResumoDashboard:
     properties:
-      empresasAtivas:
+      empresas_ativas:
         type: integer
-      empresasBloqueadas:
+      empresas_bloqueadas:
         type: integer
-      empresasEmTeste:
+      empresas_em_teste:
         type: integer
-      receitaMensal:
+      empresas_vencidas:
+        description: não bloqueadas com vencimento passado
+        type: integer
+      receita_mensal:
         type: number
-      totalEmpresas:
+      total_empresas:
         type: integer
-      totalEntregas:
+      total_entregas:
         type: integer
-      totalEpis:
+      total_epis:
         type: integer
-      totalFuncionarios:
+      total_funcionarios:
         type: integer
     type: object
   model.TamanhoDto:
@@ -718,6 +870,107 @@ definitions:
         type: string
     type: object
   model.TipoProtecaoDto:
+    properties:
+      id:
+        type: integer
+      nome:
+        type: string
+    type: object
+  model.TransferenciaDto:
+    properties:
+      cancelada:
+        type: boolean
+      data:
+        type: string
+      id:
+        type: integer
+      itens:
+        items:
+          $ref: '#/definitions/model.TransferenciaItemDto'
+        type: array
+      observacao:
+        type: string
+      unidade_destino:
+        $ref: '#/definitions/model.UnidadeResumo'
+      unidade_origem:
+        $ref: '#/definitions/model.UnidadeResumo'
+      usuario:
+        type: string
+    type: object
+  model.TransferenciaInserir:
+    properties:
+      id_unidade_destino:
+        type: integer
+      id_unidade_origem:
+        type: integer
+      itens:
+        items:
+          $ref: '#/definitions/model.ItemParaInserir'
+        minItems: 1
+        type: array
+      observacao:
+        maxLength: 500
+        type: string
+    required:
+    - id_unidade_destino
+    - id_unidade_origem
+    - itens
+    type: object
+  model.TransferenciaItemDto:
+    properties:
+      epi_nome:
+        type: string
+      id_epi:
+        type: integer
+      id_tamanho:
+        type: integer
+      lote:
+        type: string
+      quantidade:
+        type: integer
+      tamanho_nome:
+        type: string
+    type: object
+  model.TrocaPendenteDto:
+    properties:
+      em_posse:
+        type: integer
+      epi_id:
+        type: integer
+      epi_nome:
+        type: string
+      funcionario_id:
+        type: integer
+      funcionario_nome:
+        type: string
+      matricula:
+        type: integer
+      ultima_entrega:
+        type: string
+      vence_em:
+        type: string
+    type: object
+  model.UnidadeDto:
+    properties:
+      funcionarios:
+        description: ativos lotados nela
+        type: integer
+      id:
+        type: integer
+      nome:
+        type: string
+      saldo:
+        description: unidades de EPI em estoque nela
+        type: integer
+    type: object
+  model.UnidadeInserir:
+    properties:
+      nome:
+        type: string
+    required:
+    - nome
+    type: object
+  model.UnidadeResumo:
     properties:
       id:
         type: integer
@@ -745,6 +998,10 @@ definitions:
         type: array
       validade_ca:
         type: string
+      vida_util_dias:
+        description: 0 desliga
+        minimum: 0
+        type: integer
     type: object
   model.UpdateFuncionarioRequest:
     properties:
@@ -753,6 +1010,8 @@ definitions:
       id_departamento:
         type: integer
       id_funcao:
+        type: integer
+      id_unidade:
         type: integer
       nome:
         type: string
@@ -765,7 +1024,7 @@ definitions:
         type: array
       pagina:
         type: integer
-      paginaFinal:
+      pagina_final:
         type: integer
       total:
         type: integer
@@ -803,24 +1062,21 @@ definitions:
           $ref: '#/definitions/model.EpiDto'
         type: array
       pagina:
-        format: int32
         type: integer
-      paginaFinal:
-        format: int32
+      pagina_final:
         type: integer
       total:
-        format: int64
         type: integer
     type: object
   service.FuncionarioPaginado:
     properties:
-      funcionario:
+      funcionarios:
         items:
           $ref: '#/definitions/model.Funcionario_Dto'
         type: array
       pagina:
         type: integer
-      paginaFinal:
+      pagina_final:
         type: integer
       total:
         type: integer
@@ -1270,6 +1526,22 @@ paths:
       security:
       - BearerAut: []
       summary: Editar empresa
+      tags:
+      - Empresas
+  /empresa/logo:
+    get:
+      description: PNG da logo; 204 sem corpo quando a empresa não tem (o front mostra
+        toast em todo não-2xx).
+      produces:
+      - image/png
+      responses:
+        "200":
+          description: OK
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Logo da empresa
       tags:
       - Empresas
   /empresas:
@@ -1836,6 +2108,28 @@ paths:
       summary: EPIs por funcionário
       tags:
       - EPIs
+  /faltas-kit:
+    get:
+      description: Funcionários ativos com menos EPI em posse (entregue − devolvido)
+        do que o kit da função exige
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.FaltaKitDto'
+            type: array
+        "500":
+          description: Erro interno
+          schema:
+            $ref: '#/definitions/helper.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Funcionários sem o EPI do kit
+      tags:
+      - Entregas
   /funcao/{id}:
     delete:
       description: Remove (ou inativa) uma funcao pelo ID
@@ -1903,6 +2197,79 @@ paths:
           schema:
             $ref: '#/definitions/helper.HTTPError'
       summary: Atualizar funcao
+      tags:
+      - funcao
+  /funcao/{id}/kit:
+    get:
+      description: Lista os EPIs (e quantidades) que a função recebe na entrega
+      parameters:
+      - description: ID da funcao
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.KitItem'
+            type: array
+        "400":
+          description: ID inválido
+          schema:
+            $ref: '#/definitions/helper.HTTPError'
+        "500":
+          description: Erro interno
+          schema:
+            $ref: '#/definitions/helper.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Kit de EPI da função
+      tags:
+      - funcao
+    put:
+      consumes:
+      - application/json
+      description: Substitui o kit inteiro da função. Lista vazia limpa o kit.
+      parameters:
+      - description: ID da funcao
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Itens do kit
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.KitFuncaoInserir'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Dados inválidos
+          schema:
+            $ref: '#/definitions/helper.HTTPError'
+        "422":
+          description: EPI repetido no kit
+          schema:
+            $ref: '#/definitions/helper.HTTPError'
+        "500":
+          description: Erro interno
+          schema:
+            $ref: '#/definitions/helper.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Salvar kit de EPI da função
       tags:
       - funcao
   /funcionario/{id}:
@@ -2096,6 +2463,331 @@ paths:
       summary: Listar todos
       tags:
       - funcao
+  /gerencial/caepi/{ca}:
+    get:
+      description: Busca o CA na base pública CAEPI (atualizada por `./main atualizar-caepi`)
+        para preencher o cadastro do EPI
+      parameters:
+      - description: Número do CA
+        in: path
+        name: ca
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.CaepiDto'
+        "204":
+          description: CA não está na base do MTE (sem corpo, para o front não tratar
+            como erro)
+        "500":
+          description: Erro interno
+          schema:
+            $ref: '#/definitions/helper.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Consultar CA na base do MTE
+      tags:
+      - EPIs
+  /gerencial/empresa/logo:
+    delete:
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Remover a logo da empresa
+      tags:
+      - Empresas
+    put:
+      consumes:
+      - multipart/form-data
+      description: PNG ou JPG de até 2 MB (campo "file"). Vai no cabeçalho das fichas
+        em PDF.
+      parameters:
+      - description: Logo (PNG ou JPG)
+        in: formData
+        name: file
+        required: true
+        type: file
+      responses:
+        "204":
+          description: No Content
+        "422":
+          description: Unprocessable Entity
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Enviar a logo da empresa
+      tags:
+      - Empresas
+  /gerencial/transferencias/{id}:
+    delete:
+      description: Devolve o estoque à origem. Recusa (409) se o destino já usou parte
+        dele.
+      parameters:
+      - description: ID da transferência
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+      summary: Cancela uma transferência
+      tags:
+      - Transferencia
+  /gerencial/unidades:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Nome da unidade
+        in: body
+        name: unidade
+        required: true
+        schema:
+          $ref: '#/definitions/model.UnidadeInserir'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.UnidadeDto'
+      summary: Cadastra uma unidade
+      tags:
+      - Unidade
+  /gerencial/unidades/{id}:
+    delete:
+      description: Recusa (409) a última unidade da empresa e a que ainda tem estoque
+        ou funcionários ativos.
+      parameters:
+      - description: ID da unidade
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+      summary: Desativa uma unidade
+      tags:
+      - Unidade
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID da unidade
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Novo nome
+        in: body
+        name: unidade
+        required: true
+        schema:
+          $ref: '#/definitions/model.UnidadeInserir'
+      responses:
+        "204":
+          description: No Content
+      summary: Renomeia uma unidade
+      tags:
+      - Unidade
+  /gerencial/unidades/acessos:
+    get:
+      description: Usuários ativos da empresa com as unidades que cada um pode ver.
+        Vazio = todas; admin sempre vê todas.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.AcessoUnidadeDto'
+            type: array
+      summary: Lista quem vê quais unidades
+      tags:
+      - Unidade
+  /gerencial/usuarios/{id}/unidades:
+    put:
+      consumes:
+      - application/json
+      description: Troca a lista inteira. Lista vazia = todas as unidades. Não vale
+        para admin, que sempre vê todas.
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Unidades permitidas
+        in: body
+        name: acesso
+        required: true
+        schema:
+          $ref: '#/definitions/model.AcessoUnidadeInserir'
+      responses:
+        "204":
+          description: No Content
+      summary: Limita o usuário a algumas unidades
+      tags:
+      - Unidade
+  /master/dashboard/alertas:
+    get:
+      description: Empresas com vencimento passado (nível alto), vencendo em até 7
+        dias ou sem nenhum acesso há 14 dias (nível medio).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.AlertaMaster'
+            type: array
+      summary: Alertas do painel master
+      tags:
+      - Empresas
+  /motivos:
+    get:
+      description: 'Lista global e pronta, igual para todas as empresas. gera_descarte=true:
+        o EPI não volta ao estoque.'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.MotivoDevolucaoEpiDto'
+            type: array
+      summary: Lista os motivos de devolução
+      tags:
+      - Devolucao
+  /protecoes:
+    get:
+      description: Lista os 9 grupos de proteção do Anexo I da NR-6 (globais, iguais
+        para todas as empresas)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.TipoProtecaoDto'
+            type: array
+        "500":
+          description: Erro interno
+          schema:
+            $ref: '#/definitions/helper.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Grupos de proteção
+      tags:
+      - protecao
+  /transferencias:
+    get:
+      description: As 100 mais recentes. Com a unidade escolhida (X-Unidade-ID ou
+        ?id_unidade=), só as que saíram dela ou chegaram nela.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.TransferenciaDto'
+            type: array
+      summary: Lista as transferências
+      tags:
+      - Transferencia
+    post:
+      consumes:
+      - application/json
+      description: Sai da origem pelo FEFO e entra na destino na hora, lote a lote.
+        Falta de saldo → 422; origem fora das unidades do usuário → 403.
+      parameters:
+      - description: Origem, destino e itens
+        in: body
+        name: transferencia
+        required: true
+        schema:
+          $ref: '#/definitions/model.TransferenciaInserir'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: integer
+            type: object
+      summary: Transfere EPIs entre unidades
+      tags:
+      - Transferencia
+  /trocas-pendentes:
+    get:
+      description: EPIs em posse dos funcionários cuja vida útil já venceu ou vence
+        nos próximos `dias` dias (padrão 30)
+      parameters:
+      - description: Janela em dias a partir de hoje (0 a 365)
+        in: query
+        name: dias
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.TrocaPendenteDto'
+            type: array
+        "400":
+          description: Parâmetro inválido
+          schema:
+            $ref: '#/definitions/helper.HTTPError'
+        "500":
+          description: Erro interno
+          schema:
+            $ref: '#/definitions/helper.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Trocas periódicas pendentes
+      tags:
+      - Entregas
+  /unidades:
+    get:
+      description: Lojas, obras ou almoxarifados do tenant, com funcionários ativos
+        e saldo de EPI em cada uma.
+      parameters:
+      - description: 1 = todas as unidades, para o destino da transferência (usuário
+          limitado recebe só id e nome)
+        in: query
+        name: destinos
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.UnidadeDto'
+            type: array
+      summary: Lista as unidades da empresa
+      tags:
+      - Unidade
 securityDefinitions:
   BearerAuth:
     in: header

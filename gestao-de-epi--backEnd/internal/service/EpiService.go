@@ -25,7 +25,8 @@ type EpiRepository interface {
 	AtualizaEpi(ctx context.Context, epi repository.UpdateEpiCampoParams) (int64, error)
 	BuscaEpiDashbord(ctx context.Context, tenant int32) ([]repository.BuscaEpiDashbordRow, error)
 	BuscaEpiTenant(ctx context.Context, tenant int32) ([]repository.BuscaTodosItensEntreguesDoTenantRow, error)
-	BuscaEpiFuncionario(ctx context.Context, idfuncionario, tenantId int32)([]repository.BuscaItensEntreguesPorFuncionarioRow, error)
+	BuscaEpiFuncionario(ctx context.Context, idfuncionario, tenantId int32) ([]repository.BuscaItensEntreguesPorFuncionarioRow, error)
+	BuscarCaepi(ctx context.Context, ca string) (repository.BuscarCaepiRow, error)
 }
 
 type EpiService struct {
@@ -73,6 +74,7 @@ func (e *EpiService) Salvar(ctx context.Context, model model.EpiInserir, tenantI
 		ValidadeCa:     pgtype.Date{Time: model.DataValidadeCa.Time(), Valid: true},
 		Idtipoprotecao: int32(model.IDProtecao),
 		AlertaMinimo:   int32(model.AlertaMinimo),
+		VidaUtilDias:   model.VidaUtilDias,
 		TenantID:       tenantID,
 	})
 	if err != nil {
@@ -108,10 +110,10 @@ type EpiFiltro struct {
 }
 
 type EpiPaginado struct {
-	Epis        []model.EpiDto
-	Total       int64
-	Pagina      int32
-	PaginaFinal int32
+	Epis        []model.EpiDto `json:"epis"`
+	Total       int64          `json:"total"`
+	Pagina      int32          `json:"pagina"`
+	PaginaFinal int32          `json:"pagina_final"`
 }
 
 func (e *EpiService) ListarEpis(ctx context.Context, f EpiFiltro, tenantId int32) (EpiPaginado, error) {
@@ -176,6 +178,7 @@ func (e *EpiService) ListarEpis(ctx context.Context, f EpiFiltro, tenantId int32
 				Nome: epi.TipoProtecaoNome,
 			},
 			AlertaMinimo: epi.AlertaMinimo,
+			VidaUtilDias: epi.VidaUtilDias.Int32,
 		}
 
 		if e.Tamanhos == nil {
@@ -254,6 +257,8 @@ func (e *EpiService) ListarEpi(ctx context.Context, id int, tenantid int32) (mod
 			ID:   int64(epi.Idtipoprotecao),
 			Nome: epi.TipoProtecaoNome,
 		},
+		AlertaMinimo: epi.AlertaMinimo,
+		VidaUtilDias: epi.VidaUtilDias.Int32,
 	}, nil
 }
 
@@ -360,6 +365,11 @@ func (e *EpiService) AtualizaEpi(ctx context.Context, model model.UpdateEpiInput
 		alertaMin = *model.AlertaMinimo
 	}
 
+	var vidaUtil int32
+	if model.VidaUtilDias != nil {
+		vidaUtil = *model.VidaUtilDias
+	}
+
 	u := repository.UpdateEpiCampoParams{
 		ID:             id,
 		Nome:           toPgText(model.Nome),
@@ -370,6 +380,7 @@ func (e *EpiService) AtualizaEpi(ctx context.Context, model model.UpdateEpiInput
 		IDTipoProtecao: pgtype.Int4{Int32: idProt, Valid: model.IdProtecao != nil},
 		TenantID:       tenantId,
 		AlertaMinimo:   pgtype.Int4{Int32: alertaMin, Valid: model.AlertaMinimo != nil},
+		VidaUtilDias:   pgtype.Int4{Int32: vidaUtil, Valid: model.VidaUtilDias != nil},
 	}
 
 	linhasAfetadas, err := qtx.UpdateEpiCampo(ctx, u)
@@ -428,6 +439,9 @@ func (e *EpiService) ListarEpiDashbord(ctx context.Context, tenantId int32) ([]m
 			Id:           e.ID,
 			Nome:         e.Nome,
 			AlertaMinimo: e.AlertaMinimo,
+			CA:           e.Ca,
+			ValidadeCa:   configs.DataBr(e.ValidadeCa.Time),
+			SituacaoCa:   e.SituacaoCa,
 		}
 
 		dto = append(dto, ee)
@@ -436,45 +450,64 @@ func (e *EpiService) ListarEpiDashbord(ctx context.Context, tenantId int32) ([]m
 	return dto, err
 }
 
+func (e *EpiService) BuscarEpiDoFuncionario(ctx context.Context, tenantId, IdFuncionario int32) ([]model.EpiDtoDevolucao, error) {
 
-func (e *EpiService) BuscarEpiDoFuncionario(ctx context.Context, tenantId, IdFuncionario int32) ([]model.EpiDtoDevolucao, error){
-
-
-	epis, err:= e.repo.BuscaEpiFuncionario(ctx, IdFuncionario, tenantId)
+	epis, err := e.repo.BuscaEpiFuncionario(ctx, IdFuncionario, tenantId)
 	if err != nil {
 		return []model.EpiDtoDevolucao{}, err
 	}
 
-	dto:= make(map[int32]*model.EpiDtoDevolucao)
+	dto := make(map[int32]*model.EpiDtoDevolucao)
 
-	for _, i:= range epis {
+	for _, i := range epis {
 
-		if _, ok := dto[i.IDEpi]; !ok{
+		if _, ok := dto[i.IDEpi]; !ok {
 			dto[i.IDEpi] = &model.EpiDtoDevolucao{
-				Id: i.IDEpi,
-				Nome: i.EpiNome,
-				Fabricante: i.Fabricante,
-				CA: i.Ca,
-				Tamanhos: []model.TamanhoDto{},
-				Descricao: i.Descricao,
+				Id:             i.IDEpi,
+				Nome:           i.EpiNome,
+				Fabricante:     i.Fabricante,
+				CA:             i.Ca,
+				Tamanhos:       []model.TamanhoDto{},
+				Descricao:      i.Descricao,
 				DataValidadeCa: configs.DataBr(i.ValidadeCa.Time),
-				Protecao: model.TipoProtecaoDto{ID: int64(i.Idtipoprotecao), Nome: i.TipoProtecaoNome},
-				AlertaMinimo: i.AlertaMinimo,	
-				SaldoAtual: i.SaldoAtual,			
+				Protecao:       model.TipoProtecaoDto{ID: int64(i.Idtipoprotecao), Nome: i.TipoProtecaoNome},
+				AlertaMinimo:   i.AlertaMinimo,
+				SaldoAtual:     i.SaldoAtual,
 			}
 		}
 
 		dto[i.IDEpi].Tamanhos = append(dto[i.IDEpi].Tamanhos, model.TamanhoDto{
-			ID: int(i.IDTamanho),
+			ID:      int(i.IDTamanho),
 			Tamanho: i.TamanhoNome,
-		} )
+		})
 	}
 
-	dtoSlice:= make([]model.EpiDtoDevolucao, 0, len(dto))
-	for _, v:= range dto {
+	dtoSlice := make([]model.EpiDtoDevolucao, 0, len(dto))
+	for _, v := range dto {
 
 		dtoSlice = append(dtoSlice, *v)
 	}
 
 	return dtoSlice, nil
+}
+
+// BuscarCaepi consulta o CA na base do MTE para preencher o cadastro do EPI
+func (e *EpiService) BuscarCaepi(ctx context.Context, ca string) (model.CaepiDto, error) {
+	c, err := e.repo.BuscarCaepi(ctx, ca)
+	if err != nil {
+		return model.CaepiDto{}, err
+	}
+	return model.CaepiDto{
+		CA:          c.Ca,
+		Validade:    configs.DataBr(c.Validade.Time),
+		Situacao:    c.Situacao,
+		Fabricante:  c.Fabricante,
+		Equipamento: c.Equipamento,
+		IdProtecaoSugerida: func() *int32 {
+			if !c.IDProtecaoSugerida.Valid {
+				return nil
+			}
+			return &c.IDProtecaoSugerida.Int32
+		}(),
+	}, nil
 }

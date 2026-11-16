@@ -14,7 +14,6 @@ type PlanosServices interface {
 	MostrarPlanos(ctx context.Context) ([]model.Plano, error)
 	AtualizarPlano(ctx context.Context, input model.AtualizarPlanoParams) error
 	AtualizaStatus(ctx context.Context, status string, id int32) error
-	
 }
 
 type PlanosController struct {
@@ -46,11 +45,7 @@ func (p *PlanosController) SalvarPlano() gin.HandlerFunc {
 		idPlano, err := p.service.SalvarPlanos(ctx, input)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -65,10 +60,7 @@ func (p *PlanosController) MostrarPlanos() gin.HandlerFunc {
 		planos, err := p.service.MostrarPlanos(ctx)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Erro interno ao listar funcoes",
-			})
+			responderErro(ctx, err, "Erro interno ao listar funcoes")
 			return
 		}
 
@@ -98,12 +90,7 @@ func (p *PlanosController) Atualizar() gin.HandlerFunc {
 		err = p.service.AtualizarPlano(ctx, input)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"erro":     "erro ao atualizar o plano",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao atualizar o plano")
 			return
 		}
 
@@ -115,46 +102,37 @@ func (p *PlanosController) Atualizar() gin.HandlerFunc {
 	}
 }
 
-func (p *PlanosController) AtualizaStatus() gin.HandlerFunc{
+func (p *PlanosController) AtualizaStatus() gin.HandlerFunc {
 
-	return  func(ctx *gin.Context) {
+	return func(ctx *gin.Context) {
 
-		idparam:= ctx.Param("id")
-		id, err:= strconv.Atoi(idparam)
+		idparam := ctx.Param("id")
+		id, err := strconv.Atoi(idparam)
 		if err != nil {
-			ctx.Error(err)
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-
-				
-				"error":"Id invalido",
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+				"error": "id inválido",
 			})
-			return 
+			return
 		}
 
-
 		var input struct {
-
 			Status string `json:"status" binding:"required"`
 		}
 
-		if err:= ctx.ShouldBindBodyWithJSON(&input); err != nil {
+		if err := ctx.ShouldBindBodyWithJSON(&input); err != nil {
 
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 
 				"error": "campo status nao preenchido",
 			})
-			return 
+			return
 		}
 
-		err = p.service.AtualizaStatus(ctx,input.Status, int32(id))
+		err = p.service.AtualizaStatus(ctx, input.Status, int32(id))
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error":"erro ao atualizar o status do banco",
-				"detalhes": err.Error(),
-			})
-			return 
+			responderErro(ctx, err, "erro ao atualizar o status do banco")
+			return
 		}
 
 		ctx.JSON(http.StatusOK, gin.H{"sucesso": "status atualizado com sucesso"})

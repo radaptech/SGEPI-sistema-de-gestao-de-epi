@@ -22,6 +22,7 @@ SELECT
         WHERE eei.id_epi = te.IdEpi 
           AND eei.id_tamanho = t.id
           AND eei.tenant_id = @tenant_id
+          AND (sqlc.narg('id_unidade')::int IS NULL OR eei.id_unidade = sqlc.narg('id_unidade')::int)
           AND eei.ativo = TRUE
           AND eei.quantidade_atual > 0
           AND eei.data_validade >= CURRENT_DATE

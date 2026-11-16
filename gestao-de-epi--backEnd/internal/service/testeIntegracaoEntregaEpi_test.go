@@ -9,6 +9,7 @@ import (
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/configs"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/database/repository"
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
@@ -27,17 +28,17 @@ func TestEntrega(t *testing.T) {
 
 	// 1. CENÁRIO SAAS: CRIAR TENANT
 
-	planos:= CreatePlanos(t, db)
+	planos := CreatePlanos(t, db)
 	empresa := CreateEmpresa(t, db, planos)
 	user := CreateUser(t, db, empresa)
 	dep := CreateDepartamento(t, db, empresa)
 	funcc := CreateFuncao(t, db, dep, empresa)
 	funcionario := CreateFuncionario(t, db, dep, funcc, empresa)
-	protec := CreateProtecao(t, db, empresa)
+	protec := CreateProtecao(t, db)
 	tamanho := CreateTamanho(t, db, empresa)
 	epi := CreateEpi(t, db, protec, empresa)
 	fornecedor := CreateFornecedor(t, db, empresa)
-	entradaNf := CreateEntradaNfEpi(t, db, empresa, user,fornecedor)
+	entradaNf := CreateEntradaNfEpi(t, db, empresa, user, fornecedor)
 	entradaEpi := CreateEntradaEpi(t, db, empresa, epi, tamanho, user, entradaNf)
 	entrega := CreateEntregaEpi(t, db, funcionario, user, empresa)
 	_ = CreateEpiEntregues(t, db, entrega, entradaEpi, epi, tamanho, empresa)
@@ -74,6 +75,7 @@ func TestEntrega(t *testing.T) {
 			Assinatura:       entregas[0].Assinatura_Digital,
 			TokenValidacao:   pgtype.Text{String: "testeToken", Valid: true},
 			IDUsuarioEntrega: pgtype.Int4{Int32: int32(entregas[0].Id_user), Valid: true},
+			IDUnidade:        principalDe(t, db, empresa),
 		}
 
 		identrega, err := repo.AdicionarEntrega(ctx, qtx, args)
@@ -85,6 +87,7 @@ func TestEntrega(t *testing.T) {
 
 			// Adicionado TenantID nos parâmetros de busca de lote
 			lotes := repository.ListarLotesParaConsumoParams{
+				IDUnidade: principalDe(t, db, empresa),
 				TenantID:  int32(empresa),
 				IDEpi:     int32(item.ID_epi),
 				IDTamanho: int32(item.ID_tamanho),
@@ -175,7 +178,117 @@ func TestEntrega(t *testing.T) {
 		require.Equal(t, 0, count, "A entrega não deveria ter sido salva no banco")
 	})
 
-	 t.Run("teste de concorrencia (nao deixar 2 usuarios fazer uma entrega do mesmo lote de uma vez)", func(t *testing.T) {
+	t.Run("ERRO - entregar EPI com CA vencido na data da entrega", func(t *testing.T) {
+		epiVencido := CreateEpi(t, db, protec, empresa)
+		lote := CreateEntradaEpi(t, db, empresa, epiVencido, tamanho, user, entradaNf)
+		// data montada no Go: o CURRENT_DATE do container é UTC e pode já estar no dia seguinte
+		_, err := db.Exec(ctx, "UPDATE epi SET validade_CA = $1 WHERE id = $2", time.Now().AddDate(0, 0, -1).Format("2006-01-02"), epiVencido)
+		require.NoError(t, err)
+
+		var saldoAntes int32
+		require.NoError(t, db.QueryRow(ctx, "SELECT quantidade_atual FROM entrada_epi_item WHERE id = $1", lote).Scan(&saldoAntes))
+
+		entregaVencida := model.EntregaParaInserir{
+			ID_funcionario:     int32(funcionario),
+			Id_user:            int32(user),
+			Data_entrega:       *configs.NewDataBrPtr(time.Now()),
+			Assinatura_Digital: "teste.pop",
+			Itens: []model.ItemParaInserir{
+				{ID_epi: int32(epi), ID_tamanho: int32(tamanho), Quantidade: 1},
+				{ID_epi: int32(epiVencido), ID_tamanho: int32(tamanho), Quantidade: 1},
+			},
+		}
+
+		err = serv.Salvar(ctx, entregaVencida, int32(empresa), "token-ca-vencido")
+		require.ErrorIs(t, err, helper.ErrCaVencido)
+
+		var count int
+		require.NoError(t, db.QueryRow(ctx, "SELECT count(*) FROM entrega_epi WHERE token_validacao = $1", "token-ca-vencido").Scan(&count))
+		require.Equal(t, 0, count, "a entrega não deveria ter sido salva")
+
+		var saldoDepois int32
+		require.NoError(t, db.QueryRow(ctx, "SELECT quantidade_atual FROM entrada_epi_item WHERE id = $1", lote).Scan(&saldoDepois))
+		require.Equal(t, saldoAntes, saldoDepois, "o estoque não deveria ter sido abatido")
+	})
+
+	t.Run("ERRO - entregar EPI com CA cancelado na base do MTE, mesmo com validade em dia", func(t *testing.T) {
+		epiCancelado := CreateEpi(t, db, protec, empresa) // validade do CA daqui a 1 ano
+		CreateEntradaEpi(t, db, empresa, epiCancelado, tamanho, user, entradaNf)
+		_, err := db.Exec(ctx, `INSERT INTO caepi (ca, validade, situacao, fabricante, equipamento)
+			SELECT ltrim(CA, '0'), validade_CA, 'CANCELADO', 'Fabr', 'LUVA' FROM epi WHERE id = $1`, epiCancelado)
+		require.NoError(t, err)
+
+		err = serv.Salvar(ctx, model.EntregaParaInserir{
+			ID_funcionario:     int32(funcionario),
+			Id_user:            int32(user),
+			Data_entrega:       *configs.NewDataBrPtr(time.Now()),
+			Assinatura_Digital: "teste.pop",
+			Itens:              []model.ItemParaInserir{{ID_epi: int32(epiCancelado), ID_tamanho: int32(tamanho), Quantidade: 1}},
+		}, int32(empresa), "token-ca-cancelado")
+		require.ErrorIs(t, err, helper.ErrCaVencido)
+		require.ErrorContains(t, err, "cancelado no MTE")
+	})
+
+	t.Run("trocas pendentes - vida útil vencida, em dia, sem vida útil e devolvido", func(t *testing.T) {
+		func2 := CreateFuncionario(t, db, dep, funcc, empresa)
+		epiVida := CreateEpi(t, db, protec, empresa)    // vida útil 10 dias
+		epiSemVida := CreateEpi(t, db, protec, empresa) // sem troca periódica
+		CreateEntradaEpi(t, db, empresa, epiVida, tamanho, user, entradaNf)
+		CreateEntradaEpi(t, db, empresa, epiSemVida, tamanho, user, entradaNf)
+		_, err := db.Exec(ctx, "UPDATE epi SET vida_util_dias = 10 WHERE id = $1", epiVida)
+		require.NoError(t, err)
+
+		entregar := func(idEpi int64, diasAtras int, qtd int32, token string) {
+			err := serv.Salvar(ctx, model.EntregaParaInserir{
+				ID_funcionario:     int32(func2),
+				Id_user:            int32(user),
+				Data_entrega:       *configs.NewDataBrPtr(time.Now().AddDate(0, 0, -diasAtras)),
+				Assinatura_Digital: "teste.pop",
+				Itens:              []model.ItemParaInserir{{ID_epi: int32(idEpi), ID_tamanho: int32(tamanho), Quantidade: qtd}},
+			}, int32(empresa), token)
+			require.NoError(t, err)
+		}
+		pendentes := func(dias int) []model.TrocaPendenteDto {
+			var doFunc []model.TrocaPendenteDto
+			trocas, err := serv.ListarTrocasPendentes(ctx, int32(empresa), 0, dias)
+			require.NoError(t, err)
+			for _, tr := range trocas {
+				if tr.FuncionarioId == int32(func2) {
+					doFunc = append(doFunc, tr)
+				}
+			}
+			return doFunc
+		}
+
+		// entregue há 5 dias com vida útil de 10: ainda em dia
+		entregar(epiVida, 5, 2, "troca-1")
+		entregar(epiSemVida, 30, 1, "troca-2")
+		require.Empty(t, pendentes(0), "vida útil ainda não venceu e EPI sem vida útil nunca aparece")
+
+		// janela de 7 dias já pega o vencimento em 5 dias
+		vencendo := pendentes(7)
+		require.Len(t, vencendo, 1)
+		require.Equal(t, int32(epiVida), vencendo[0].EpiId)
+		require.Equal(t, int32(2), vencendo[0].EmPosse)
+
+		// devolveu tudo: sai da lista
+		motivo := CreateMotivoDevolucao(t, db, randomString("Desgaste"), false, empresa)
+		_, err = db.Exec(ctx, `INSERT INTO devolucao (tenant_id, idepi, idfuncionario, idmotivo, data_devolucao, idtamanho, quantidadeadevolver, assinatura_digital)
+			VALUES ($1, $2, $3, $4, CURRENT_DATE, $5, 2, 'teste.pop')`, empresa, epiVida, func2, motivo, tamanho)
+		require.NoError(t, err)
+		require.Empty(t, pendentes(7))
+
+		// nova entrega há 15 dias (vida útil vencida há 5) volta a aparecer, já atrasada
+		_, err = db.Exec(ctx, "UPDATE devolucao SET ativo = FALSE WHERE idfuncionario = $1", func2)
+		require.NoError(t, err)
+		_, err = db.Exec(ctx, "UPDATE entrega_epi SET data_entrega = CURRENT_DATE - 15 WHERE token_validacao = 'troca-1'")
+		require.NoError(t, err)
+		atrasados := pendentes(0)
+		require.Len(t, atrasados, 1)
+		require.True(t, atrasados[0].VenceEm.Time().Before(time.Now()))
+	})
+
+	t.Run("teste de concorrencia (nao deixar 2 usuarios fazer uma entrega do mesmo lote de uma vez)", func(t *testing.T) {
 		// Setup Específico para garantir isolamento deste teste
 		db2 := SetupTestDB(t)
 		defer db2.Close()
@@ -183,18 +296,18 @@ func TestEntrega(t *testing.T) {
 		repo2 := repository.NewEntregaRepository(db2)
 		serv2 := NewEntregaService(repo2, db2)
 
-		planos2:= CreatePlanos(t, db2)
+		planos2 := CreatePlanos(t, db2)
 		idEmpresa2 := CreateEmpresa(t, db2, planos2)
 		iduser2 := CreateUser(t, db2, idEmpresa2)
 		iddep2 := CreateDepartamento(t, db2, idEmpresa2)
 		IdFuncao2 := CreateFuncao(t, db2, iddep2, idEmpresa2)
 		idtam2 := CreateTamanho(t, db2, idEmpresa2)
-		idprotec2 := CreateProtecao(t, db2, idEmpresa2)
+		idprotec2 := CreateProtecao(t, db2)
 		idepi2 := CreateEpi(t, db2, idprotec2, idEmpresa2)
 		idfuncionarioC := CreateFuncionario(t, db2, iddep2, IdFuncao2, idEmpresa2)
 		//fornecedores
 		Idfornecedor1 := CreateFornecedor(t, db2, idEmpresa2)
-		entrada2 := CreateEntradaNfEpi(t, db2, idEmpresa2, iduser2,Idfornecedor1)
+		entrada2 := CreateEntradaNfEpi(t, db2, idEmpresa2, iduser2, Idfornecedor1)
 		entradaEpi2 := CreateEntradaEpi1(t, db2, idEmpresa2, idepi2, idtam2, iduser2, entrada2)
 
 		var wg sync.WaitGroup
@@ -265,7 +378,7 @@ func TestEntrega(t *testing.T) {
 		iddep := CreateDepartamento(t, db, empresa)
 		IdFuncao := CreateFuncao(t, db, iddep, empresa)
 		idtam := CreateTamanho(t, db, empresa)
-		idprotec := CreateProtecao(t, db, empresa)
+		idprotec := CreateProtecao(t, db)
 		idepi := CreateEpi(t, db, idprotec, empresa)
 		idfuncionario := CreateFuncionario(t, db, iddep, IdFuncao, empresa)
 		//fornecedores

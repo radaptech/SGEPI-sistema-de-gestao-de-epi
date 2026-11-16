@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/jackc/pgx/v5"
@@ -12,8 +13,6 @@ type EntregaRepository struct {
 	q  *Queries
 	db *pgxpool.Pool
 }
-
-
 
 func NewEntregaRepository(pool *pgxpool.Pool) *EntregaRepository {
 	return &EntregaRepository{
@@ -91,8 +90,8 @@ func (e *EntregaRepository) ListasEntregasPorMatricula(ctx context.Context, args
 	return entrega, nil
 }
 
-func (e *EntregaRepository) BuscaEntregaDashbord(ctx context.Context, tenant int32) ([]EntregaDashbordRow, error) {
-	entregas, err := e.q.EntregaDashbord(ctx, tenant)
+func (e *EntregaRepository) BuscaEntregaDashbord(ctx context.Context, tenant, unidade int32) ([]EntregaDashbordRow, error) {
+	entregas, err := e.q.EntregaDashbord(ctx, EntregaDashbordParams{TenantID: tenant, IDUnidade: pgtype.Int4{Int32: unidade, Valid: unidade > 0}})
 	if err != nil {
 		return nil, helper.TraduzErroPostgres(err)
 	}
@@ -129,9 +128,9 @@ func (e *EntregaRepository) ReporEstoqueEntrada(ctx context.Context, qtx *Querie
 }
 
 // BuscaEntregaItensDashbord implements [service.EntregaRepository].
-func (e *EntregaRepository) BuscaEntregaItensDashbord(ctx context.Context, tenant int32) ([]EntregaItensDashbordRow, error) {
-	
-	entregaDash,err:= e.q.EntregaItensDashbord(ctx, tenant)
+func (e *EntregaRepository) BuscaEntregaItensDashbord(ctx context.Context, tenant, unidade int32) ([]EntregaItensDashbordRow, error) {
+
+	entregaDash, err := e.q.EntregaItensDashbord(ctx, EntregaItensDashbordParams{TenantID: tenant, IDUnidade: pgtype.Int4{Int32: unidade, Valid: unidade > 0}})
 	if err != nil {
 		return []EntregaItensDashbordRow{}, helper.TraduzErroPostgres(err)
 	}
@@ -141,8 +140,8 @@ func (e *EntregaRepository) BuscaEntregaItensDashbord(ctx context.Context, tenan
 
 // BuscaTodasEntregasDoTenant implements [service.EntregaRepository].
 func (e *EntregaRepository) BuscaTodasEntregasDoTenant(ctx context.Context, tenantId int32) ([]BuscaTodasEntregasDoTenantRow, error) {
-	
-	entregasTenant, err:= e.q.BuscaTodasEntregasDoTenant(ctx, tenantId)
+
+	entregasTenant, err := e.q.BuscaTodasEntregasDoTenant(ctx, tenantId)
 	if err != nil {
 
 		return []BuscaTodasEntregasDoTenantRow{}, helper.TraduzErroPostgres(err)
@@ -153,23 +152,49 @@ func (e *EntregaRepository) BuscaTodasEntregasDoTenant(ctx context.Context, tena
 
 // ListarEntregasDisponiveis implements [service.EntregaRepository].
 func (e *EntregaRepository) ListarEntregasDisponiveis(ctx context.Context, qtx *Queries, args ListarLotesParaConsumoParams) ([]ListarLotesParaConsumoRow, error) {
-	
-	listaLotes, err:= qtx.ListarLotesParaConsumo(ctx, args)
+
+	listaLotes, err := qtx.ListarLotesParaConsumo(ctx, args)
 	if err != nil {
 
-		return  []ListarLotesParaConsumoRow{}, helper.TraduzErroPostgres(err)
+		return []ListarLotesParaConsumoRow{}, helper.TraduzErroPostgres(err)
 	}
 
 	return listaLotes, nil
 }
 
+// ListarTrocasPendentes implements [service.EntregaRepository].
+func (e *EntregaRepository) ListarTrocasPendentes(ctx context.Context, args ListarTrocasPendentesParams) ([]ListarTrocasPendentesRow, error) {
+	trocas, err := e.q.ListarTrocasPendentes(ctx, args)
+	if err != nil {
+		return nil, helper.TraduzErroPostgres(err)
+	}
+	return trocas, nil
+}
+
+func (e *EntregaRepository) ListarFaltasKit(ctx context.Context, tenantId, unidade int32) ([]ListarFaltasKitRow, error) {
+	faltas, err := e.q.ListarFaltasKit(ctx, ListarFaltasKitParams{TenantID: tenantId, IDUnidade: pgtype.Int4{Int32: unidade, Valid: unidade > 0}})
+	if err != nil {
+		return nil, helper.TraduzErroPostgres(err)
+	}
+	return faltas, nil
+}
+
+// ListarEpisCaVencido implements [service.EntregaRepository].
+func (e *EntregaRepository) ListarEpisCaVencido(ctx context.Context, qtx *Queries, args ListarEpisCaVencidoParams) ([]ListarEpisCaVencidoRow, error) {
+	epis, err := qtx.ListarEpisCaVencido(ctx, args)
+	if err != nil {
+		return nil, helper.TraduzErroPostgres(err)
+	}
+	return epis, nil
+}
+
 // ListarEpisEntreguesCancelados implements [service.EntregaRepository].
 func (e *EntregaRepository) ListarEpisEntreguesCancelados(ctx context.Context, qtx *Queries, arg ListarItensEntregueCanceladosParams) ([]ListarItensEntregueCanceladosRow, error) {
-	
-	episEntreguesCanc, err:= qtx.ListarItensEntregueCancelados(ctx, arg)
+
+	episEntreguesCanc, err := qtx.ListarItensEntregueCancelados(ctx, arg)
 	if err != nil {
 		return []ListarItensEntregueCanceladosRow{}, helper.TraduzErroPostgres(err)
 	}
 
-	return  episEntreguesCanc, nil
+	return episEntreguesCanc, nil
 }

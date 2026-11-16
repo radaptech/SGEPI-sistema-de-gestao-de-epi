@@ -32,21 +32,67 @@ INSERT INTO empresas (
 );
 
 
--- name: EmpresasAtivas :one
-select count(*) from empresas where status = 'Ativa';
--- name: EmpresaEmTeste :one
-select count(*) from empresas where status = 'Em teste';
--- name: EmpresasBloqueadas :one
-select count(*) from empresas where status = 'Bloqueada';   
--- name: TotalFuncionarios :one
-SELECT COUNT(*) FROM funcionario;      
--- name: TotalEpis :one
-SELECT COUNT(*) FROM epi; 
--- name: TotalEntregas :one
-SELECT COUNT(*) FROM entrega_epi;
--- name: ReceitaMensal :one
-SELECT COALESCE(SUM(mensalidade), 0)::float8 FROM planos;
+-- Painel master: os números somam todas as empresas clientes (é a única área sem filtro de tenant, de
+-- propósito). "Cliente" = toda empresa menos a matriz, que é a do super_admin.
 
+-- name: ResumoMaster :one
+WITH clientes AS (
+    SELECT e.id, e.status, e.vencimento, p.mensalidade
+    FROM empresas e
+    LEFT JOIN planos p ON p.id = e.plano_id
+    WHERE NOT EXISTS (SELECT 1 FROM usuarios u WHERE u.tenant_id = e.id AND u.role = 'super_admin')
+)
+SELECT
+    (COUNT(*) FILTER (WHERE status = 'Ativa'))::int AS empresas_ativas,
+    (COUNT(*) FILTER (WHERE status = 'Bloqueada'))::int AS empresas_bloqueadas,
+    (COUNT(*) FILTER (WHERE status = 'Em teste'))::int AS empresas_em_teste,
+    COUNT(*)::int AS total_empresas,
+    (COUNT(*) FILTER (WHERE status <> 'Bloqueada' AND vencimento < CURRENT_DATE))::int AS empresas_vencidas,
+    -- receita: o plano de cada empresa ativa (em teste e bloqueada não pagam)
+    COALESCE(SUM(mensalidade) FILTER (WHERE status = 'Ativa'), 0)::float8 AS receita_mensal,
+    (SELECT COUNT(*) FROM funcionario f WHERE f.ativo = TRUE AND f.tenant_id IN (SELECT id FROM clientes))::int AS total_funcionarios,
+    (SELECT COUNT(*) FROM epi ep WHERE ep.ativo = TRUE AND ep.tenant_id IN (SELECT id FROM clientes))::int AS total_epis,
+    (SELECT COUNT(*) FROM entrega_epi en WHERE en.ativo = TRUE AND en.tenant_id IN (SELECT id FROM clientes))::int AS total_entregas
+FROM clientes;
+
+-- name: AlertasMaster :many
+-- Empresas não bloqueadas com vencimento passado ou em até 7 dias, ou sem nenhum acesso há 14 dias ou mais.
+-- ultimo_acesso é gravado no horário de São Paulo; por isso a conta de dias usa o mesmo fuso.
+WITH clientes AS (
+    SELECT e.id, e.nome_fantasia, e.vencimento, e.criado_em,
+        (SELECT MAX(u.ultimo_acesso) FROM usuarios u WHERE u.tenant_id = e.id AND u.ativo = TRUE) AS ultimo_acesso
+    FROM empresas e
+    WHERE e.status <> 'Bloqueada'
+      AND NOT EXISTS (SELECT 1 FROM usuarios u WHERE u.tenant_id = e.id AND u.role = 'super_admin')
+)
+SELECT
+    id, nome_fantasia,
+    COALESCE(vencimento - (now() AT TIME ZONE 'America/Sao_Paulo')::date, 0)::int AS dias_para_vencer,
+    (vencimento IS NOT NULL)::bool AS tem_vencimento,
+    ((now() AT TIME ZONE 'America/Sao_Paulo')::date - COALESCE(ultimo_acesso, criado_em)::date)::int AS dias_sem_acesso,
+    (ultimo_acesso IS NULL)::bool AS nunca_acessou
+FROM clientes
+WHERE vencimento <= (now() AT TIME ZONE 'America/Sao_Paulo')::date + 7
+   OR COALESCE(ultimo_acesso, criado_em) < (now() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '14 days'
+ORDER BY nome_fantasia;
+
+
+-- name: LimitesMaster :many
+-- Empresas não bloqueadas usando 80% ou mais de algum limite do plano (NULL = ilimitado, fica de fora).
+-- Conta igual à trava do cadastro: funcionários e usuários ativos, unidades não excluídas.
+SELECT e.id, e.nome_fantasia, l.recurso::text AS recurso, l.usado::int AS usado, l.limite::int AS limite
+FROM empresas e
+JOIN planos p ON p.id = e.plano_id
+CROSS JOIN LATERAL (VALUES
+    ('funcionários', (SELECT COUNT(*) FROM funcionario f WHERE f.tenant_id = e.id AND f.ativo = TRUE), p.limite_funcionarios),
+    ('usuários', (SELECT COUNT(*) FROM usuarios u WHERE u.tenant_id = e.id AND u.ativo = TRUE), p.limite_usuarios),
+    ('unidades', (SELECT COUNT(*) FROM unidade un WHERE un.tenant_id = e.id AND un.deletado_em IS NULL), p.limite_unidades)
+) AS l(recurso, usado, limite)
+WHERE e.status <> 'Bloqueada'
+  AND NOT EXISTS (SELECT 1 FROM usuarios u WHERE u.tenant_id = e.id AND u.role = 'super_admin')
+  AND l.limite > 0 -- NULL (ilimitado) também fica de fora
+  AND l.usado * 10 >= l.limite * 8
+ORDER BY e.nome_fantasia, l.recurso;
 
 -- name: EmpresasRecentes :many
 SELECT 
@@ -61,7 +107,9 @@ SELECT
     (SELECT COUNT(*)::int FROM funcionario f WHERE f.tenant_id = e.id) AS funcionarios,
     (SELECT COUNT(*)::int FROM epi ep WHERE ep.tenant_id = e.id) AS epis
 FROM empresas e
-INNER JOIN planos p ON e.plano_id = p.id;;
+INNER JOIN planos p ON e.plano_id = p.id
+WHERE NOT EXISTS (SELECT 1 FROM usuarios u WHERE u.tenant_id = e.id AND u.role = 'super_admin')
+ORDER BY e.criado_em DESC, e.id DESC;
 
 
 -- name: DadosEmpresas :many
@@ -75,6 +123,8 @@ SELECT
     p.nome AS plano_nome, 
     (SELECT COUNT(*)::int FROM funcionario f WHERE f.tenant_id = e.id) AS funcionarios,
     (SELECT COUNT(*)::int FROM epi ep WHERE ep.tenant_id = e.id) AS epis,
+    (SELECT COUNT(*)::int FROM unidade u WHERE u.tenant_id = e.id AND u.deletado_em IS NULL) AS unidades,
+    p.limite_unidades,
     p.mensalidade::float8,
     e.vencimento,
     e.status,
@@ -112,3 +162,9 @@ from empresas e
 inner join planos p on e.plano_id = p.id
 where e.id = @id
 FOR UPDATE;
+-- name: BuscarLogoEmpresa :one
+-- empresas.id é o próprio tenant
+SELECT COALESCE(logo_key, '')::text AS logo_key FROM empresas WHERE id = $1;
+
+-- name: DefinirLogoEmpresa :exec
+UPDATE empresas SET logo_key = sqlc.narg('logo_key') WHERE id = sqlc.arg('id');

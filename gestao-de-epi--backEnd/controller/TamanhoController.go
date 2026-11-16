@@ -8,8 +8,8 @@ import (
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/middleware"
 	"github.com/gin-gonic/gin"
-	"github.com/radaptech/ginmw"
 )
 
 type TamanhoService interface {
@@ -17,7 +17,7 @@ type TamanhoService interface {
 	ListarTamanho(ctx context.Context, id int, tenantId int32) (model.TamanhoDto, error)
 	ListarTodosTamanhos(ctx context.Context, tenantId int32) ([]model.TamanhoDto, error)
 	CancelarTamanho(ctx context.Context, id int, tenantId int32) error
-	ListarTamanhoPorIdEpi(ctx context.Context, idEpi, tenantId int32) ([]model.TamanhoEntregaDto, error)
+	ListarTamanhoPorIdEpi(ctx context.Context, idEpi, idUnidade, tenantId int32) ([]model.TamanhoEntregaDto, error)
 }
 
 type TamanhoController struct {
@@ -50,7 +50,7 @@ func (t *TamanhoController) Adicionar() gin.HandlerFunc {
 			Tamanho: input.Tamanho,
 		}
 
-		tenantID64, ok := ginmw.TenantID(ctx)
+		tenantID64, ok := middleware.TenantID(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -68,11 +68,7 @@ func (t *TamanhoController) Adicionar() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -87,7 +83,7 @@ func (t *TamanhoController) ListarTodosTamanhos() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 
@@ -97,10 +93,7 @@ func (t *TamanhoController) ListarTodosTamanhos() gin.HandlerFunc {
 
 		tamanhos, err := t.service.ListarTodosTamanhos(ctx, tenantId)
 		if err != nil {
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -121,7 +114,7 @@ func (t *TamanhoController) ListarTamanhoPorId() gin.HandlerFunc {
 			return
 		}
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -141,11 +134,7 @@ func (t *TamanhoController) ListarTamanhoPorId() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -166,7 +155,7 @@ func (t *TamanhoController) DeletarTamanho() gin.HandlerFunc {
 			return
 		}
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -186,11 +175,7 @@ func (t *TamanhoController) DeletarTamanho() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 
 			return
 		}
@@ -213,14 +198,15 @@ func (t *TamanhoController) ListarTamanhoPorIdEpi() gin.HandlerFunc {
 			return
 		}
 
-		tenantId64, ok := ginmw.TenantID(ctx)
+		tenantId64, ok := middleware.TenantID(ctx)
 		tenantId := int32(tenantId64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
 			return
 		}
 
-		tamanho, err := t.service.ListarTamanhoPorIdEpi(ctx, int32(id), tenantId)
+		// saldo só da unidade pedida (?id_unidade= ou a loja do topo); 0 soma todas
+		tamanho, err := t.service.ListarTamanhoPorIdEpi(ctx, int32(id), unidadeEscolhida(ctx), tenantId)
 		if err != nil {
 
 			if errors.Is(err, helper.ErrNaoEncontrado) {
@@ -234,11 +220,7 @@ func (t *TamanhoController) ListarTamanhoPorIdEpi() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 

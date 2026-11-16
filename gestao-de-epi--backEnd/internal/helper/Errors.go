@@ -23,6 +23,15 @@ var (
 	ErrDataMenorValidade   = errors.New("A data de validade não pode ser menor que a data de fabricação")
 	ErrLimiteExcedido      = errors.New("limite de funcionários e/ou de usuarios do plano excedido")
 	ErrCpfInvalido         = errors.New("CPF inválido")
+	ErrCaVencido           = errors.New("CA do EPI vencido, cancelado ou suspenso na data da entrega")
+	ErrUnidadeEmUso        = errors.New("a unidade ainda tem estoque ou funcionários ativos")
+	ErrUnidadeInvalida     = errors.New("unidade não encontrada ou desativada")
+	ErrUnidadeObrigatoria  = errors.New("escolha a unidade: a empresa tem mais de uma")
+	ErrUltimaUnidade       = errors.New("a empresa precisa ter pelo menos uma unidade")
+	ErrUnidadeSemAcesso    = errors.New("você não tem acesso a esta unidade")
+	ErrSubdominioInvalido  = errors.New("o nome da empresa gera um endereço reservado pelo sistema ou vazio; mude o nome fantasia")
+	ErrMesmaUnidade        = errors.New("a unidade de destino precisa ser diferente da de origem")
+	ErrTransferenciaUsada  = errors.New("não dá para cancelar: o destino já usou parte do estoque transferido ou o lote de origem foi cancelado")
 )
 
 // Códigos de Erro Oficiais do PostgreSQL
@@ -60,5 +69,11 @@ func TraduzErroPostgres(err error) error {
 			return fmt.Errorf("o sistema está ocupado, tente novamente em instantes")
 		}
 	}
-	return fmt.Errorf("%v", err)
+	return err // sem embrulhar: quem chama ainda consegue errors.Is(err, pgx.ErrNoRows)
 }
+
+// ErroDeNegocio é uma recusa por regra do negócio com mensagem própria (ex.: devolver mais do que o
+// funcionário tem). O controller responde 422 com o texto como está.
+type ErroDeNegocio string
+
+func (e ErroDeNegocio) Error() string { return string(e) }

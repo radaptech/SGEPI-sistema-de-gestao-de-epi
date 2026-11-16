@@ -14,9 +14,9 @@ import (
 const addEntregaEpi = `-- name: AddEntregaEpi :one
 INSERT INTO entrega_epi (
     tenant_id, 
-    IdFuncionario, data_entrega, assinatura, IdTroca, token_validacao, id_usuario_entrega
+    IdFuncionario, data_entrega, assinatura, IdTroca, token_validacao, id_usuario_entrega, id_unidade
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING id
 `
 
@@ -28,6 +28,7 @@ type AddEntregaEpiParams struct {
 	Idtroca          pgtype.Int4
 	TokenValidacao   pgtype.Text
 	IDUsuarioEntrega pgtype.Int4
+	IDUnidade        int32
 }
 
 func (q *Queries) AddEntregaEpi(ctx context.Context, arg AddEntregaEpiParams) (int32, error) {
@@ -39,6 +40,7 @@ func (q *Queries) AddEntregaEpi(ctx context.Context, arg AddEntregaEpiParams) (i
 		arg.Idtroca,
 		arg.TokenValidacao,
 		arg.IDUsuarioEntrega,
+		arg.IDUnidade,
 	)
 	var id int32
 	err := row.Scan(&id)
@@ -284,10 +286,16 @@ func (q *Queries) CancelarEntrega(ctx context.Context, arg CancelarEntregaParams
 const entregaDashbord = `-- name: EntregaDashbord :many
 SELECT
     id, IdFuncionario, data_entrega,
-    assinatura, token_validacao
+    assinatura, token_validacao, id_unidade
 FROM entrega_epi
 WHERE tenant_id = $1 AND ativo = TRUE
+  AND ($2::int IS NULL OR id_unidade = $2::int)
 `
+
+type EntregaDashbordParams struct {
+	TenantID  int32
+	IDUnidade pgtype.Int4
+}
 
 type EntregaDashbordRow struct {
 	ID             int32
@@ -295,10 +303,11 @@ type EntregaDashbordRow struct {
 	DataEntrega    pgtype.Date
 	Assinatura     string
 	TokenValidacao pgtype.Text
+	IDUnidade      int32
 }
 
-func (q *Queries) EntregaDashbord(ctx context.Context, tenantID int32) ([]EntregaDashbordRow, error) {
-	rows, err := q.db.Query(ctx, entregaDashbord, tenantID)
+func (q *Queries) EntregaDashbord(ctx context.Context, arg EntregaDashbordParams) ([]EntregaDashbordRow, error) {
+	rows, err := q.db.Query(ctx, entregaDashbord, arg.TenantID, arg.IDUnidade)
 	if err != nil {
 		return nil, err
 	}
@@ -312,6 +321,7 @@ func (q *Queries) EntregaDashbord(ctx context.Context, tenantID int32) ([]Entreg
 			&i.DataEntrega,
 			&i.Assinatura,
 			&i.TokenValidacao,
+			&i.IDUnidade,
 		); err != nil {
 			return nil, err
 		}
@@ -326,9 +336,18 @@ func (q *Queries) EntregaDashbord(ctx context.Context, tenantID int32) ([]Entreg
 const entregaItensDashbord = `-- name: EntregaItensDashbord :many
 SELECT
     id, id_entrega_cabecalho, id_epi, id_tamanho, quantidade
-FROM epis_entregues
-WHERE tenant_id = $1 AND ativo = TRUE
+FROM epis_entregues ie
+WHERE ie.tenant_id = $1 AND ie.ativo = TRUE
+  AND ($2::int IS NULL OR EXISTS (
+      SELECT 1 FROM entrega_epi ee
+      WHERE ee.id = ie.id_entrega_cabecalho AND ee.tenant_id = ie.tenant_id AND ee.id_unidade = $2::int
+  ))
 `
+
+type EntregaItensDashbordParams struct {
+	TenantID  int32
+	IDUnidade pgtype.Int4
+}
 
 type EntregaItensDashbordRow struct {
 	ID                 int32
@@ -338,8 +357,8 @@ type EntregaItensDashbordRow struct {
 	Quantidade         int32
 }
 
-func (q *Queries) EntregaItensDashbord(ctx context.Context, tenantID int32) ([]EntregaItensDashbordRow, error) {
-	rows, err := q.db.Query(ctx, entregaItensDashbord, tenantID)
+func (q *Queries) EntregaItensDashbord(ctx context.Context, arg EntregaItensDashbordParams) ([]EntregaItensDashbordRow, error) {
+	rows, err := q.db.Query(ctx, entregaItensDashbord, arg.TenantID, arg.IDUnidade)
 	if err != nil {
 		return nil, err
 	}
@@ -383,6 +402,7 @@ WHERE
     )
     AND ($5::int IS NULL OR ee.id = $5)
     AND ($6::int IS NULL OR ee.idfuncionario = $6)
+    AND ($7::int IS NULL OR ee.id_unidade = $7::int)
 ORDER BY ee.data_entrega DESC
 LIMIT $1 OFFSET $2
 `
@@ -394,6 +414,7 @@ type ListarEntregasParams struct {
 	Canceladas    bool
 	IDEntrega     pgtype.Int4
 	Idfuncionario pgtype.Int4
+	IDUnidade     pgtype.Int4
 }
 
 type ListarEntregasRow struct {
@@ -420,6 +441,7 @@ func (q *Queries) ListarEntregas(ctx context.Context, arg ListarEntregasParams) 
 		arg.Canceladas,
 		arg.IDEntrega,
 		arg.Idfuncionario,
+		arg.IDUnidade,
 	)
 	if err != nil {
 		return nil, err
@@ -453,19 +475,102 @@ func (q *Queries) ListarEntregas(ctx context.Context, arg ListarEntregasParams) 
 	return items, nil
 }
 
+const listarFaltasKit = `-- name: ListarFaltasKit :many
+WITH entregue AS (
+    SELECT ee.idfuncionario, ie.id_epi, SUM(ie.quantidade)::int AS quantidade
+    FROM entrega_epi ee
+    JOIN epis_entregues ie ON ie.id_entrega_cabecalho = ee.id AND ie.tenant_id = ee.tenant_id AND ie.ativo = TRUE
+    WHERE ee.tenant_id = $1 AND ee.ativo = TRUE
+    GROUP BY ee.idfuncionario, ie.id_epi
+), devolvido AS (
+    SELECT d.idfuncionario, d.idepi, SUM(d.quantidadeadevolver)::int AS quantidade
+    FROM devolucao d
+    WHERE d.tenant_id = $1 AND d.ativo = TRUE
+    GROUP BY d.idfuncionario, d.idepi
+)
+SELECT
+    f.id AS funcionario_id, f.nome AS funcionario_nome, f.matricula,
+    fn.nome AS funcao_nome,
+    e.id AS epi_id, e.nome AS epi_nome,
+    fe.quantidade AS exigido,
+    (COALESCE(en.quantidade, 0) - COALESCE(dv.quantidade, 0))::int AS em_posse
+FROM funcionario f
+JOIN funcao fn ON fn.id = f.idfuncao AND fn.tenant_id = $1
+JOIN funcao_epi fe ON fe.id_funcao = f.idfuncao AND fe.tenant_id = $1
+JOIN epi e ON e.id = fe.id_epi AND e.tenant_id = $1 AND e.ativo = TRUE
+LEFT JOIN entregue en ON en.idfuncionario = f.id AND en.id_epi = fe.id_epi
+LEFT JOIN devolvido dv ON dv.idfuncionario = f.id AND dv.idepi = fe.id_epi
+WHERE f.tenant_id = $1 -- SEGURANÇA
+  AND f.ativo = TRUE
+  AND ($2::int IS NULL OR f.id_unidade = $2::int)
+  AND COALESCE(en.quantidade, 0) - COALESCE(dv.quantidade, 0) < fe.quantidade
+ORDER BY f.nome, e.nome
+`
+
+type ListarFaltasKitParams struct {
+	TenantID  int32
+	IDUnidade pgtype.Int4
+}
+
+type ListarFaltasKitRow struct {
+	FuncionarioID   int32
+	FuncionarioNome string
+	Matricula       int32
+	FuncaoNome      string
+	EpiID           int32
+	EpiNome         string
+	Exigido         int32
+	EmPosse         int32
+}
+
+// Funcionários ativos com menos EPI em posse (entregue − devolvido) do que o kit da função pede.
+// Quem nunca recebeu o EPI aparece com em_posse = 0.
+func (q *Queries) ListarFaltasKit(ctx context.Context, arg ListarFaltasKitParams) ([]ListarFaltasKitRow, error) {
+	rows, err := q.db.Query(ctx, listarFaltasKit, arg.TenantID, arg.IDUnidade)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListarFaltasKitRow
+	for rows.Next() {
+		var i ListarFaltasKitRow
+		if err := rows.Scan(
+			&i.FuncionarioID,
+			&i.FuncionarioNome,
+			&i.Matricula,
+			&i.FuncaoNome,
+			&i.EpiID,
+			&i.EpiNome,
+			&i.Exigido,
+			&i.EmPosse,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listarHistoricoEntregasPorMatricula = `-- name: ListarHistoricoEntregasPorMatricula :many
 SELECT 
-    emp.razao_social as razao_social,
+    emp.razao_social as razao_social, emp.cnpj, COALESCE(emp.logo_key, '')::text as logo_key,
     f.id as func_id, f.nome as func_nome, f.cpf ,f.matricula,
     d.id as dep_id, d.nome as dep_nome,
     ff.id as funcao_id, ff.nome as funcao_nome,
-    ee.data_entrega, i.quantidade, e.ca, e.nome AS epi_nome, e.descricao,
+    ee.id as entrega_id, ee.data_entrega, ee.token_validacao,
+    un.nome as unidade_nome, COALESCE(u.nome, '')::text as entregue_por,
+    i.quantidade, e.ca, e.nome AS epi_nome, e.descricao,
     i.id_tamanho, t.tamanho, ee.assinatura
 FROM entrega_epi ee
 INNER JOIN empresas emp ON ee.tenant_id = emp.id
 INNER JOIN funcionario f ON ee.IdFuncionario = f.id
 INNER JOIN departamento d ON f.IdDepartamento = d.id
 INNER JOIN funcao ff ON f.IdFuncao = ff.id
+INNER JOIN unidade un ON un.id = ee.id_unidade AND un.tenant_id = ee.tenant_id
+LEFT JOIN usuarios u ON u.id = ee.id_usuario_entrega
 INNER JOIN epis_entregues i ON i.id_entrega_cabecalho = ee.id
 INNER JOIN epi e ON e.id = i.id_epi
 INNER JOIN tamanho t ON t.id = i.id_tamanho
@@ -473,7 +578,7 @@ WHERE f.matricula = $1
 AND ee.tenant_id = $2
 and ee.id = $3
 AND ee.ativo = TRUE
-ORDER BY ee.data_entrega DESC, ee.id DESC
+ORDER BY i.id
 `
 
 type ListarHistoricoEntregasPorMatriculaParams struct {
@@ -483,25 +588,32 @@ type ListarHistoricoEntregasPorMatriculaParams struct {
 }
 
 type ListarHistoricoEntregasPorMatriculaRow struct {
-	RazaoSocial string
-	FuncID      int32
-	FuncNome    string
-	Cpf         pgtype.Text
-	Matricula   int32
-	DepID       int32
-	DepNome     string
-	FuncaoID    int32
-	FuncaoNome  string
-	DataEntrega pgtype.Date
-	Quantidade  int32
-	Ca          string
-	EpiNome     string
-	Descricao   string
-	IDTamanho   int32
-	Tamanho     string
-	Assinatura  string
+	RazaoSocial    string
+	Cnpj           string
+	LogoKey        string
+	FuncID         int32
+	FuncNome       string
+	Cpf            pgtype.Text
+	Matricula      int32
+	DepID          int32
+	DepNome        string
+	FuncaoID       int32
+	FuncaoNome     string
+	EntregaID      int32
+	DataEntrega    pgtype.Date
+	TokenValidacao pgtype.Text
+	UnidadeNome    string
+	EntreguePor    string
+	Quantidade     int32
+	Ca             string
+	EpiNome        string
+	Descricao      string
+	IDTamanho      int32
+	Tamanho        string
+	Assinatura     string
 }
 
+// Dados da ficha de entrega (PDF): uma linha por lote consumido.
 func (q *Queries) ListarHistoricoEntregasPorMatricula(ctx context.Context, arg ListarHistoricoEntregasPorMatriculaParams) ([]ListarHistoricoEntregasPorMatriculaRow, error) {
 	rows, err := q.db.Query(ctx, listarHistoricoEntregasPorMatricula, arg.Matricula, arg.TenantID, arg.ID)
 	if err != nil {
@@ -513,6 +625,8 @@ func (q *Queries) ListarHistoricoEntregasPorMatricula(ctx context.Context, arg L
 		var i ListarHistoricoEntregasPorMatriculaRow
 		if err := rows.Scan(
 			&i.RazaoSocial,
+			&i.Cnpj,
+			&i.LogoKey,
 			&i.FuncID,
 			&i.FuncNome,
 			&i.Cpf,
@@ -521,7 +635,11 @@ func (q *Queries) ListarHistoricoEntregasPorMatricula(ctx context.Context, arg L
 			&i.DepNome,
 			&i.FuncaoID,
 			&i.FuncaoNome,
+			&i.EntregaID,
 			&i.DataEntrega,
+			&i.TokenValidacao,
+			&i.UnidadeNome,
+			&i.EntreguePor,
 			&i.Quantidade,
 			&i.Ca,
 			&i.EpiNome,
@@ -569,6 +687,84 @@ func (q *Queries) ListarItensEntregueCancelados(ctx context.Context, arg ListarI
 	for rows.Next() {
 		var i ListarItensEntregueCanceladosRow
 		if err := rows.Scan(&i.Quantidade, &i.IDEntradaItem); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listarTrocasPendentes = `-- name: ListarTrocasPendentes :many
+WITH entregue AS (
+    SELECT ee.idfuncionario, ie.id_epi, SUM(ie.quantidade)::int AS quantidade, MAX(ee.data_entrega)::date AS ultima_entrega
+    FROM entrega_epi ee
+    JOIN epis_entregues ie ON ie.id_entrega_cabecalho = ee.id AND ie.tenant_id = ee.tenant_id AND ie.ativo = TRUE
+    WHERE ee.tenant_id = $1 AND ee.ativo = TRUE
+    GROUP BY ee.idfuncionario, ie.id_epi
+), devolvido AS (
+    SELECT d.idfuncionario, d.idepi, SUM(d.quantidadeadevolver)::int AS quantidade
+    FROM devolucao d
+    WHERE d.tenant_id = $1 AND d.ativo = TRUE
+    GROUP BY d.idfuncionario, d.idepi
+)
+SELECT
+    f.id AS funcionario_id, f.nome AS funcionario_nome, f.matricula,
+    e.id AS epi_id, e.nome AS epi_nome,
+    (en.quantidade - COALESCE(dv.quantidade, 0))::int AS em_posse,
+    en.ultima_entrega,
+    (en.ultima_entrega + e.vida_util_dias)::date AS vence_em
+FROM entregue en
+JOIN epi e ON e.id = en.id_epi AND e.tenant_id = $1 AND e.ativo = TRUE AND e.vida_util_dias IS NOT NULL
+JOIN funcionario f ON f.id = en.idfuncionario AND f.tenant_id = $1 AND f.ativo = TRUE
+LEFT JOIN devolvido dv ON dv.idfuncionario = en.idfuncionario AND dv.idepi = en.id_epi
+WHERE en.quantidade - COALESCE(dv.quantidade, 0) > 0
+  AND ($2::int IS NULL OR f.id_unidade = $2::int)
+  AND en.ultima_entrega + e.vida_util_dias <= $3::date
+ORDER BY vence_em, f.nome
+`
+
+type ListarTrocasPendentesParams struct {
+	TenantID  int32
+	IDUnidade pgtype.Int4
+	Ate       pgtype.Date
+}
+
+type ListarTrocasPendentesRow struct {
+	FuncionarioID   int32
+	FuncionarioNome string
+	Matricula       int32
+	EpiID           int32
+	EpiNome         string
+	EmPosse         int32
+	UltimaEntrega   pgtype.Date
+	VenceEm         pgtype.Date
+}
+
+// EPIs com vida útil cadastrada que o funcionário ainda tem em posse (entregue − devolvido > 0)
+// e cuja última entrega + vida_util_dias vence até a data informada. A troca na devolução gera
+// uma entrega nova, então ela reinicia a contagem.
+func (q *Queries) ListarTrocasPendentes(ctx context.Context, arg ListarTrocasPendentesParams) ([]ListarTrocasPendentesRow, error) {
+	rows, err := q.db.Query(ctx, listarTrocasPendentes, arg.TenantID, arg.IDUnidade, arg.Ate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListarTrocasPendentesRow
+	for rows.Next() {
+		var i ListarTrocasPendentesRow
+		if err := rows.Scan(
+			&i.FuncionarioID,
+			&i.FuncionarioNome,
+			&i.Matricula,
+			&i.EpiID,
+			&i.EpiNome,
+			&i.EmPosse,
+			&i.UltimaEntrega,
+			&i.VenceEm,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

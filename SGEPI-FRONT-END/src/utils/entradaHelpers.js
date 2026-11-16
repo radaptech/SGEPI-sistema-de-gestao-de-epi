@@ -31,3 +31,29 @@ export function formatarDataParaGo(dataISO) {
   const [ano, mes, dia] = dataISO.split("-");
   return `${dia}/${mes}/${ano}`;
 }
+export const totalEntrada = (e) => Number(e.quantidade || 0) * Number(e.valor_unitario || 0);
+
+// Completa cada entrada com nomes de EPI, tamanho e fornecedor das listas; o que faltar cai no que veio do back.
+export function resolverEntradas(entradas, epis, tamanhos, fornecedores) {
+  return entradas.map((entrada) => {
+    const epi = epis.find((item) => item.id === entrada.IdEpi);
+    const tamanho = tamanhos.find((t) => t.id === entrada.IdTamanho);
+    const nomeBack = (entrada.fornecedor_nome_back || "").toLowerCase();
+    const fornecedor = fornecedores.find(
+      (f) =>
+        (entrada.Idfornecedor > 0 && f.id === entrada.Idfornecedor) ||
+        f.razao_social.toLowerCase() === nomeBack ||
+        f.nome_fantasia.toLowerCase() === nomeBack
+    );
+
+    return {
+      ...entrada,
+      epiNome: epi?.nome || entrada.epi_nome_back || "EPI não identificado",
+      epiFabricante: epi?.fabricante || entrada.epi_fabricante_back || "-",
+      epiCA: entrada.epi_ca_back || epi?.ca || "-",
+      tamanhoNome: tamanho?.tamanho || entrada.tamanho_nome_back || "S/T",
+      fornecedorNome: fornecedor?.nome_fantasia || fornecedor?.razao_social || entrada.fornecedor_nome_back || "Fornecedor não identificado",
+      usuario: entrada.usuario_entrada || "Usuário não identificado",
+    };
+  });
+}

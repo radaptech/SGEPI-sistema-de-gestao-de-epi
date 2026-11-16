@@ -23,7 +23,8 @@ type EntradaEpiInserir struct {
 	Nota_fiscal_serie  string                  `json:"nota_fiscal_serie" binding:"required,max=20"`
 	Data_emissao       configs.DataBr          `json:"data_emissao" binding:"required"`
 	Id_user            int32                   `json:"-"`
-	Itens              []EntradaEpiItemInserir `json:"itens" binding:"required,dive"` // "dive" valida cada item da lista
+	IdUnidade          *int32                  `json:"id_unidade" binding:"omitempty,min=1"` // obrigatório com 2+ unidades
+	Itens              []EntradaEpiItemInserir `json:"itens" binding:"required,dive"`        // "dive" valida cada item da lista
 }
 
 // EntradaEpiDto representa o retorno detalhado (Listagem)
@@ -34,7 +35,9 @@ type EntradaEpiDto struct {
 	IDFornecedor int `json:"id_fornecedor"`
 
 	// 2. Linha do tempo
-	DataEntrada configs.DataBr `json:"data_entrada"`
+	DataEntrada    configs.DataBr `json:"data_entrada"`
+	DataFabricacao configs.DataBr `json:"data_fabricacao"`
+	DataValidade   configs.DataBr `json:"data_validade"`
 
 	// 3. Valores e informações da operação
 	Quantidade       int             `json:"quantidade"`
@@ -65,15 +68,15 @@ type EntradaEstoqueDto struct {
 }
 
 type EntradaDashbord struct {
-	Id              int
-	IdEpi           int
-	IdTamanho       int
-	QuantidadeAtual int
-	ValorUnitario   decimal.Decimal
-	Quantidade      int
-	// Usa o helper para garantir o ponteiro da data formatada
-	DataEntrada configs.DataBr
-	Lote        string
+	Id              int             `json:"id"`
+	IdEpi           int             `json:"id_epi"`
+	IdTamanho       int             `json:"id_tamanho"`
+	QuantidadeAtual int             `json:"quantidade_atual"`
+	ValorUnitario   decimal.Decimal `json:"valor_unitario"`
+	Quantidade      int             `json:"quantidade"`
+	DataEntrada     configs.DataBr  `json:"data_entrada"`
+	Lote            string          `json:"lote"`
+	IdUnidade       int32           `json:"id_unidade"`
 }
 
 type EpiSimples struct {
@@ -92,4 +95,5 @@ type FornecedorSimples struct {
 	ID           int    `json:"id"`
 	NomeFantasia string `json:"nome_fantasia"`
 	RazaoSocial  string `json:"razao_social"`
+	Cnpj         string `json:"cnpj,omitempty"`
 }

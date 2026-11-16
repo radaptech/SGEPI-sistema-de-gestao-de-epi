@@ -6,10 +6,10 @@ import (
 
 // ItemParaInserir representa cada EPI saindo do estoque
 type ItemParaInserir struct {
-	ID_epi        int32 `json:"id_epi" binding:"required"`
-	ID_tamanho    int32 `json:"id_tamanho" binding:"required"`
+	ID_epi          int32 `json:"id_epi" binding:"required"`
+	ID_tamanho      int32 `json:"id_tamanho" binding:"required"`
 	ID_entrada_item int32 `json:"id_entrada_item"` // 🔑 NOVO: Precisamos saber de qual lote saiu!
-	Quantidade    int32 `json:"quantidade" binding:"required,gt=0"`
+	Quantidade      int32 `json:"quantidade" binding:"required,gt=0"`
 }
 
 // EntregaParaInserir é o DTO que a Paloma envia do Frontend
@@ -17,7 +17,8 @@ type EntregaParaInserir struct {
 	ID_funcionario     int32             `json:"id_funcionario" binding:"required"`
 	Id_user            int32             `json:"id_user"`
 	Data_entrega       configs.DataBr    `json:"data_entrega" binding:"required"`
-	IdTroca            *int32            `json:"id_troca"` // Usei ponteiro para aceitar nulo
+	IdTroca            *int32            `json:"id_troca"`                             // Usei ponteiro para aceitar nulo
+	IdUnidade          *int32            `json:"id_unidade" binding:"omitempty,min=1"` // sem ela, sai da unidade do funcionário
 	Assinatura_Digital string            `json:"assinatura_digital" binding:"required"`
 	Itens              []ItemParaInserir `json:"itens" binding:"required,min=1,dive"`
 }
@@ -48,6 +49,7 @@ type EntregaDashbord struct {
 	Data_entrega   configs.DataBr `json:"data_entrega"`
 	Assinatura     string         `json:"assinatura"`
 	TokenValidacao string         `json:"token_validacao"`
+	IdUnidade      int32          `json:"id_unidade"`
 }
 
 type EntregaItensDashBord struct {
@@ -63,4 +65,28 @@ type EntregaDoFuncionarioDto struct {
 	Data_entrega       configs.DataBr    `json:"data_entrega"`
 	Assinatura_Digital string            `json:"assinatura_digital"`
 	Itens              []ItemEntregueDto `json:"itens,omitempty"` // <-- AQUI ELA!
+}
+
+// FaltaKitDto é um EPI do kit da função que o funcionário tem em posse em quantidade menor que a exigida
+type FaltaKitDto struct {
+	FuncionarioId   int32  `json:"funcionario_id"`
+	FuncionarioNome string `json:"funcionario_nome"`
+	Matricula       int32  `json:"matricula"`
+	FuncaoNome      string `json:"funcao_nome"`
+	EpiId           int32  `json:"epi_id"`
+	EpiNome         string `json:"epi_nome"`
+	Exigido         int32  `json:"exigido"`
+	EmPosse         int32  `json:"em_posse"`
+}
+
+// TrocaPendenteDto é um EPI em posse do funcionário cuja vida útil vence até a data consultada
+type TrocaPendenteDto struct {
+	FuncionarioId   int32          `json:"funcionario_id"`
+	FuncionarioNome string         `json:"funcionario_nome"`
+	Matricula       int32          `json:"matricula"`
+	EpiId           int32          `json:"epi_id"`
+	EpiNome         string         `json:"epi_nome"`
+	EmPosse         int32          `json:"em_posse"`
+	UltimaEntrega   configs.DataBr `json:"ultima_entrega"`
+	VenceEm         configs.DataBr `json:"vence_em"`
 }

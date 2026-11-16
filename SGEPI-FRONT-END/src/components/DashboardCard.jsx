@@ -1,44 +1,42 @@
+import { ChevronRight } from "lucide-react";
+
+// Etiqueta de prateleira: faixa de cabeçalho com o título, número grande no corpo.
+// A faixa só ganha cor quando é pendência e o valor passa de zero.
+// Sem onClick vira só leitura (sem seta). Usada no dashboard e nos resumos das telas.
+const FAIXA = {
+  erro: "bg-erro-soft text-erro border-erro-line",
+  atencao: "bg-atencao-soft text-atencao border-atencao-line",
+};
+const VALOR = { erro: "text-erro", atencao: "text-atencao" };
+
 function DashboardCard({ card, onClick }) {
+  const ativa = card.grupo === "pendencia" && Number(card.valor) > 0;
+  const Tag = onClick ? "button" : "div";
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`group text-left bg-white dark:bg-slate-800/50 p-4 md:p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer outline-none focus:ring-2 focus:ring-blue-500/50 dark:focus:ring-blue-500/30 ${card.ring}`}
+    <Tag
+      {...(onClick ? { type: "button", onClick } : {})}
+      className={`group text-left bg-surface border border-line rounded-md overflow-hidden ${onClick ? "hover:border-line-strong transition-colors" : ""}`}
     >
-      <div className="flex items-start justify-between gap-3 mb-4">
-        <div className="min-w-0">
-          <span className="inline-flex text-[10px] md:text-[11px] font-bold uppercase tracking-[0.14em] text-gray-400 dark:text-slate-500 mb-2 transition-colors duration-300">
-            {card.badge}
-          </span>
-
-          <h3 className="text-gray-600 dark:text-slate-300 text-sm md:text-sm font-bold uppercase leading-tight transition-colors duration-300">
-            {card.titulo}
-          </h3>
-        </div>
-
-        <span
-          className={`shrink-0 p-2.5 rounded-xl text-base md:text-lg transition-colors duration-300 ${card.iconeBox}`}
-        >
-          {card.icone}
-        </span>
+      <div
+        className={`flex items-center justify-between gap-2 px-4 py-2 border-b text-sm font-semibold ${
+          ativa ? FAIXA[card.estado] : "bg-sunken text-ink border-line"
+        }`}
+      >
+        <span>{card.titulo}</span>
+        {onClick && <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />}
       </div>
-
-      <div className="mb-3">
-        <p className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white leading-tight break-words transition-colors duration-300">
+      <div className="px-4 pt-3 pb-4">
+        <p
+          className={`text-3xl font-bold leading-none tabular-nums tracking-tight ${
+            ativa ? VALOR[card.estado] : card.grupo === "pendencia" ? "text-ink-3" : "text-ink"
+          }`}
+        >
           {card.valor}
         </p>
+        {card.descricao && <p className="mt-2 text-xs text-ink-3 leading-snug">{card.descricao}</p>}
       </div>
-
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed transition-colors duration-300">
-          {card.descricao}
-        </p>
-
-        <span className="text-blue-600 dark:text-blue-400 font-bold text-xs md:text-sm opacity-80 group-hover:translate-x-1 transition-all duration-300">
-          Abrir →
-        </span>
-      </div>
-    </button>
+    </Tag>
   );
 }
 

@@ -2,45 +2,110 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Etiqueta de almoxarifado: dado em tinta preta sobre papel branco, fio de 1px,
+  cor só para estado (atenção, erro, ok, info). O escuro é a etiqueta invertida em grafite.
+  Os componentes usam só estes tokens; não precisam de classes dark: de cor.
+*/
+:root {
+  --canvas: 238 240 242;
+  --surface: 255 255 255;
+  --sunken: 246 247 248;
+  --line: 217 220 225;
+  --line-strong: 160 166 175;
+  --ink: 22 24 29;
+  --ink-2: 74 80 90;
+  --ink-3: 98 105 116;
+  --action: 22 24 29;
+  --action-hover: 52 56 64;
+  --on-action: 255 255 255;
+
+  /* painel de marca do login: grafite nos dois temas (o logo tem texto branco) */
+  --painel: 22 24 29;
+  --painel-ink: 236 238 241;
+  --painel-ink-2: 160 166 175;
+  --painel-line: 58 63 71;
+
+  --atencao: 138 98 0;
+  --atencao-solid: 214 154 0;
+  --atencao-soft: 255 244 204;
+  --atencao-line: 236 205 120;
+  --erro: 180 35 24;
+  --erro-solid: 196 50 31;
+  --erro-soft: 253 234 231;
+  --erro-line: 240 180 170;
+  --ok: 36 110 68;
+  --ok-solid: 47 125 79;
+  --ok-soft: 230 242 234;
+  --ok-line: 170 210 185;
+  --info: 29 79 145;
+  --info-solid: 29 79 145;
+  --info-soft: 229 237 247;
+  --info-line: 170 195 228;
+
+  color-scheme: light;
+}
+
+.dark {
+  --canvas: 18 20 23;
+  --surface: 26 29 33;
+  --sunken: 34 38 43;
+  --line: 51 56 63;
+  --line-strong: 92 99 109;
+  --ink: 236 238 241;
+  --ink-2: 180 186 195;
+  --ink-3: 146 153 163;
+  --action: 236 238 241;
+  --action-hover: 206 210 216;
+  --on-action: 18 20 23;
+
+  --painel: 12 13 16;
+  --painel-line: 44 48 55;
+
+  --atencao: 240 196 90;
+  --atencao-solid: 214 154 0;
+  --atencao-soft: 52 42 14;
+  --atencao-line: 110 86 26;
+  --erro: 248 140 125;
+  --erro-solid: 196 50 31;
+  --erro-soft: 58 26 22;
+  --erro-line: 120 48 40;
+  --ok: 120 200 150;
+  --ok-solid: 47 125 79;
+  --ok-soft: 22 46 32;
+  --ok-line: 48 96 66;
+  --info: 140 180 235;
+  --info-solid: 29 79 145;
+  --info-soft: 24 36 56;
+  --info-line: 52 80 120;
+
+  color-scheme: dark;
+}
+
 body {
-  @apply bg-slate-50 transition-colors duration-300;
+  @apply bg-canvas text-ink font-sans antialiased;
+  font-feature-settings: "tnum" 1;
 }
 
-
-::-webkit-scrollbar {
-  width: 10px; 
-  height: 10px;
+::selection {
+  background: rgb(var(--atencao-solid) / 0.35);
+  color: rgb(var(--ink));
 }
 
-::-webkit-scrollbar-track {
-  background: #f1f5f9; 
+/* :where() zera a especificidade: campos com outline-none (e anel próprio) não ganham anel duplo */
+:where(:focus-visible) {
+  outline: 2px solid rgb(var(--ink));
+  outline-offset: 2px;
 }
 
-::-webkit-scrollbar-thumb {
-  background-color: #94a3b8;
-  border-radius: 10px;
+input, select, textarea {
+  caret-color: rgb(var(--ink));
+  accent-color: rgb(var(--ink));
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background-color: #2563eb; 
-}
-
-.custom-scrollbar::-webkit-scrollbar {
-  width: 8px; 
-  height: 8px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #94a3b8; 
-  border-radius: 10px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: #2563eb; 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--line-strong)) transparent;
 }
 
 @layer utilities {
@@ -51,4 +116,26 @@ body {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+}
+
+/* o espaço da Archivo é estreito; em caixa alta com tracking ele some */
+.uppercase {
+  word-spacing: 0.14em;
+}
+
+/* react-toastify segue os tokens (e o modo escuro por tabela) */
+:root {
+  --toastify-font-family: inherit;
+  --toastify-color-light: rgb(var(--surface));
+  --toastify-text-color-light: rgb(var(--ink));
+  --toastify-color-success: rgb(var(--ok-solid));
+  --toastify-color-error: rgb(var(--erro-solid));
+  --toastify-color-warning: rgb(var(--atencao-solid));
+  --toastify-color-info: rgb(var(--info-solid));
+  --toastify-toast-bd-radius: 4px;
+}
+.Toastify__toast {
+  box-shadow: none;
+  border: 1px solid rgb(var(--line));
+  font-size: 0.875rem;
 }

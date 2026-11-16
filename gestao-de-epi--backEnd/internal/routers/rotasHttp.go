@@ -3,6 +3,7 @@ package routers
 import (
 	"context"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/controller"
@@ -13,7 +14,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/radaptech/ginmw"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"golang.org/x/time/rate"
@@ -22,6 +22,8 @@ import (
 type Container struct {
 	Usuario         controller.LoginController
 	Departamento    controller.DepartamentoController
+	Unidade         controller.UnidadeController
+	Transferencia   controller.TransferenciaController
 	Funcao          controller.FuncaoController
 	Funcionario     controller.FuncionarioController
 	Tamanho         controller.TamanhoController
@@ -41,6 +43,7 @@ func NewContainer(db *pgxpool.Pool) *Container {
 
 	repoUsuario := repository.NewUsuarioRepository(db)
 	repoDepartamento := repository.NewDepartamentoRepository(db)
+	repoUnidade := repository.NewUnidadeRepository(db)
 	repoFuncao := repository.NewFuncaoRepository(db)
 	repoFuncionario := repository.NewFuncionarioRepository(db)
 	repoTamanho := repository.NewTamanhoRepository(db)
@@ -58,6 +61,7 @@ func NewContainer(db *pgxpool.Pool) *Container {
 	ServiceEmail := service.NewEmail()
 	serviceUsuario := service.NewUsuarioService(repoUsuario, *ServiceEmail, db)
 	departamentoService := service.NewDepartamentoService(repoDepartamento)
+	unidadeService := service.NewUnidadeService(repoUnidade)
 	funcaoService := service.NewFuncaoService(repoFuncao)
 	FornecedorService := service.NewFornecedorService(repoFornecedor)
 	funcionarioService := service.NewFuncionarioService(repoFuncionario, repoEntrega, repoEpi, db)
@@ -75,6 +79,8 @@ func NewContainer(db *pgxpool.Pool) *Container {
 	return &Container{
 		Usuario:         *controller.NewLoginController(serviceUsuario),
 		Departamento:    *controller.NewDepartamentoController(departamentoService),
+		Unidade:         *controller.NewUnidadeController(unidadeService),
+		Transferencia:   *controller.NewTransferenciaController(service.NewTransferenciaService(db)),
 		Funcao:          *controller.NewFuncaoController(funcaoService),
 		Funcionario:     *controller.NewFuncionarioController(funcionarioService),
 		Tamanho:         *controller.NewTamanhoControle(tamanhoService),
@@ -90,13 +96,18 @@ func NewContainer(db *pgxpool.Pool) *Container {
 		Empresas:        *controller.NewEmpresaController(empresaService),
 	}
 }
+
+// Versao vem da tag do release (-ldflags "-X .../internal/routers.Versao=1.2.3" no Dockerfile).
+// GET /api mostra qual versão está no ar.
+var Versao = "dev"
+
 func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 
 	queries := repository.New(db)
 
 	// Montados uma vez só, reaproveitados em todo Use() abaixo.
 	authSessao := middleware.Sessao(queries)
-	tenant := ginmw.Tenant(func(ctx context.Context, subdominio string) (int64, error) {
+	tenant := middleware.Tenant(func(ctx context.Context, subdominio string) (int64, error) {
 		empresa, err := queries.GetTenantBySubdomain(ctx, subdominio)
 		return int64(empresa.ID), err
 	}, pgx.ErrNoRows)
@@ -105,22 +116,26 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 	// Qualquer um acessa sem sessão
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	r.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status":  "online",
-			"message": "Bem-vindo à API do Sistema de Gestão de EPIs - Radaptech",
-			"version": "1.0.0",
+	// Na imagem única "/" é o front; só a API sozinha responde a mensagem de boas-vindas.
+	if !servirFront(r, os.Getenv("FRONT_DIR")) {
+		r.GET("/", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{
+				"status":  "online",
+				"message": "Bem-vindo à API do Sistema de Gestão de EPIs - Radaptech",
+				"version": Versao,
+			})
 		})
-	})
+	}
 	r.GET("/api", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "online",
 			"message": "API operando normalmente. Acesse a documentação do Swagger para ver as rotas.",
+			"version": Versao,
 		})
 	})
 	api := r.Group("/api")
 	painel := r.Group("/api/painel")
-	painel.Use(authSessao, ginmw.Require("super_admin"))
+	painel.Use(authSessao, middleware.Require("super_admin"))
 	{
 
 		//empresas
@@ -128,10 +143,11 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 	}
 
 	master := r.Group("/api/master")
-	master.Use(authSessao, ginmw.Require("super_admin"))
+	master.Use(authSessao, middleware.Require("super_admin"))
 	{
 		master.GET("/dashboard/resumo", c.Empresas.ResumoDashboard())
 		master.GET("/dashboard/empresas-recentes", c.Empresas.EmpresaRecentes())
+		master.GET("/dashboard/alertas", c.Empresas.Alertas())
 		master.GET("/dashboard/dados-empresas", c.Empresas.DadosEmpresas())
 		master.GET("/dashboard/dados-usuarios", c.Usuario.MostrarUsuariosPainel())
 		master.POST("/dashboard/salvar-usuarios", c.Usuario.Registrar())
@@ -150,24 +166,27 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 	{
 
 		// Rate limit: 5 tentativas de imediato, depois 1 nova a cada 12s por IP
-		api.POST("/login", ginmw.RateLimit(rate.Every(12*time.Second), 5), c.Usuario.Login())
+		api.POST("/login", middleware.RateLimit(rate.Every(12*time.Second), 5), c.Usuario.Login())
 
 		api.POST("/logout", c.Usuario.Logout())
 		// Rate limit: 3 tentativas de imediato, depois 1 nova por minuto por IP (evita spam de e-mail)
-		api.POST("/esqueci-minha-senha", ginmw.RateLimit(rate.Every(time.Minute), 3), c.Usuario.SalvarToken())
+		api.POST("/esqueci-minha-senha", middleware.RateLimit(rate.Every(time.Minute), 3), c.Usuario.SalvarToken())
 		api.POST("/redefinir-senha", c.Usuario.RedefinirSenha())
 	}
 
 	// --- GRUPO 3: Rotas Protegidas (SaaS) ---
 	// Precisa de sessão válida (cookie) para passar
-	api.Use(authSessao)
+	api.Use(authSessao, middleware.LimitarUnidade())
 	{
 
 		//colaborador e adm tem acesso a essas rotas
 
 		api.GET("/me", c.Usuario.VerPerfil())
+		api.GET("/empresa/logo", c.Empresas.Logo())
 		//departamentos
 		api.GET("/departamentos", c.Departamento.ListarDepartamentos())
+		//unidades (lojas, obras, almoxarifados)
+		api.GET("/unidades", c.Unidade.Listar())
 
 		//quantidade de todos os epis cadastrados
 		api.GET("/quantidade-epi", c.Estoque.MostrarQuantidades())
@@ -176,6 +195,7 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 		api.GET("/saldo-epi", c.Estoque.MostrarSaldo())
 		//funcao
 		api.GET("/funcoes", c.Funcao.ListarFuncoes())
+		api.GET("/funcao/:id/kit", c.Funcao.ListarKitFuncao())
 
 		//funcionario
 		api.GET("/funcionarios", c.Funcionario.ListarFuncionarios())
@@ -190,7 +210,6 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 
 		//proteções dedicada a cada epi
 		api.GET("/protecoes", c.Protecao.ListarProtecoes())
-		api.GET("/protecao/:id", c.Protecao.ListarProtecaoPorId())
 
 		//Epi´s
 		api.GET("/epis", c.Epi.ListarEpis())
@@ -211,18 +230,23 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 		api.POST("/cadastro-entregas", c.Entrega.Adicionar())
 		api.GET("/entregas-dashbord", c.Entrega.BuscarEntregaDashbord())
 		api.GET("/entrega-itens-dashbord", c.Entrega.BuscarEntregaItenDashbord())
+		api.GET("/trocas-pendentes", c.Entrega.ListarTrocasPendentes())
+		api.GET("/faltas-kit", c.Entrega.ListarFaltasKit())
 
 		//devolucao
 		api.POST("/cadastro-devolucao", c.Devolucao.Adicionar())
 		api.GET("/devolucao", c.Devolucao.Listar())
 
+		//transferência entre unidades (a origem passa pela trava da Fase 6)
+		api.GET("/transferencias", c.Transferencia.Listar())
+		api.POST("/transferencias", c.Transferencia.Transferir())
+
 		//motivo da Motivo da Devolucao
-		api.POST("/cadastrar-motivo-devolucao", c.MotivoDevolucao.Salvar())
 		api.GET("/motivos", c.MotivoDevolucao.ListarMotivo())
 
 		//rotas que apenas o "admin" tem acesso
 		rotasAdm := api.Group("/gerencial")
-		rotasAdm.Use(ginmw.Require("admin"))
+		rotasAdm.Use(middleware.Require("admin"))
 		{
 
 			//departamentos
@@ -231,9 +255,18 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 			rotasAdm.POST("/cadastro-departamento", c.Departamento.RegistraDepartamento())
 			rotasAdm.POST("/importar-departamentos", c.Departamento.ImportDepartamentoXLSX())
 
+			//unidades
+			rotasAdm.POST("/unidades", c.Unidade.Criar())
+			rotasAdm.PATCH("/unidades/:id", c.Unidade.Renomear())
+			rotasAdm.DELETE("/unidades/:id", c.Unidade.Desativar())
+			rotasAdm.GET("/unidades/acessos", c.Unidade.Acessos())
+			rotasAdm.PUT("/usuarios/:id/unidades", c.Unidade.DefinirAcesso())
+			rotasAdm.DELETE("/transferencias/:id", c.Transferencia.Cancelar())
+
 			//funçoes
 			rotasAdm.DELETE("/funcao/:id", c.Funcao.DeletarFuncao())
 			rotasAdm.PUT("/funcao/:id", c.Funcao.AtualizarFuncao())
+			rotasAdm.PUT("/funcao/:id/kit", c.Funcao.SalvarKitFuncao())
 			rotasAdm.POST("/cadastro-funcao", c.Funcao.RegistraFuncao())
 			rotasAdm.POST("/importar-funcoes", c.Funcao.ImportarFuncaoXLSX())
 
@@ -247,13 +280,12 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 			rotasAdm.DELETE("/tamanho/:id", c.Tamanho.DeletarTamanho())
 
 			//proteções epis
-			rotasAdm.POST("/cadastro-protecao", c.Protecao.AdicionarProtecao())
-			rotasAdm.DELETE("/protecao/:id", c.Protecao.DeletarProtecao())
 
 			//epis
 			rotasAdm.DELETE("/epi/:id", c.Epi.DeletarEpi())
 			rotasAdm.PATCH("/epi/:id", c.Epi.AtualizaEpi())
 			rotasAdm.POST("/cadastro-epi", c.Epi.AdicionarEpi())
+			rotasAdm.GET("/caepi/:ca", c.Epi.BuscarCaepi())
 
 			//entrada
 			rotasAdm.POST("/cadastrar-entrada", c.Entrada.AdicionarEntrada())
@@ -274,6 +306,8 @@ func ConfigurarRotas(r *gin.Engine, c *Container, db *pgxpool.Pool) {
 
 			//devolucao
 			rotasAdm.GET("/devolucoes/:id/pdf", c.Devolucao.GerarFichaPDF())
+			rotasAdm.PUT("/empresa/logo", c.Empresas.SalvarLogo())
+			rotasAdm.DELETE("/empresa/logo", c.Empresas.RemoverLogo())
 
 		}
 	}

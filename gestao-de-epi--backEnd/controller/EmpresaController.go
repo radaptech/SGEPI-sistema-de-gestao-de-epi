@@ -2,11 +2,15 @@ package controller
 
 import (
 	"context"
+	"errors"
+	"io"
 	"strconv"
 
 	"net/http"
 
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,8 +18,12 @@ type EmpresaService interface {
 	Salvar(ctx context.Context, model model.EmpresaInserir) error
 	EmpresaDashboard(ctx context.Context) (model.ResumoDashboard, error)
 	EmpresaRecentes(ctx context.Context) ([]model.EmpresaRecente, error)
+	Alertas(ctx context.Context) ([]model.AlertaMaster, error)
 	DadosEmpresas(ctx context.Context) ([]model.Empresa, error)
 	EditarEmpresa(ctx context.Context, id int32, model model.EditarEmpresaRequest) error
+	SalvarLogo(ctx context.Context, tenantId int32, arquivo []byte) error
+	RemoverLogo(ctx context.Context, tenantId int32) error
+	Logo(ctx context.Context, tenantId int32) ([]byte, error)
 }
 
 type EmpresaController struct {
@@ -55,13 +63,13 @@ func (e *EmpresaController) Salvar() gin.HandlerFunc {
 		}
 
 		err := e.service.Salvar(ctx, input)
+		if errors.Is(err, helper.ErrSubdominioInvalido) {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error":    "Erro ao salvar empresa no banco de dados.",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "Erro ao salvar empresa no banco de dados.")
 			return
 		}
 
@@ -70,7 +78,6 @@ func (e *EmpresaController) Salvar() gin.HandlerFunc {
 		})
 	}
 }
-
 
 // ResumoDashboard godoc
 // @Summary      Dashboard
@@ -87,12 +94,7 @@ func (e *EmpresaController) ResumoDashboard() gin.HandlerFunc {
 
 		resumo, err := e.service.EmpresaDashboard(ctx)
 		if err != nil {
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro ao realizar buscar dos dados do Dashbord",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao realizar buscar dos dados do Dashbord")
 			return
 		}
 
@@ -100,6 +102,26 @@ func (e *EmpresaController) ResumoDashboard() gin.HandlerFunc {
 	}
 }
 
+// AlertasMaster godoc
+// @Summary      Alertas do painel master
+// @Description  Empresas com vencimento passado (nível alto), vencendo em até 7 dias ou sem nenhum acesso há 14 dias (nível medio).
+// @Tags         Empresas
+// @Produce      json
+// @Success      200  {array}   model.AlertaMaster
+// @Router       /master/dashboard/alertas [get]
+func (e *EmpresaController) Alertas() gin.HandlerFunc {
+
+	return func(ctx *gin.Context) {
+
+		alertas, err := e.service.Alertas(ctx)
+		if err != nil {
+			responderErro(ctx, err, "erro ao buscar os alertas")
+			return
+		}
+
+		ctx.JSON(http.StatusOK, alertas)
+	}
+}
 
 // EmpresaRecentes godoc
 // @Summary      Empresas recentes
@@ -116,12 +138,7 @@ func (e *EmpresaController) EmpresaRecentes() gin.HandlerFunc {
 
 		empresa, err := e.service.EmpresaRecentes(ctx)
 		if err != nil {
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro ao realizar buscar dos dados das empresas",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao realizar buscar dos dados das empresas")
 			return
 		}
 
@@ -145,12 +162,7 @@ func (e *EmpresaController) DadosEmpresas() gin.HandlerFunc {
 
 		empresa, err := e.service.DadosEmpresas(ctx)
 		if err != nil {
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro ao realizar buscar dos dados das empresas",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao realizar buscar dos dados das empresas")
 			return
 		}
 
@@ -186,26 +198,118 @@ func (e *EmpresaController) EditarEmpresa() gin.HandlerFunc {
 
 		if err := ctx.ShouldBindJSON(&input); err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"erro": err.Error(),
-			})
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "dados inválidos", "detalhes": err.Error()})
 			return
 		}
 
 		err = e.service.EditarEmpresa(ctx, int32(id), input)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro ao editar empresa",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao editar empresa")
 			return
 		}
 
 		ctx.Status(http.StatusNoContent)
+	}
+}
+
+func tenantDaSessao(ctx *gin.Context) (int32, bool) {
+	id, ok := middleware.TenantID(ctx)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "erro interno de tenant"})
+	}
+	return int32(id), ok
+}
+
+// SalvarLogo godoc
+// @Summary      Enviar a logo da empresa
+// @Description  PNG ou JPG de até 2 MB (campo "file"). Vai no cabeçalho das fichas em PDF.
+// @Tags         Empresas
+// @Accept       multipart/form-data
+// @Param        file formData file true "Logo (PNG ou JPG)"
+// @Success      204
+// @Failure      422  {object}  map[string]string
+// @Security     BearerAuth
+// @Router       /gerencial/empresa/logo [put]
+func (e *EmpresaController) SalvarLogo() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		tenantId, ok := tenantDaSessao(ctx)
+		if !ok {
+			return
+		}
+		arquivo, err := ctx.FormFile("file")
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Selecione o arquivo da logo."})
+			return
+		}
+		if arquivo.Size > helper.TamanhoMaximoLogo {
+			responderErro(ctx, helper.ErrLogoGrande, "")
+			return
+		}
+		f, err := arquivo.Open()
+		if err != nil {
+			responderErro(ctx, err, "erro ao ler a logo")
+			return
+		}
+		defer f.Close()
+		dados, err := io.ReadAll(io.LimitReader(f, helper.TamanhoMaximoLogo+1))
+		if err != nil {
+			responderErro(ctx, err, "erro ao ler a logo")
+			return
+		}
+		if err := e.service.SalvarLogo(ctx, tenantId, dados); err != nil {
+			responderErro(ctx, err, "erro ao salvar a logo")
+			return
+		}
+		ctx.Status(http.StatusNoContent)
+	}
+}
+
+// RemoverLogo godoc
+// @Summary      Remover a logo da empresa
+// @Tags         Empresas
+// @Success      204
+// @Security     BearerAuth
+// @Router       /gerencial/empresa/logo [delete]
+func (e *EmpresaController) RemoverLogo() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		tenantId, ok := tenantDaSessao(ctx)
+		if !ok {
+			return
+		}
+		if err := e.service.RemoverLogo(ctx, tenantId); err != nil {
+			responderErro(ctx, err, "erro ao remover a logo")
+			return
+		}
+		ctx.Status(http.StatusNoContent)
+	}
+}
+
+// Logo godoc
+// @Summary      Logo da empresa
+// @Description  PNG da logo; 204 sem corpo quando a empresa não tem (o front mostra toast em todo não-2xx).
+// @Tags         Empresas
+// @Produce      image/png
+// @Success      200
+// @Success      204
+// @Security     BearerAuth
+// @Router       /empresa/logo [get]
+func (e *EmpresaController) Logo() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		tenantId, ok := tenantDaSessao(ctx)
+		if !ok {
+			return
+		}
+		logo, err := e.service.Logo(ctx, tenantId)
+		if err != nil {
+			responderErro(ctx, err, "erro ao buscar a logo")
+			return
+		}
+		if logo == nil {
+			ctx.Status(http.StatusNoContent)
+			return
+		}
+		ctx.Header("Cache-Control", "no-store")
+		ctx.Data(http.StatusOK, "image/png", logo)
 	}
 }

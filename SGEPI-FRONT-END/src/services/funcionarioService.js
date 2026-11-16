@@ -1,6 +1,5 @@
-import { api } from "./api";
+import { listar } from "./listas";
 import {
-  extrairLista,
   normalizarDepartamento,
   normalizarFuncionario,
   normalizarFuncao,
@@ -9,8 +8,7 @@ import {
 export async function carregarDadosFuncionarios() {
   try {
     // 1. Fazemos apenas UMA única chamada para o back-end!
-    const resposta = await api.get("/funcionario-estoque");
-    const listaFuncionarios = extrairLista(resposta);
+    const listaFuncionarios = await listar("/funcionario-estoque");
 
     // 2. Normalizamos os funcionários normalmente
     const funcionariosNormalizados = listaFuncionarios.map(normalizarFuncionario);

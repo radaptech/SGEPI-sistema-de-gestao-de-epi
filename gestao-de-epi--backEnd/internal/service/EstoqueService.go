@@ -27,6 +27,7 @@ func NewEstoqueService(r EstoqueRepository) *EstoqueService {
 // --- ESTRUTURAS DE FILTRO E PAGINAÇÃO ---
 
 type FiltroEstoqueAtual struct {
+	IdUnidade int32 `form:"id_unidade"`
 	FiltroPaginacao
 }
 
@@ -39,6 +40,7 @@ type EstoqueAtualPaginado struct {
 
 type FiltroEstoqueSaldo struct {
 	Fabricante string `form:"fabricante"`
+	IdUnidade  int32  `form:"id_unidade"`
 	FiltroPaginacao
 }
 
@@ -56,9 +58,10 @@ func (e *EstoqueService) MostrarQuantidadeTotais(ctx context.Context, f FiltroEs
 	p := Paginacao(f.FiltroPaginacao)
 
 	filtro := repository.ListarEstoqueAtualParams{
-		Limit:    p.Limit,
-		Offset:   p.Offset,
-		TenantID: tenantId,
+		Limit:     p.Limit,
+		Offset:    p.Offset,
+		TenantID:  tenantId,
+		IDUnidade: pgtype.Int4{Int32: f.IdUnidade, Valid: f.IdUnidade > 0},
 	}
 
 	quantidades, err := e.repo.SomaQuantidade(ctx, filtro)
@@ -99,6 +102,7 @@ func (e *EstoqueService) MostrarSaldoAtual(ctx context.Context, f FiltroEstoqueS
 		Offset:     p.Offset,
 		TenantID:   tenantId,
 		Fabricante: pgtype.Text{String: f.Fabricante, Valid: f.Fabricante != ""},
+		IDUnidade:  pgtype.Int4{Int32: f.IdUnidade, Valid: f.IdUnidade > 0},
 	}
 
 	saldos, err := e.repo.SaldoAtual(ctx, filtro)

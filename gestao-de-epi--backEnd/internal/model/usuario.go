@@ -7,8 +7,8 @@ type Usuario struct {
 	Email        string     `json:"email" binding:"required,email"`
 	Senha        string     `json:"senha" binding:"required,max=10"`
 	Role         string     `json:"role" binding:"required"`
-	EmpresaID    *int       `json:"empresaId"`
-	UltimoAcesso *time.Time `json:"ultimoAcesso"`
+	EmpresaID    *int       `json:"empresa_id"`
+	UltimoAcesso *time.Time `json:"ultimo_acesso"`
 }
 
 // LoginResponse é o que o Front vai receber
@@ -50,7 +50,7 @@ type UsuarioResponsePainel struct {
 	Empresa      string `json:"empresa"` // Aqui vai apenas o nome da empresa
 	Tipo         string `json:"tipo"`
 	Status       bool   `json:"status"`
-	UltimoAcesso string `json:"ultimoAcesso"` // Formatado como string "DD/MM/YYYY HH:MM"
+	UltimoAcesso string `json:"ultimo_acesso"` // Formatado como string "DD/MM/YYYY HH:MM"
 }
 
 type RecuperaLogin struct {

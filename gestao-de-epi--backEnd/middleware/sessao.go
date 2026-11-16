@@ -8,15 +8,14 @@ import (
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/database/repository"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
-	"github.com/radaptech/ginmw"
 )
 
-// Sessao autentica pelo cookie de sessão e popula as mesmas chaves que o
-// ginmw.JWT populava, então ginmw.UserID/TenantID/Require e o "user_nome"
-// dos controllers continuam funcionando sem mudança.
+// Sessao autentica pelo cookie de sessão e põe no contexto o usuário, o tenant
+// e o perfil (lidos com UserID/TenantID/Role e usados por Require), o "user_nome"
+// e as unidades permitidas (lidas com Unidades; ausente = todas).
 func Sessao(q *repository.Queries) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		token, err := c.Cookie(auth.CookieSessao)
+		token, err := c.Cookie(auth.CookieSessao(c.GetHeader("X-Tenant-ID")))
 		if err != nil || token == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Acesso negado, sessão ausente"})
 			return
@@ -33,10 +32,20 @@ func Sessao(q *repository.Queries) gin.HandlerFunc {
 			return
 		}
 
-		c.Set(ginmw.UserIDKey, int64(usuario.ID))
-		c.Set(ginmw.TenantIDKey, int64(usuario.TenantID.Int32))
-		c.Set(ginmw.RoleKey, usuario.Role.String)
+		// Nas rotas de empresa o Tenant já resolveu o subdomínio: a sessão tem que ser dessa empresa
+		if tenant, ok := TenantIDFromHeader(c); ok && tenant != int64(usuario.TenantID.Int32) {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Sessão de outra empresa"})
+			return
+		}
+
+		c.Set(UserIDKey, int64(usuario.ID))
+		c.Set(TenantIDKey, int64(usuario.TenantID.Int32))
+		c.Set(RoleKey, usuario.Role.String)
 		c.Set("user_nome", usuario.Nome)
+		// admin é o gestor da rede: vê todas as unidades mesmo que tenha linhas em usuario_unidade
+		if usuario.Role.String != "admin" && len(usuario.Unidades) > 0 {
+			c.Set(UnidadesKey, usuario.Unidades)
+		}
 
 		c.Next()
 	}

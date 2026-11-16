@@ -10,8 +10,8 @@ import (
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/service"
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/middleware"
 	"github.com/gin-gonic/gin"
-	"github.com/radaptech/ginmw"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -63,11 +63,7 @@ func (d *DepartamentoController) ImportDepartamentoXLSX() gin.HandlerFunc {
 		filer, err := fileHearder.Open()
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"erro":     "erro ao ler a planilha",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao ler a planilha")
 			return
 		}
 		defer filer.Close()
@@ -128,7 +124,7 @@ func (d *DepartamentoController) ImportDepartamentoXLSX() gin.HandlerFunc {
 			return
 		}
 
-		tenantID64, exists := ginmw.TenantID(ctx)
+		tenantID64, exists := middleware.TenantID(ctx)
 		tenantID := int32(tenantID64)
 		if !exists {
 			ctx.JSON(http.StatusUnauthorized, gin.H{"message": "Sessão inválida ou expirada."})
@@ -151,8 +147,7 @@ func (d *DepartamentoController) ImportDepartamentoXLSX() gin.HandlerFunc {
 					})
 					return
 				}
-				ctx.Error(err)
-				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Erro ao registrar os departamentos no banco de dados."})
+				responderErro(ctx, err, "Erro ao registrar os departamentos no banco de dados.")
 				return
 
 			}
@@ -195,7 +190,7 @@ func (d *DepartamentoController) RegistraDepartamento() gin.HandlerFunc {
 		novoDep := model.Departamento{
 			Departamento: input.Departamento,
 		}
-		tenantID64, ok := ginmw.TenantID(c)
+		tenantID64, ok := middleware.TenantID(c)
 		tenantID := int32(tenantID64)
 		if !ok {
 			c.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -213,11 +208,7 @@ func (d *DepartamentoController) RegistraDepartamento() gin.HandlerFunc {
 				})
 				return
 			}
-			c.Error(err)
-			c.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(c, err, "erro interno do servidor")
 			return
 		}
 
@@ -256,7 +247,7 @@ func (d *DepartamentoController) ListarDepartamentos() gin.HandlerFunc {
 			})
 			return
 		}
-		tenantID64, ok := ginmw.TenantID(ctx)
+		tenantID64, ok := middleware.TenantID(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -273,12 +264,7 @@ func (d *DepartamentoController) ListarDepartamentos() gin.HandlerFunc {
 		deps, err := d.service.ListarTodosDepartamentos(ctx, filtro, tenantID)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error":    "erro ao realizar buscar dos departamentos",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao realizar buscar dos departamentos")
 			return
 
 		}
@@ -314,7 +300,7 @@ func (d *DepartamentoController) DeletarDepartamento() gin.HandlerFunc {
 			return
 		}
 
-		tenantID64, ok := ginmw.TenantID(ctx)
+		tenantID64, ok := middleware.TenantID(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -333,11 +319,7 @@ func (d *DepartamentoController) DeletarDepartamento() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -373,7 +355,7 @@ func (d *DepartamentoController) AtualizarDepartamento() gin.HandlerFunc {
 			return
 		}
 
-		tenantID64, ok := ginmw.TenantID(ctx)
+		tenantID64, ok := middleware.TenantID(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -410,11 +392,7 @@ func (d *DepartamentoController) AtualizarDepartamento() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"erro": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 
 			return
 		}

@@ -11,8 +11,8 @@ import (
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/helper"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/model"
 	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/internal/service"
+	"github.com/davi-fernandesx/sistema-de-gestao-de-epi/middleware"
 	"github.com/gin-gonic/gin"
-	"github.com/radaptech/ginmw"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -22,6 +22,8 @@ type FuncaoService interface {
 	DeletarFuncao(ctx context.Context, id int, tenantId int32) error
 	AtualizarFuncao(ctx context.Context, id int, funcao string, tenantId int32) error
 	BuscaDepartamentosParaFuncao(ctx context.Context, tenantId int32) (map[string]int, error)
+	ListarKit(ctx context.Context, idFuncao int, tenantId int32) ([]model.KitItem, error)
+	SalvarKit(ctx context.Context, idFuncao int, itens []model.KitItem, tenantId int32) error
 }
 
 type FuncaoController struct {
@@ -50,12 +52,7 @@ func (f *FuncaoController) ImportarFuncaoXLSX() gin.HandlerFunc {
 		file, err := fileHearder.Open()
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"erro":     "erro ao ler a planilha",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "erro ao ler a planilha")
 			return
 		}
 		defer file.Close()
@@ -82,7 +79,7 @@ func (f *FuncaoController) ImportarFuncaoXLSX() gin.HandlerFunc {
 			return
 		}
 
-		tenantID64, exists := ginmw.TenantID(ctx)
+		tenantID64, exists := middleware.TenantID(ctx)
 		tenantID := int32(tenantID64)
 		if !exists {
 			ctx.JSON(http.StatusUnauthorized, gin.H{"message": "Sessão inválida ou expirada."})
@@ -91,11 +88,7 @@ func (f *FuncaoController) ImportarFuncaoXLSX() gin.HandlerFunc {
 
 		mapDep, err := f.service.BuscaDepartamentosParaFuncao(ctx, tenantID)
 		if err != nil {
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"message":  "Erro ao carregar departamentos para validação.",
-				"detalhes": err.Error(),
-			})
+			responderErro(ctx, err, "Erro ao carregar departamentos para validação.")
 			return
 		}
 
@@ -143,11 +136,7 @@ func (f *FuncaoController) ImportarFuncaoXLSX() gin.HandlerFunc {
 				}
 
 				// Qualquer outro erro de banco (ex: conexão, query quebrada) aborta a requisição
-				ctx.Error(err)
-				ctx.JSON(http.StatusInternalServerError, gin.H{
-					"message":  fmt.Sprintf("Erro interno ao salvar a função '%s' na linha %d.", colunaFuncao, indexLinha+1),
-					"detalhes": err.Error(),
-				})
+				responderErro(ctx, err, fmt.Sprintf("erro ao salvar a função '%s' na linha %d", colunaFuncao, indexLinha+1))
 				return
 			}
 
@@ -213,7 +202,7 @@ func (f *FuncaoController) RegistraFuncao() gin.HandlerFunc {
 			Funcao:         input.Funcao,
 			IdDepartamento: input.IdDepartamento,
 		}
-		tenantID64, ok := ginmw.TenantID(ctx)
+		tenantID64, ok := middleware.TenantID(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -238,11 +227,7 @@ func (f *FuncaoController) RegistraFuncao() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -279,7 +264,7 @@ func (f *FuncaoController) ListarFuncoes() gin.HandlerFunc {
 			return
 		}
 
-		tenantID64, ok := ginmw.TenantID(ctx)
+		tenantID64, ok := middleware.TenantID(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -296,10 +281,7 @@ func (f *FuncaoController) ListarFuncoes() gin.HandlerFunc {
 		funcoes, err := f.service.ListasTodasFuncao(ctx, filtro, tenantID)
 		if err != nil {
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Erro interno ao listar funcoes",
-			})
+			responderErro(ctx, err, "Erro interno ao listar funcoes")
 			return
 		}
 
@@ -333,7 +315,7 @@ func (f *FuncaoController) DeletarFuncao() gin.HandlerFunc {
 			return
 		}
 
-		tenantID64, ok := ginmw.TenantID(ctx)
+		tenantID64, ok := middleware.TenantID(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -353,11 +335,7 @@ func (f *FuncaoController) DeletarFuncao() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"error": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 			return
 		}
 
@@ -392,7 +370,7 @@ func (f *FuncaoController) AtualizarFuncao() gin.HandlerFunc {
 			return
 		}
 
-		tenantID64, ok := ginmw.TenantID(ctx)
+		tenantID64, ok := middleware.TenantID(ctx)
 		tenantID := int32(tenantID64)
 		if !ok {
 			ctx.JSON(500, gin.H{"error": "Erro interno de tenant"})
@@ -430,16 +408,100 @@ func (f *FuncaoController) AtualizarFuncao() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Error(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-
-				"erro": err.Error(),
-			})
+			responderErro(ctx, err, "erro interno do servidor")
 
 			return
 		}
 
 		ctx.JSON(http.StatusOK, gin.H{"sucesso": "funcao atualizado"})
 
+	}
+}
+
+// ListarKitFuncao godoc
+// @Summary      Kit de EPI da função
+// @Description  Lista os EPIs (e quantidades) que a função recebe na entrega
+// @Tags         funcao
+// @Produce      json
+// @Param        id   path      int  true  "ID da funcao"
+// @Success      200  {array}   model.KitItem
+// @Failure      400  {object}  helper.HTTPError "ID inválido"
+// @Failure      500  {object}  helper.HTTPError "Erro interno"
+// @Router       /funcao/{id}/kit [get]
+// @Security     BearerAuth
+func (f *FuncaoController) ListarKitFuncao() gin.HandlerFunc {
+
+	return func(ctx *gin.Context) {
+
+		id, err := strconv.Atoi(ctx.Param("id"))
+		if err != nil || id <= 0 {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "id deve ser um numero"})
+			return
+		}
+
+		tenantID64, ok := middleware.TenantID(ctx)
+		if !ok {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Sessão inválida ou expirada."})
+			return
+		}
+
+		kit, err := f.service.ListarKit(ctx, id, int32(tenantID64))
+		if err != nil {
+			responderErro(ctx, err, "Erro interno ao listar o kit")
+			return
+		}
+
+		ctx.JSON(http.StatusOK, kit)
+	}
+}
+
+// SalvarKitFuncao godoc
+// @Summary      Salvar kit de EPI da função
+// @Description  Substitui o kit inteiro da função. Lista vazia limpa o kit.
+// @Tags         funcao
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int                     true  "ID da funcao"
+// @Param        body body      model.KitFuncaoInserir  true  "Itens do kit"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  helper.HTTPError "Dados inválidos"
+// @Failure      422  {object}  helper.HTTPError "EPI repetido no kit"
+// @Failure      500  {object}  helper.HTTPError "Erro interno"
+// @Router       /funcao/{id}/kit [put]
+// @Security     BearerAuth
+func (f *FuncaoController) SalvarKitFuncao() gin.HandlerFunc {
+
+	return func(ctx *gin.Context) {
+
+		id, err := strconv.Atoi(ctx.Param("id"))
+		if err != nil || id <= 0 {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "id deve ser um numero"})
+			return
+		}
+
+		var input model.KitFuncaoInserir
+		if err := ctx.ShouldBindJSON(&input); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "dados do kit invalidos", "detalhes": err.Error()})
+			return
+		}
+
+		tenantID64, ok := middleware.TenantID(ctx)
+		if !ok {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Sessão inválida ou expirada."})
+			return
+		}
+
+		err = f.service.SalvarKit(ctx, id, input.Itens, int32(tenantID64))
+		if err != nil {
+			if errors.Is(err, helper.ErrDadoDuplicado) {
+				ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "o mesmo EPI aparece mais de uma vez no kit"})
+				return
+			}
+
+			responderErro(ctx, err, "Erro interno ao salvar o kit")
+			return
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{"mensagem": "kit da função salvo"})
 	}
 }
